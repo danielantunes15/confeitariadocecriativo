@@ -1,0 +1,2527 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Doces Criativos - Sistema de Gestão</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        :root {
+            --primary: #d81b60;
+            --secondary: #f8bbd0;
+            --accent: #ec407a;
+            --light: #fce4ec;
+            --dark: #880e4f;
+            --success: #43a047;
+            --danger: #e53935;
+            --warning: #ffb300;
+            --info: #039be5;
+        }
+        *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif}
+        body{background-color:#fafafa;color:#333}
+        .container{max-width:1400px;margin:0 auto;padding:15px}
+        header{background:linear-gradient(135deg,var(--primary),var(--accent));color:white;padding:15px;border-radius:8px 8px 0 0;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;box-shadow:0 4px 6px rgba(0,0,0,.1)}
+        .logo{font-size:24px;font-weight:bold;display:flex;align-items:center}
+        .logo i{margin-right:10px}
+        .user-info{display:flex;align-items:center;gap:15px}
+        .btn{padding:10px 15px;border:none;border-radius:5px;cursor:pointer;font-weight:500;transition:all .3s}
+        .btn-primary{background-color:var(--primary);color:white}
+        .btn-secondary{background-color:var(--secondary);color:var(--dark)}
+        .btn-success{background-color:var(--success);color:white}
+        .btn-danger{background-color:var(--danger);color:white}
+        .btn-warning{background-color:var(--warning);color:black}
+        .btn-info {
+            background-color: var(--info);
+            color: white;
+        }
+        .btn:hover{opacity:.9;transform:translateY(-2px)}
+        .tabs{display:flex;background-color:var(--secondary);border-radius:8px;overflow:hidden;margin-bottom:20px;box-shadow:0 2px 4px rgba(0,0,0,.1)}
+        .tab{padding:15px 20px;cursor:pointer;text-align:center;flex:1;transition:all .3s;font-weight:500}
+        .tab.active{background-color:var(--primary);color:white}
+        .tab:hover:not(.active){background-color:var(--accent);color:white}
+        .tab-content{display:none;background-color:white;padding:20px;border-radius:8px;box-shadow:0 4px 6px rgba(0,0,0,.1);margin-bottom:20px}
+        .tab-content.active{display:block}
+        .product-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:15px;margin-bottom:20px}
+        .product-card{background-color:white;border-radius:8px;overflow:hidden;box-shadow:0 2px 4px rgba(0,0,0,.1);text-align:center;cursor:pointer;transition:all .3s;border:1px solid var(--light)}
+        .product-card:hover{transform:translateY(-5px);box-shadow:0 5px 15px rgba(0,0,0,.2)}
+        .product-image{height:100px;background-color:var(--light);display:flex;align-items:center;justify-content:center;color:var(--dark);font-size:40px}
+        .product-info{padding:10px}
+        .product-name{font-weight:500;margin-bottom:5px}
+        .product-price{color:var(--primary);font-weight:bold}
+        .product-stock{font-size:12px;color:#666}
+        .sale-items{margin:20px 0;border:1px solid #ddd;border-radius:8px;overflow:hidden}
+        .sale-item{display:flex;justify-content:space-between;padding:10px 15px;border-bottom:1px solid #eee;cursor:pointer}
+        .sale-item:last-child{border-bottom:none}
+        .sale-item.selected{background:#f1f1f1;border-left:4px solid var(--primary)}
+        .sale-total{background-color:var(--light);padding:15px;text-align:right;font-size:20px;font-weight:bold;color:var(--primary)}
+        .payment-options{display:flex;gap:10px;margin:20px 0;flex-wrap:wrap}
+        .payment-option{flex:1;min-width:100px;text-align:center;padding:15px;background-color:var(--light);border-radius:8px;cursor:pointer;transition:all .3s;border:2px solid transparent}
+        .payment-option.active{background-color:var(--primary);color:white;border-color:var(--dark)}
+        .payment-option:hover:not(.active){background-color:var(--accent);color:white}
+        .form-group{margin-bottom:15px}
+        .form-control{width:100%;padding:10px;border:1px solid #ddd;border-radius:5px}
+        table{width:100%;border-collapse:collapse;margin:15px 0}
+        th,td{padding:12px 15px;text-align:left;border-bottom:1px solid #ddd}
+        th{background-color:var(--light);font-weight:600}
+        tr:hover{background-color:#f5f5f5}
+        .alert{padding:15px;border-radius:5px;margin-bottom:20px}
+        .alert-success{background-color:#d4edda;color:#155724}
+        .alert-danger{background-color:#f8d7da;color:#721c24}
+        .alert-warning{background-color:#fff3cd;color:#856404}
+        .alert-info{background-color:#d1ecf1;color:#0c5460}
+        .modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background-color:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center}
+        .modal-content{background-color:white;padding:20px;border-radius:8px;width:90%;max-width:600px;box-shadow:0 5px 15px rgba(0,0,0,.3);max-height:90vh;overflow:auto}
+        .modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding-bottom:10px;border-bottom:1px solid #eee}
+        .close{font-size:24px;cursor:pointer;color:#999}
+        .close:hover{color:#333}
+        .low-stock{color:var(--danger);font-weight:bold}
+        .badge{display:inline-block;padding:3px 8px;border-radius:12px;font-size:12px;font-weight:bold}
+        .badge-warning{background-color:var(--warning);color:black}
+        .category-bar{display:flex;gap:10px;margin-bottom:15px;flex-wrap:wrap}
+        .category-btn{padding:8px 12px;border-radius:20px;background:#fff;border:1px solid #eee;cursor:pointer}
+        .category-btn.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+        .permission-restricted{opacity:0.7;position:relative}
+        .permission-restricted::after{content:"🔒";position:absolute;top:5px;right:5px;font-size:12px}
+        .cash-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px;margin:20px 0}
+        .cash-card{background:white;border-radius:8px;padding:15px;box-shadow:0 2px 4px rgba(0,0,0,.1);text-align:center}
+        .cash-card h3{margin:0 0 10px;color:var(--dark)}
+        .cash-card .amount{font-size:24px;font-weight:bold}
+        .cash-card.dinheiro{border-top:4px solid #43a047}
+        .cash-card.cartao{border-top:4px solid #039be5}
+        .cash-card.pix{border-top:4px solid #9c27b0}
+        .cash-card.total{border-top:4px solid var(--primary)}
+        .dashboard-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;margin:20px 0}
+        .dashboard-card{background:white;border-radius:8px;padding:20px;box-shadow:0 2px 10px rgba(0,0,0,.1)}
+        .dashboard-card h3{margin-top:0;color:var(--dark);border-bottom:1px solid #eee;padding-bottom:10px}
+        .chart-container{position:relative;height:250px;width:100%}
+        .report-table{margin-top:20px;width:100%;border-collapse:collapse}
+        .report-table th{background-color:var(--primary);color:white}
+        .report-table tr:nth-child(even){background-color:#f9f9f9}
+        .report-filters{display:flex;gap:15px;margin:20px 0;flex-wrap:wrap;align-items:flex-end}
+        .filter-group{flex:1;min-width:200px}
+        @media(max-width:768px){.product-grid{grid-template-columns:repeat(auto-fill,minmax(120px,1fr))}.tabs{flex-wrap:wrap}.tab{flex:1 0 33%}.payment-options{flex-direction:column}.cash-summary{grid-template-columns:1fr}.dashboard-grid{grid-template-columns:1fr}.report-filters{flex-direction:column}}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <i class="fas fa-cupcake"></i>
+                <span>Doces Criativos</span>
+            </div>
+            <div class="user-info">
+                <span>Usuário: <strong id="currentUser">Convidado</strong></span>
+                <span id="userRole" style="font-size: 0.9em; background: rgba(255,255,255,0.2); padding: 3px 8px; border-radius: 10px;"></span>
+                <button class="btn btn-primary" id="logoutBtn">Sair / Login</button>
+            </div>
+        </header>
+
+        <div class="tabs">
+            <div class="tab active" data-tab="vendas">Vendas</div>
+            <div class="tab" data-tab="caixa">Controle de Caixa</div>
+            <div class="tab permission-restricted" data-tab="estoque">Estoque</div>
+            <div class="tab permission-restricted" data-tab="relatorios">Relatórios</div>
+            <div class="tab permission-restricted" data-tab="admin">Administração</div>
+        </div>
+
+        <!-- Vendas -->
+        <div class="tab-content active" id="vendas">
+            <h2><i class="fas fa-cash-register"></i> Tela de Vendas</h2>
+
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i> Turno aberto às <span id="openingTime">08:00</span> por <span id="currentUserLabel">Usuário</span>
+            </div>
+
+            <div class="category-bar" id="categoryBar">
+                <!-- Categorias serão renderizadas aqui -->
+            </div>
+
+            <div class="product-grid" id="productGrid">
+                <!-- Produtos serão carregados via JavaScript -->
+            </div>
+
+            <div class="sale-items" id="saleItems">
+                <!-- Itens da venda serão adicionados aqui -->
+            </div>
+
+            <div class="sale-total" id="saleTotal">Total: R$ 0,00</div>
+
+            <div class="payment-options">
+                <div class="payment-option active" data-method="dinheiro">
+                    <i class="fas fa-money-bill-wave fa-2x"></i>
+                    <div>Dinheiro</div>
+                </div>
+                <div class="payment-option" data-method="cartao">
+                    <i class="fas fa-credit-card fa-2x"></i>
+                    <div>Cartão</div>
+                </div>
+                <div class="payment-option" data-method="pix">
+                    <i class="fas fa-mobile-alt fa-2x"></i>
+                    <div>PIX</div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="observation">Observações:</label>
+                <input type="text" class="form-control" id="observation" placeholder="Ex: Sem açúcar, para viagem...">
+            </div>
+
+            <div style="display:flex;gap:10px;">
+                <button class="btn btn-success" id="finalizeSale" style="flex:2;"><i class="fas fa-check"></i> Finalizar Venda</button>
+                <button class="btn btn-warning" id="cancelItem" style="flex:1;"><i class="fas fa-times"></i> Cancelar Item</button>
+                <button class="btn btn-danger" id="cancelSale" style="flex:1;"><i class="fas fa-ban"></i> Cancelar Venda</button>
+            </div>
+        </div>
+
+        <!-- Controle de Caixa -->
+        <div class="tab-content" id="caixa">
+            <h2><i class="fas fa-cash-register"></i> Controle de Caixa</h2>
+
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i> 
+                <span id="cashInfoText">Visualizando movimentações do dia</span>
+            </div>
+
+            <div style="display:flex;gap:15px;margin:20px 0;">
+                <div class="form-group" style="flex:1;">
+                    <label for="cashDateFilter">Filtrar por data:</label>
+                    <input type="date" class="form-control" id="cashDateFilter">
+                </div>
+                <div class="form-group" style="flex:1;display:flex;align-items:flex-end;">
+                    <button class="btn btn-primary" id="applyDateFilter"><i class="fas fa-filter"></i> Aplicar Filtro</button>
+                </div>
+                <div class="form-group" style="flex:1;display:flex;align-items:flex-end;">
+                    <button class="btn btn-secondary" id="resetDateFilter"><i class="fas fa-times"></i> Limpar Filtro</button>
+                </div>
+            </div>
+
+            <div style="display:flex;gap:15px;margin:20px 0;">
+                <button class="btn btn-success" id="addValueBtn" style="flex:1;"><i class="fas fa-plus-circle"></i> Adicionar Valor</button>
+                <button class="btn btn-danger" id="removeValueBtn" style="flex:1;"><i class="fas fa-minus-circle"></i> Retirar Valor</button>
+                <button class="btn btn-primary" id="closeRegisterBtn" style="flex:1;"><i class="fas fa-lock"></i> Fechar Caixa</button>
+            </div>
+
+            <!-- Resumo de Caixa -->
+            <div id="cashSummary">
+                <h3>Resumo do Caixa</h3>
+                <div class="cash-summary">
+                    <div class="cash-card dinheiro">
+                        <h3><i class="fas fa-money-bill-wave"></i> Dinheiro</h3>
+                        <div class="amount" id="cashAmount">R$ 0,00</div>
+                    </div>
+                    <div class="cash-card cartao">
+                        <h3><i class="fas fa-credit-card"></i> Cartão</h3>
+                        <div class="amount" id="cardAmount">R$ 0,00</div>
+                    </div>
+                    <div class="cash-card pix">
+                        <h3><i class="fas fa-mobile-alt"></i> PIX</h3>
+                        <div class="amount" id="pixAmount">R$ 0,00</div>
+                    </div>
+                    <div class="cash-card total">
+                        <h3><i class="fas fa-calculator"></i> Total</h3>
+                        <div class="amount" id="totalAmount">R$ 0,00</div>
+                    </div>
+                </div>
+            </div>
+
+            <h3>Movimentações</h3>
+            <table id="cashFlowTable">
+                <thead>
+                    <tr>
+                        <th>Data/Hora</th>
+                        <th>Descrição</th>
+                        <th>Forma de Pagamento</th>
+                        <th>Entrada</th>
+                        <th>Saída</th>
+                        <th>Operador</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+
+            <h3>Fechamento do Caixa</h3>
+            <table id="closingTable">
+                <thead>
+                    <tr>
+                        <th>Forma de Pagamento</th>
+                        <th>Quantidade</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+
+            <div style="margin-top:20px;text-align:center;">
+                <button class="btn btn-primary" id="printReportBtn"><i class="fas fa-print"></i> Imprimir Relatório</button>
+                <button class="btn btn-secondary" id="exportExcelBtn"><i class="fas fa-file-excel"></i> Exportar para Excel</button>
+            </div>
+        </div>
+
+        <!-- Estoque -->
+        <div class="tab-content" id="estoque">
+            <h2><i class="fas fa-boxes"></i> Controle de Estoque</h2>
+
+            <div class="alert alert-warning" id="lowStockAlert"><i class="fas fa-exclamation-triangle"></i> <span id="lowStockCount">0</span> produtos com estoque baixo</div>
+
+            <div style="display:flex;justify-content:space-between;margin-bottom:20px;">
+                <input type="text" class="form-control" id="searchProduct" placeholder="Buscar produto..." style="width:70%;">
+                <button class="btn btn-primary" id="addProductBtn"><i class="fas fa-plus"></i> Novo Produto</button>
+            </div>
+
+            <table id="inventoryTable">
+                <thead><tr><th>Produto</th><th>Estoque</th><th>Preço</th><th>Categoria</th><th>Ações</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <!-- Relatorios -->
+        <div class="tab-content" id="relatorios">
+            <h2><i class="fas fa-chart-line"></i> Relatórios</h2>
+
+            <div class="report-filters">
+                <div class="filter-group">
+                    <label for="startDate">Data Início:</label>
+                    <input type="date" class="form-control" id="startDate">
+                </div>
+                <div class="filter-group">
+                    <label for="endDate">Data Fim:</label>
+                    <input type="date" class="form-control" id="endDate">
+                </div>
+                <div class="filter-group">
+                    <label for="reportType">Tipo de Relatório:</label>
+                    <select class="form-control" id="reportType">
+                        <option value="sales">Vendas por Produto</option>
+                        <option value="categories">Vendas por Categoria</option>
+                        <option value="payment">Métodos de Pagamento</option>
+                        <option value="general">Relatório Geral</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <button class="btn btn-primary" id="generateReportBtn">Gerar Relatório</button>
+                </div>
+            </div>
+
+            <div class="dashboard-grid" id="reportDashboard">
+                <!-- Dashboard será gerado aqui -->
+            </div>
+
+            <div id="reportContent">
+                <!-- Conteúdo do relatório será gerado aqui -->
+            </div>
+
+            <div style="margin-top:20px;text-align:center;">
+                <button class="btn btn-primary" id="printReportBtn2"><i class="fas fa-print"></i> Imprimir</button>
+                <button class="btn btn-secondary" id="exportExcelBtn2"><i class="fas fa-file-excel"></i> Exportar para Excel</button>
+                <button class="btn btn-info" id="exportPdfBtn"><i class="fas fa-file-pdf"></i> Exportar para PDF</button>
+            </div>
+        </div>
+
+        <!-- Admin -->
+        <div class="tab-content" id="admin">
+            <h2><i class="fas fa-lock"></i> Área Administrativa</h2>
+
+            <div id="adminAccessMessage" class="alert alert-info" style="display:none;">
+                <i class="fas fa-info-circle"></i> Acesso restrito ao administrador
+            </div>
+
+            <div id="adminContent" style="display:none;">
+                <div class="tabs" style="margin-bottom: 20px;">
+                    <div class="tab active" data-tab="users">Usuários</div>
+                    <div class="tab" data-tab="categories">Categorias</div>
+                    <div class="tab" data-tab="system">Sistema</div>
+                </div>
+
+                <!-- Gestão de Usuários -->
+                <div id="usersAdmin" class="tab-content active">
+                    <h3>Gerenciamento de Usuários</h3>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> Aqui você pode adicionar, editar e remover usuários do sistema.
+                    </div>
+
+                    <div style="display:flex;gap:15px;margin:20px 0;">
+                        <div class="form-group" style="flex:1;">
+                            <label for="newUserName">Nome:</label>
+                            <input type="text" class="form-control" id="newUserName" placeholder="Nome completo">
+                        </div>
+                        <div class="form-group" style="flex:1;">
+                            <label for="newUserUsername">Usuário:</label>
+                            <input type="text" class="form-control" id="newUserUsername" placeholder="Nome de usuário">
+                        </div>
+                    </div>
+
+                    <div style="display:flex;gap:15px;margin:20px 0;">
+                        <div class="form-group" style="flex:1;">
+                            <label for="newUserPassword">Senha:</label>
+                            <input type="password" class="form-control" id="newUserPassword" placeholder="Senha">
+                        </div>
+                        <div class="form-group" style="flex:1;">
+                            <label for="newUserRole">Permissão:</label>
+                            <select class="form-control" id="newUserRole">
+                                <option value="operator">Operador</option>
+                                <option value="manager">Gerente</option>
+                                <option value="admin">Administrador</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-success" id="createUserBtn"><i class="fas fa-user-plus"></i> Criar Usuário</button>
+
+                    <h3 style="margin-top: 30px;">Usuários do Sistema</h3>
+                    <table id="usersTable">
+                        <thead><tr><th>Nome</th><th>Usuário</th><th>Permissão</th><th>Ações</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+
+                <!-- Gestão de Categorias -->
+                <div id="categoriesAdmin" class="tab-content">
+                    <h3>Gerenciamento de Categorias</h3>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> Gerencie as categorias de produtos do sistema.
+                    </div>
+
+                    <div style="display:flex;gap:15px;margin:20px 0;">
+                        <div class="form-group" style="flex:2;">
+                            <label for="newCategoryName">Nome da Categoria:</label>
+                            <input type="text" class="form-control" id="newCategoryName" placeholder="Nome da nova categoria">
+                        </div>
+                        <div class="form-group" style="flex:1;display:flex;align-items:flex-end;">
+                            <button class="btn btn-success" id="addCategoryBtn"><i class="fas fa-plus"></i> Adicionar Categoria</button>
+                        </div>
+                    </div>
+
+                    <h3>Categorias Existentes</h3>
+                    <table id="categoriesTable">
+                        <thead><tr><th>Nome</th><th>Quantidade de Produtos</th><th>Ações</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+
+                <!-- Configurações do Sistema -->
+                <div id="systemAdmin" class="tab-content">
+                    <h3>Configurações do Sistema</h3>
+                    
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i> Estas configurações afetam todo o sistema. Use com cuidado.
+                    </div>
+
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:20px;margin:20px 0;">
+                        <div class="card" style="padding:20px;background:white;border-radius:8px;text-align:center;box-shadow:0 2px 4px rgba(0,0,0,.1);">
+                            <i class="fas fa-cog fa-3x" style="color:var(--primary);margin-bottom:15px;"></i>
+                            <h3>Configurações</h3>
+                            <p>Configure o sistema</p>
+                            <button class="btn btn-primary" id="settingsBtn">Acessar</button>
+                        </div>
+
+                        <div class="card" style="padding:20px;background:white;border-radius:8px;text-align:center;box-shadow:0 2px 4px rgba(0,0,0,.1);">
+                            <i class="fas fa-history fa-3x" style="color:var(--primary);margin-bottom:15px;"></i>
+                            <h3>Histórico Completo</h3>
+                            <p>Visualize todas as movimentações</p>
+                            <button class="btn btn-primary" id="historyBtn">Acessar</button>
+                        </div>
+
+                        <div class="card" style="padding:20px;background:white;border-radius:8px;text-align:center;box-shadow:0 2px 4px rgba(0,0,0,.1);">
+                            <i class="fas fa-cloud-upload-alt fa-3x" style="color:var(--primary);margin-bottom:15px;"></i>
+                            <h3>Backup</h3>
+                            <p>Gerencie backups dos dados</p>
+                            <button class="btn btn-primary" id="backupBtn">Acessar</button>
+                        </div>
+
+                        <div class="card" style="padding:20px;background:white;border-radius:8px;text-align:center;box-shadow:0 2px 4px rgba(0,0,0,.1);">
+                            <i class="fas fa-database fa-3x" style="color:var(--primary);margin-bottom:15px;"></i>
+                            <h3>Limpar Dados</h3>
+                            <p>Reinicialize o sistema</p>
+                            <button class="btn btn-danger" id="resetBtn">Limpar Tudo</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div class="modal" id="loginModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Acesso ao Sistema</h2>
+                <span class="close" data-close="loginModal">&times;</span>
+            </div>
+            <div class="form-group">
+                <label for="username">Usuário:</label>
+                <input type="text" class="form-control" id="username" placeholder="Digite seu usuário">
+            </div>
+            <div class="form-group">
+                <label for="password">Senha:</label>
+                <input type="password" class="form-control" id="password" placeholder="Digite sua senha">
+            </div>
+            <button class="btn btn-primary" style="width:100%" id="loginBtn">Entrar</button>
+            <div style="margin-top: 15px; text-align: center;">
+                <p>Usuários demo:<br>
+                <strong>Admin</strong>: admin / 1234<br>
+                <strong>Operador</strong>: maria / 0000</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="productModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="productModalTitle">Novo Produto</h2>
+                <span class="close" data-close="productModal">&times;</span>
+            </div>
+            <div class="form-group">
+                <label for="prodName">Nome:</label>
+                <input type="text" class="form-control" id="prodName">
+            </div>
+            <div class="form-group">
+                <label for="prodPrice">Preço:</label>
+                <input type="number" step="0.01" class="form-control" id="prodPrice">
+            </div>
+            <div class="form-group">
+                <label for="prodStock">Estoque:</label>
+                <input type="number" class="form-control" id="prodStock">
+            </div>
+            <div class="form-group">
+                <label for="prodMinStock">Estoque Mínimo (para alerta):</label>
+                <input type="number" class="form-control" id="prodMinStock" value="10">
+            </div>
+            <div class="form-group">
+                <label for="prodCategory">Categoria:</label>
+                <select class="form-control" id="prodCategory">
+                    <!-- Categorias serão preenchidas via JavaScript -->
+                </select>
+            </div>
+            <div id="newCategoryContainer" style="display:none;margin-top:10px;">
+                <input type="text" class="form-control" id="newCategoryInput" placeholder="Digite o nome da nova categoria">
+            </div>
+            <div class="form-group">
+                <label for="prodIcon">Ícone (classes FontAwesome):</label>
+                <input type="text" class="form-control" id="prodIcon" placeholder="ex: fas fa-cookie">
+            </div>
+            <div style="display:flex;gap:10px;">
+                <button class="btn btn-success" id="saveProductBtn" style="flex:1">Salvar</button>
+                <button class="btn btn-secondary" id="cancelProductBtn" style="flex:1">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ---------- Dados iniciais e persistência ----------
+        const initialProducts = [
+            { id: 1, name: "Bolo Chocolate", price: 35.00, stock: 12, minStock: 10, category: "Bolos caseirinhos", icon: "fas fa-birthday-cake" },
+            { id: 2, name: "Cookie", price: 4.50, stock: 36, minStock: 10, category: "Explosao morango", icon: "fas fa-cookie" },
+            { id: 3, name: "Pão Francês", price: 0.70, stock: 5, minStock: 8, category: "Salgados", icon: "fas fa-bread-slice" },
+            { id: 4, name: "Cupcake", price: 7.00, stock: 18, minStock: 10, category: "Explosao morango", icon: "fas fa-cupcake" },
+            { id: 5, name: "Brigadeiro", price: 2.50, stock: 48, minStock: 10, category: "Bombom Aberto", icon: "fas fa-ice-cream" },
+            { id: 6, name: "Torta de Limão", price: 28.00, stock: 8, minStock: 10, category: "Fatias de Bolo", icon: "fas fa-pie-chart" },
+            { id: 7, name: "Croissant", price: 5.50, stock: 15, minStock: 10, category: "Salgados", icon: "fas fa-bread-slice" },
+            { id: 8, name: "Bolo de Cenoura", price: 32.00, stock: 10, minStock: 10, category: "Bolos caseirinhos", icon: "fas fa-birthday-cake" }
+        ];
+
+        // Categorias iniciais
+        const initialCategories = [
+            "Explosao morango",
+            "Copos da felicidade", 
+            "Fatias de Bolo",
+            "Bolos caseirinhos",
+            "Salgados",
+            "Bebidas Geladas",
+            "Bombom Aberto"
+        ];
+
+        // Carregar usuários do localStorage ou inicializar com padrão
+        function loadUsersFromStorage() {
+            const storedUsers = localStorage.getItem('doces_users');
+            if (storedUsers) {
+                try {
+                    return JSON.parse(storedUsers);
+                } catch(e) {
+                    console.error('Erro ao carregar usuários:', e);
+                }
+            }
+            
+            // Usuários padrão se não existirem
+            const defaultUsers = [
+                { id: 1, username: 'admin', password: '1234', role: 'admin', displayName: 'Administrador' },
+                { id: 2, username: 'maria', password: '0000', role: 'operator', displayName: 'Maria Silva' },
+                { id: 3, username: 'joao', password: '1111', role: 'manager', displayName: 'João Gerente' }
+            ];
+            localStorage.setItem('doces_users', JSON.stringify(defaultUsers));
+            return defaultUsers;
+        }
+
+        // Carregar categorias do localStorage ou inicializar com padrão
+        function loadCategoriesFromStorage() {
+            const storedCategories = localStorage.getItem('doces_categories');
+            if (storedCategories) {
+                try {
+                    return JSON.parse(storedCategories);
+                } catch(e) {
+                    console.error('Erro ao carregar categorias:', e);
+                }
+            }
+            
+            localStorage.setItem('doces_categories', JSON.stringify(initialCategories));
+            return initialCategories.slice();
+        }
+
+        let users = loadUsersFromStorage();
+        let categories = loadCategoriesFromStorage();
+
+        // estado da aplicação
+        let products = loadProductsFromStorage();
+        let currentSale = [];
+        let paymentMethod = "dinheiro";
+        let cashFlow = [];
+        let salesHistory = loadSalesHistoryFromStorage();
+        let selectedSaleIndex = null;
+        let currentUser = loadCurrentUserFromStorage() || null;
+
+        // ---------- Inicialização ----------
+        document.addEventListener('DOMContentLoaded', () => {
+            // Verificar se há usuário logado
+            if (!currentUser) {
+                showModal('loginModal');
+            } else {
+                initializeApp();
+            }
+            
+            // Configurar tabs internas da área admin
+            document.querySelectorAll('#admin .tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('#admin .tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    document.querySelectorAll('#admin .tab-content').forEach(content => content.classList.remove('active'));
+                    const tabId = tab.getAttribute('data-tab');
+                    document.getElementById(tabId + 'Admin').classList.add('active');
+                    
+                    // Se for a aba de categorias, atualizar a tabela
+                    if (tabId === 'categories') {
+                        renderCategoriesTable();
+                    }
+                });
+            });
+            
+            // Event listener para o select de categoria
+            document.getElementById('prodCategory').addEventListener('change', function() {
+                if (this.value === 'new') {
+                    document.getElementById('newCategoryContainer').style.display = 'block';
+                } else {
+                    document.getElementById('newCategoryContainer').style.display = 'none';
+                }
+            });
+            
+            // Event listener para adicionar categoria
+            document.getElementById('addCategoryBtn').addEventListener('click', addNewCategory);
+            
+            // Configurar data padrão para o filtro (hoje)
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('cashDateFilter').value = today;
+            
+            // Event listeners para o controle de caixa
+            document.getElementById('applyDateFilter').addEventListener('click', applyDateFilter);
+            document.getElementById('resetDateFilter').addEventListener('click', resetDateFilter);
+            document.getElementById('closeRegisterBtn').addEventListener('click', closeRegister);
+            document.getElementById('printReportBtn').addEventListener('click', printReport);
+            document.getElementById('exportExcelBtn').addEventListener('click', exportToExcel);
+            
+            // Event listeners para relatórios
+            document.getElementById('generateReportBtn').addEventListener('click', generateReport);
+            document.getElementById('printReportBtn2').addEventListener('click', printReport);
+            document.getElementById('exportExcelBtn2').addEventListener('click', exportReportToExcel);
+            document.getElementById('exportPdfBtn').addEventListener('click', exportReportToPDF);
+            
+            buildCategoryBar();
+            renderProducts(); // mostra todos por default
+            updateLowStockCount();
+            renderInventoryTable(document.getElementById('searchProduct').value);
+            updateCashFlowTable();
+            updateCashSummary();
+            updateUIForUser();
+            renderUsersTable();
+            checkAdminAccess();
+        });
+
+        function initializeApp() {
+            const openingTime = new Date();
+            const openingTimeString = openingTime.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            document.getElementById('openingTime').textContent = openingTimeString;
+            document.getElementById('currentUser').textContent = currentUser.displayName || currentUser.username;
+            document.getElementById('currentUserLabel').textContent = currentUser.displayName || currentUser.username;
+
+            // carregar cashFlow se tiver no storage
+            const storedCash = localStorage.getItem('doces_cashflow');
+            if (storedCash) {
+                cashFlow = JSON.parse(storedCash);
+            } else {
+                // Adicionar data às movimentações existentes
+                const dateString = new Date().toISOString().split('T')[0];
+                cashFlow.forEach(flow => {
+                    if (!flow.date) flow.date = dateString;
+                });
+                
+                cashFlow.push({
+                    time: openingTimeString,
+                    date: dateString,
+                    description: "Abertura de caixa",
+                    income: 100.00,
+                    outcome: 0,
+                    operator: currentUser.displayName || currentUser.username
+                });
+                saveCashFlowToStorage();
+            }
+        }
+
+        // ---------- Storage helpers ----------
+        function saveProductsToStorage() {
+            localStorage.setItem('doces_products', JSON.stringify(products));
+        }
+        
+        function loadProductsFromStorage() {
+            const s = localStorage.getItem('doces_products');
+            if (s) {
+                try { return JSON.parse(s); } catch(e) { console.error(e); return initialProducts.slice(); }
+            }
+            localStorage.setItem('doces_products', JSON.stringify(initialProducts));
+            return initialProducts.slice();
+        }
+        
+        function saveCashFlowToStorage() {
+            localStorage.setItem('doces_cashflow', JSON.stringify(cashFlow));
+        }
+        
+        function saveSalesHistoryToStorage() {
+            localStorage.setItem('doces_sales_history', JSON.stringify(salesHistory));
+        }
+        
+        function loadSalesHistoryFromStorage() {
+            const s = localStorage.getItem('doces_sales_history');
+            if (s) {
+                try { return JSON.parse(s); } catch(e) { console.error(e); return []; }
+            }
+            return [];
+        }
+        
+        function saveUsersToStorage() {
+            localStorage.setItem('doces_users', JSON.stringify(users));
+        }
+        
+        function saveCategoriesToStorage() {
+            localStorage.setItem('doces_categories', JSON.stringify(categories));
+        }
+        
+        function saveCurrentUserToStorage() {
+            if (currentUser) {
+                localStorage.setItem('doces_current_user', JSON.stringify(currentUser));
+            } else {
+                localStorage.removeItem('doces_current_user');
+            }
+        }
+        
+        function loadCurrentUserFromStorage() {
+            try { 
+                return JSON.parse(localStorage.getItem('doces_current_user')); 
+            } catch(e) { 
+                return null; 
+            }
+        }
+
+        // ---------- Abas ----------
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                const tabId = tab.getAttribute('data-tab');
+                
+                // Verificar permissões para acessar abas restritas
+                if (tab.classList.contains('permission-restricted')) {
+                    if (!currentUser) {
+                        showModal('loginModal');
+                        return;
+                    }
+                    
+                    // Verificar se o usuário tem permissão para acessar esta aba
+                    if (!hasPermission(tabId)) {
+                        alert('Você não tem permissão para acessar esta funcionalidade.');
+                        return;
+                    }
+                }
+                
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+                document.getElementById(tabId).classList.add('active');
+                
+                // Se for a aba de caixa, atualizar a tabela
+                if (tabId === 'caixa') {
+                    updateCashFlowTable();
+                    updateCashSummary();
+                }
+                
+                // Se for a aba de admin, verificar acesso
+                if (tabId === 'admin') {
+                    checkAdminAccess();
+                }
+            });
+        });
+
+        // Verificar permissões do usuário
+        function hasPermission(feature) {
+            if (!currentUser) return false;
+            
+            const permissions = {
+                'admin': ['admin'],
+                'relatorios': ['admin', 'manager'],
+                'estoque': ['admin', 'manager', 'operator'],
+                'caixa': ['admin', 'manager', 'operator'],
+                'vendas': ['admin', 'manager', 'operator']
+            };
+            
+            return permissions[feature]?.includes(currentUser.role);
+        }
+
+        // Verificar acesso à área administrativa
+        function checkAdminAccess() {
+            if (currentUser && currentUser.role === 'admin') {
+                document.getElementById('adminAccessMessage').style.display = 'none';
+                document.getElementById('adminContent').style.display = 'block';
+            } else {
+                document.getElementById('adminAccessMessage').style.display = 'block';
+                document.getElementById('adminContent').style.display = 'none';
+            }
+        }
+
+        // ---------- Categorias e produtos ----------
+        function getCategories() {
+            const set = new Set(products.map(p => p.category));
+            return Array.from(set).sort();
+        }
+
+        function buildCategoryBar() {
+            const bar = document.getElementById('categoryBar');
+            bar.innerHTML = '';
+            const allBtn = document.createElement('button');
+            allBtn.className = 'category-btn active';
+            allBtn.textContent = 'Todos';
+            allBtn.onclick = () => {
+                document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
+                allBtn.classList.add('active');
+                renderProducts();
+            };
+            bar.appendChild(allBtn);
+
+            getCategories().forEach(cat => {
+                const btn = document.createElement('button');
+                btn.className = 'category-btn';
+                btn.textContent = cat;
+                btn.onclick = () => {
+                    document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    renderProducts(cat);
+                };
+                bar.appendChild(btn);
+            });
+        }
+
+        function renderProducts(category = null) {
+            const productGrid = document.getElementById('productGrid');
+            productGrid.innerHTML = '';
+
+            const toShow = category ? products.filter(p => p.category === category) : products;
+            if (toShow.length === 0) {
+                productGrid.innerHTML = '<div style="color:#999;padding:10px">Nenhum produto nesta categoria</div>';
+                return;
+            }
+
+            toShow.forEach(product => {
+                const productCard = document.createElement('div');
+                productCard.className = 'product-card';
+                productCard.setAttribute('data-product', product.id);
+
+                productCard.innerHTML = `
+                    <div class="product-image"><i class="${product.icon || 'fas fa-box'}"></i></div>
+                    <div class="product-info">
+                        <div class="product-name">${product.name}</div>
+                        <div class="product-price">R$ ${product.price.toFixed(2)}</div>
+                        <div class="product-stock ${product.stock < (product.minStock || 10) ? 'low-stock' : ''}">Estoque: ${product.stock}</div>
+                    </div>
+                `;
+
+                productCard.addEventListener('click', () => {
+                    addProductToSale(product);
+                });
+
+                productGrid.appendChild(productCard);
+            });
+        }
+
+        // ---------- Vendas ----------
+        function addProductToSale(product) {
+            if (product.stock <= 0) {
+                alert('Produto sem estoque.');
+                return;
+            }
+            const existingItemIndex = currentSale.findIndex(item => item.product.id === product.id);
+            if (existingItemIndex >= 0) {
+                currentSale[existingItemIndex].quantity++;
+            } else {
+                currentSale.push({ product: { ...product }, quantity: 1, observations: '' });
+            }
+
+            // Atualizar o estoque real
+            const prodRef = products.find(p => p.id === product.id);
+            if (prodRef) prodRef.stock--;
+            saveProductsToStorage();
+
+            updateSaleItems();
+            updateSaleTotal();
+            renderProducts(getActiveCategory());
+            updateLowStockCount();
+        }
+
+        function getActiveCategory() {
+            const active = document.querySelector('.category-btn.active');
+            return active && active.textContent !== 'Todos' ? active.textContent : null;
+        }
+
+        function updateSaleItems() {
+            const saleItems = document.getElementById('saleItems');
+            saleItems.innerHTML = '';
+
+            if (currentSale.length === 0) {
+                saleItems.innerHTML = '<div class="sale-item" style="text-align:center;color:#999">Nenhum produto adicionado</div>';
+                selectedSaleIndex = null;
+                return;
+            }
+
+            currentSale.forEach((item, index) => {
+                const saleItem = document.createElement('div');
+                saleItem.className = 'sale-item' + (index === selectedSaleIndex ? ' selected' : '');
+                saleItem.innerHTML = `
+                    <div>
+                        <strong>${item.quantity}x</strong> ${item.product.name}
+                        ${item.observations ? `<small>(${item.observations})</small>` : ''}
+                    </div>
+                    <div>R$ ${(item.product.price * item.quantity).toFixed(2)}</div>
+                `;
+                saleItem.addEventListener('click', () => {
+                    if (selectedSaleIndex === index) selectedSaleIndex = null;
+                    else selectedSaleIndex = index;
+                    updateSaleItems();
+                });
+                saleItems.appendChild(saleItem);
+            });
+        }
+
+        function updateSaleTotal() {
+            const saleTotal = document.getElementById('saleTotal');
+            const total = currentSale.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
+            saleTotal.textContent = `Total: R$ ${total.toFixed(2)}`;
+        }
+
+        // Cancelar item selecionado ou último
+        document.getElementById('cancelItem').addEventListener('click', () => {
+            if (currentSale.length === 0) { alert('Não há itens para cancelar.'); return; }
+            let indexToRemove = selectedSaleIndex;
+            if (indexToRemove === null) indexToRemove = currentSale.length - 1; // último
+            const item = currentSale[indexToRemove];
+            // devolver ao estoque real
+            const prod = products.find(p => p.id === item.product.id);
+            if (prod) prod.stock += item.quantity;
+            currentSale.splice(indexToRemove, 1);
+            selectedSaleIndex = null;
+            saveProductsToStorage();
+            updateSaleItems();
+            updateSaleTotal();
+            renderProducts(getActiveCategory());
+            updateLowStockCount();
+        });
+
+        // Finalizar venda
+        document.getElementById('finalizeSale').addEventListener('click', () => {
+            if (currentSale.length === 0) { alert('Adicione pelo menos um produto para finalizar a venda.'); return; }
+
+            const total = currentSale.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            const dateString = now.toISOString().split('T')[0];
+            
+            // Determinar o método de pagamento para a descrição
+            let paymentMethodDesc = '';
+            if (paymentMethod === 'dinheiro') paymentMethodDesc = 'Dinheiro';
+            else if (paymentMethod === 'cartao') paymentMethodDesc = 'Cartão';
+            else if (paymentMethod === 'pix') paymentMethodDesc = 'PIX';
+
+            // Registrar no fluxo de caixa
+            cashFlow.push({
+                time: timeString,
+                date: dateString,
+                description: `Venda #${Math.floor(1000 + Math.random() * 9000)} (${paymentMethodDesc})`,
+                income: total,
+                outcome: 0,
+                operator: currentUser.displayName || currentUser.username
+            });
+            saveCashFlowToStorage();
+            
+            // Registrar no histórico de vendas
+            const saleId = Math.floor(1000 + Math.random() * 9000);
+            salesHistory.push({
+                id: saleId,
+                date: dateString,
+                time: timeString,
+                items: [...currentSale],
+                total: total,
+                paymentMethod: paymentMethod,
+                operator: currentUser.displayName || currentUser.username
+            });
+            saveSalesHistoryToStorage();
+
+            updateCashFlowTable();
+            updateCashSummary();
+
+            currentSale = [];
+            selectedSaleIndex = null;
+            updateSaleItems();
+            updateSaleTotal();
+            alert(`Venda finalizada com sucesso! Total: R$ ${total.toFixed(2)}`);
+        });
+
+        // Cancelar venda inteira
+        document.getElementById('cancelSale').addEventListener('click', () => {
+            if (currentSale.length === 0) { alert('Não há itens para cancelar.'); return; }
+            if (!confirm('Tem certeza que deseja cancelar toda a venda?')) return;
+
+            currentSale.forEach(item => {
+                const product = products.find(p => p.id === item.product.id);
+                if (product) product.stock += item.quantity;
+            });
+            currentSale = [];
+            saveProductsToStorage();
+            selectedSaleIndex = null;
+            updateSaleItems();
+            updateSaleTotal();
+            renderProducts(getActiveCategory());
+            updateLowStockCount();
+            alert('Venda cancelada com sucesso.');
+        });
+
+        // ---------- Pagamentos ----------
+        document.querySelectorAll('.payment-option').forEach(option => {
+            option.addEventListener('click', () => {
+                document.querySelectorAll('.payment-option').forEach(o => o.classList.remove('active'));
+                option.classList.add('active');
+                paymentMethod = option.getAttribute('data-method');
+            });
+        });
+
+        // ---------- Funções para Controle de Caixa ----------
+        function applyDateFilter() {
+            updateCashFlowTable();
+            updateCashSummary();
+        }
+        
+        function resetDateFilter() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('cashDateFilter').value = today;
+            updateCashFlowTable();
+            updateCashSummary();
+        }
+        
+        function updateCashFlowTable() {
+            const cashFlowTable = document.getElementById('cashFlowTable').querySelector('tbody');
+            cashFlowTable.innerHTML = '';
+            
+            const selectedDate = document.getElementById('cashDateFilter').value;
+            const filteredCashFlow = cashFlow.filter(flow => {
+                const flowDate = flow.date ? flow.date : getTodayDate();
+                return flowDate === selectedDate;
+            });
+            
+            if (filteredCashFlow.length === 0) {
+                const row = document.createElement('tr');
+                row.innerHTML = `<td colspan="6" style="text-align:center;color:#999">Nenhuma movimentação encontrada para esta data</td>`;
+                cashFlowTable.appendChild(row);
+                return;
+            }
+            
+            filteredCashFlow.forEach(flow => {
+                const row = document.createElement('tr');
+                
+                // Determinar a forma de pagamento com base na descrição
+                let paymentMethod = '-';
+                if (flow.description.includes('dinheiro') || flow.description.includes('Dinheiro')) {
+                    paymentMethod = 'Dinheiro';
+                } else if (flow.description.includes('cartão') || flow.description.includes('Cartão')) {
+                    paymentMethod = 'Cartão';
+                } else if (flow.description.includes('pix') || flow.description.includes('PIX')) {
+                    paymentMethod = 'PIX';
+                } else if (flow.description.includes('Entrada adicional') || flow.description.includes('Retirada de caixa')) {
+                    paymentMethod = 'Dinheiro';
+                }
+                
+                row.innerHTML = `
+                    <td>${flow.time} ${flow.date ? '(' + flow.date + ')' : ''}</td>
+                    <td>${flow.description}</td>
+                    <td>${paymentMethod}</td>
+                    <td>${flow.income > 0 ? 'R$ ' + flow.income.toFixed(2) : '-'}</td>
+                    <td>${flow.outcome > 0 ? 'R$ ' + flow.outcome.toFixed(2) : '-'}</td>
+                    <td>${flow.operator}</td>
+                `;
+                cashFlowTable.appendChild(row);
+            });
+        }
+        
+        function updateCashSummary() {
+            const selectedDate = document.getElementById('cashDateFilter').value;
+            const filteredCashFlow = cashFlow.filter(flow => {
+                const flowDate = flow.date ? flow.date : getTodayDate();
+                return flowDate === selectedDate;
+            });
+            
+            let cashTotal = 0;
+            let cardTotal = 0;
+            let pixTotal = 0;
+            let totalIncome = 0;
+            let totalOutcome = 0;
+            
+            filteredCashFlow.forEach(flow => {
+                // Determinar a forma de pagamento com base na descrição
+                if (flow.description.includes('dinheiro') || flow.description.includes('Dinheiro') || 
+                    flow.description.includes('Entrada adicional') || flow.description.includes('Retirada de caixa')) {
+                    cashTotal += flow.income - flow.outcome;
+                } else if (flow.description.includes('cartão') || flow.description.includes('Cartão')) {
+                    cardTotal += flow.income - flow.outcome;
+                } else if (flow.description.includes('pix') || flow.description.includes('PIX')) {
+                    pixTotal += flow.income - flow.outcome;
+                }
+                
+                totalIncome += flow.income;
+                totalOutcome += flow.outcome;
+            });
+            
+            // Atualizar os totais exibidos
+            document.getElementById('cashAmount').textContent = `R$ ${cashTotal.toFixed(2)}`;
+            document.getElementById('cardAmount').textContent = `R$ ${cardTotal.toFixed(2)}`;
+            document.getElementById('pixAmount').textContent = `R$ ${pixTotal.toFixed(2)}`;
+            document.getElementById('totalAmount').textContent = `R$ ${(cashTotal + cardTotal + pixTotal).toFixed(2)}`;
+            
+            // Atualizar a tabela de fechamento
+            updateClosingTable(cashTotal, cardTotal, pixTotal);
+            
+            // Atualizar informações do usuário
+            updateCashInfoText();
+        }
+        
+        function updateClosingTable(cashTotal, cardTotal, pixTotal) {
+            const closingTable = document.getElementById('closingTable').querySelector('tbody');
+            closingTable.innerHTML = '';
+            
+            // Contar quantidade de vendas por método de pagamento
+            const selectedDate = document.getElementById('cashDateFilter').value;
+            const filteredCashFlow = cashFlow.filter(flow => {
+                const flowDate = flow.date ? flow.date : getTodayDate();
+                return flowDate === selectedDate;
+            });
+            
+            const cashSales = filteredCashFlow.filter(flow => 
+                (flow.description.includes('dinheiro') || flow.description.includes('Dinheiro')) && 
+                flow.income > 0
+            ).length;
+            
+            const cardSales = filteredCashFlow.filter(flow => 
+                (flow.description.includes('cartão') || flow.description.includes('Cartão')) && 
+                flow.income > 0
+            ).length;
+            
+            const pixSales = filteredCashFlow.filter(flow => 
+                (flow.description.includes('pix') || flow.description.includes('PIX')) && 
+                flow.income > 0
+            ).length;
+            
+            // Adicionar linhas para cada método de pagamento
+            const methods = [
+                { name: 'Dinheiro', sales: cashSales, total: cashTotal },
+                { name: 'Cartão', sales: cardSales, total: cardTotal },
+                { name: 'PIX', sales: pixSales, total: pixTotal }
+            ];
+            
+            methods.forEach(method => {
+                if (method.sales > 0 || method.total > 0) {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${method.name}</td>
+                        <td>${method.sales} venda(s)</td>
+                        <td>R$ ${method.total.toFixed(2)}</td>
+                    `;
+                    closingTable.appendChild(row);
+                }
+            });
+            
+            // Adicionar linha de total
+            const totalRow = document.createElement('tr');
+            totalRow.style.fontWeight = 'bold';
+            totalRow.innerHTML = `
+                <td>TOTAL</td>
+                <td>${cashSales + cardSales + pixSales} venda(s)</td>
+                <td>R$ ${(cashTotal + cardTotal + pixTotal).toFixed(2)}</td>
+            `;
+            closingTable.appendChild(totalRow);
+            
+            // Ocultar informações de cartão e PIX para operadores
+            if (currentUser && currentUser.role === 'operator') {
+                const rows = closingTable.querySelectorAll('tr');
+                rows.forEach(row => {
+                    const methodName = row.querySelector('td:first-child')?.textContent;
+                    if (methodName === 'Cartão' || methodName === 'PIX') {
+                        row.style.display = 'none';
+                    }
+                });
+            }
+        }
+        
+        function updateCashInfoText() {
+            const selectedDate = document.getElementById('cashDateFilter').value;
+            const today = new Date().toISOString().split('T')[0];
+            const infoText = document.getElementById('cashInfoText');
+            
+            if (selectedDate === today) {
+                infoText.textContent = 'Visualizando movimentações do dia';
+            } else {
+                const dateObj = new Date(selectedDate);
+                const formattedDate = dateObj.toLocaleDateString('pt-BR');
+                infoText.textContent = `Visualizando movimentações de ${formattedDate}`;
+            }
+            
+            // Mostrar/ocultar informações baseado no nível de acesso
+            if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'manager')) {
+                document.getElementById('cashSummary').style.display = 'block';
+                document.querySelectorAll('.cash-card').forEach(card => {
+                    card.style.display = 'block';
+                });
+            } else if (currentUser && currentUser.role === 'operator') {
+                document.getElementById('cashSummary').style.display = 'block';
+                // Operador só vê o dinheiro e o total
+                document.querySelectorAll('.cash-card').forEach(card => {
+                    if (card.classList.contains('dinheiro') || card.classList.contains('total')) {
+                        card.style.display = 'block';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+            } else {
+                document.getElementById('cashSummary').style.display = 'none';
+            }
+        }
+        
+        function closeRegister() {
+            const selectedDate = document.getElementById('cashDateFilter').value;
+            const filteredCashFlow = cashFlow.filter(flow => {
+                const flowDate = flow.date ? flow.date : getTodayDate();
+                return flowDate === selectedDate;
+            });
+            
+            let cashTotal = 0;
+            let cardTotal = 0;
+            let pixTotal = 0;
+            
+            filteredCashFlow.forEach(flow => {
+                if (flow.description.includes('dinheiro') || flow.description.includes('Dinheiro') || 
+                    flow.description.includes('Entrada adicional') || flow.description.includes('Retirada de caixa')) {
+                    cashTotal += flow.income - flow.outcome;
+                } else if (flow.description.includes('cartão') || flow.description.includes('Cartão')) {
+                    cardTotal += flow.income - flow.outcome;
+                } else if (flow.description.includes('pix') || flow.description.includes('PIX')) {
+                    pixTotal += flow.income - flow.outcome;
+                }
+            });
+            
+            // Para operador, mostrar apenas o valor em dinheiro
+            if (currentUser && currentUser.role === 'operator') {
+                alert(`Valor em dinheiro para fechamento: R$ ${cashTotal.toFixed(2)}`);
+            } else {
+                alert(`Valores para fechamento:\nDinheiro: R$ ${cashTotal.toFixed(2)}\nCartão: R$ ${cardTotal.toFixed(2)}\nPIX: R$ ${pixTotal.toFixed(2)}\nTotal: R$ ${(cashTotal + cardTotal + pixTotal).toFixed(2)}`);
+            }
+            
+            // Registrar o fechamento no histórico
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            const dateString = now.toISOString().split('T')[0];
+            
+            cashFlow.push({
+                time: timeString,
+                date: dateString,
+                description: `Fechamento de caixa - ${document.getElementById('cashDateFilter').value}`,
+                income: 0,
+                outcome: 0,
+                operator: currentUser.displayName || currentUser.username
+            });
+            
+            saveCashFlowToStorage();
+            updateCashFlowTable();
+        }
+        
+        function printReport() {
+            window.print();
+        }
+        
+        function exportToExcel() {
+            // Verificar permissões
+            if (!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'manager')) {
+                alert('Você não tem permissão para exportar dados para Excel.');
+                return;
+            }
+            
+            const selectedDate = document.getElementById('cashDateFilter').value;
+            const filteredCashFlow = cashFlow.filter(flow => {
+                const flowDate = flow.date ? flow.date : getTodayDate();
+                return flowDate === selectedDate;
+            });
+            
+            if (filteredCashFlow.length === 0) {
+                alert('Nenhum dado para exportar.');
+                return;
+            }
+            
+            // Preparar dados para exportação
+            const data = filteredCashFlow.map(flow => {
+                let paymentMethod = '-';
+                if (flow.description.includes('dinheiro') || flow.description.includes('Dinheiro')) {
+                    paymentMethod = 'Dinheiro';
+                } else if (flow.description.includes('cartão') || flow.description.includes('Cartão')) {
+                    paymentMethod = 'Cartão';
+                } else if (flow.description.includes('pix') || flow.description.includes('PIX')) {
+                    paymentMethod = 'PIX';
+                } else if (flow.description.includes('Entrada adicional') || flow.description.includes('Retirada de caixa')) {
+                    paymentMethod = 'Dinheiro';
+                }
+                
+                return {
+                    'Data/Hora': `${flow.time} (${flow.date})`,
+                    'Descrição': flow.description,
+                    'Forma de Pagamento': paymentMethod,
+                    'Entrada': flow.income > 0 ? flow.income : '-',
+                    'Saída': flow.outcome > 0 ? flow.outcome : '-',
+                    'Operador': flow.operator
+                };
+            });
+            
+            // Criar planilha
+            const worksheet = XLSX.utils.json_to_sheet(data);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'Movimentações');
+            
+            // Gerar arquivo
+            const date = new Date().toISOString().slice(0, 10);
+            XLSX.writeFile(workbook, `movimentacoes_caixa_${date}.xlsx`);
+            
+            alert('Dados exportados com sucesso!');
+        }
+        
+        function getTodayDate() {
+            return new Date().toISOString().split('T')[0];
+        }
+
+        // ---------- Caixa: entradas / saídas (atualizado para incluir data) ----------
+        document.getElementById('addValueBtn').addEventListener('click', () => {
+            // Verificar permissão
+            if (!hasPermission('caixa')) {
+                alert('Você não tem permissão para adicionar valores.');
+                return;
+            }
+            
+            const value = prompt('Digite o valor a ser adicionado:');
+            if (value && !isNaN(parseFloat(value))) {
+                const amount = parseFloat(value);
+                const now = new Date();
+                const timeString = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                const dateString = now.toISOString().split('T')[0];
+                
+                cashFlow.push({
+                    time: timeString,
+                    date: dateString,
+                    description: "Entrada adicional",
+                    income: amount,
+                    outcome: 0,
+                    operator: currentUser.displayName || currentUser.username
+                });
+                saveCashFlowToStorage();
+                updateCashFlowTable();
+                updateCashSummary();
+                alert(`Valor de R$ ${amount.toFixed(2)} adicionado com sucesso.`);
+            } else alert('Valor inválido.');
+        });
+
+        document.getElementById('removeValueBtn').addEventListener('click', () => {
+            // Verificar permissão
+            if (!hasPermission('caixa')) {
+                alert('Você não tem permissão para retirar valores.');
+                return;
+            }
+            
+            const value = prompt('Digite o valor a ser retirado:');
+            if (value && !isNaN(parseFloat(value))) {
+                const amount = parseFloat(value);
+                const now = new Date();
+                const timeString = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                const dateString = now.toISOString().split('T')[0];
+                
+                cashFlow.push({
+                    time: timeString,
+                    date: dateString,
+                    description: "Retirada de caixa",
+                    income: 0,
+                    outcome: amount,
+                    operator: currentUser.displayName || currentUser.username
+                });
+                saveCashFlowToStorage();
+                updateCashFlowTable();
+                updateCashSummary();
+                alert(`Valor de R$ ${amount.toFixed(2)} retirado com sucesso.`);
+            } else alert('Valor inválido.');
+        });
+
+        // ---------- Modais ----------
+        function showModal(id) {
+            document.getElementById(id).style.display = 'flex';
+        }
+        function hideModal(id) {
+            document.getElementById(id).style.display = 'none';
+        }
+        document.querySelectorAll('.close').forEach(el => {
+            el.addEventListener('click', () => {
+                const id = el.getAttribute('data-close');
+                hideModal(id);
+            });
+        });
+        window.addEventListener('click', (event) => {
+            ['loginModal','productModal'].forEach(id => {
+                const modal = document.getElementById(id);
+                if (event.target === modal) hideModal(id);
+            });
+        });
+
+        // ---------- Login e autorização ----------
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            if (currentUser) {
+                if (confirm('Deseja realmente sair?')) {
+                    currentUser = null;
+                    saveCurrentUserToStorage();
+                    updateUIForUser();
+                    showModal('loginModal');
+                }
+            } else {
+                showModal('loginModal');
+            }
+        });
+
+        document.getElementById('loginBtn').addEventListener('click', () => {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            if (!username || !password) { alert('Preencha usuário e senha.'); return; }
+            const user = users.find(u => u.username === username && u.password === password);
+            if (!user) { alert('Usuário ou senha inválidos.'); return; }
+            currentUser = { 
+                id: user.id, 
+                username: user.username, 
+                role: user.role, 
+                displayName: user.displayName || user.username 
+            };
+            saveCurrentUserToStorage();
+            hideModal('loginModal');
+            initializeApp();
+            updateUIForUser();
+            alert(`Bem-vindo(a), ${currentUser.displayName}!`);
+        });
+
+        function updateUIForUser() {
+            if (currentUser) {
+                document.getElementById('currentUser').textContent = currentUser.displayName || currentUser.username;
+                document.getElementById('currentUserLabel').textContent = currentUser.displayName || currentUser.username;
+                
+                // Atualizar papel do usuário
+                const roleNames = {
+                    'admin': 'Administrador',
+                    'manager': 'Gerente',
+                    'operator': 'Operador'
+                };
+                document.getElementById('userRole').textContent = roleNames[currentUser.role] || currentUser.role;
+                
+                // Atualizar permissões das abas
+                document.querySelectorAll('.permission-restricted').forEach(tab => {
+                    const tabId = tab.getAttribute('data-tab');
+                    if (hasPermission(tabId)) {
+                        tab.classList.remove('permission-restricted');
+                    } else {
+                        tab.classList.add('permission-restricted');
+                    }
+                });
+            } else {
+                document.getElementById('currentUser').textContent = 'Convidado';
+                document.getElementById('currentUserLabel').textContent = 'Usuário';
+                document.getElementById('userRole').textContent = '';
+                
+                // Todas as abas restritas devem ser bloqueadas
+                document.querySelectorAll('.tab').forEach(tab => {
+                    if (tab.getAttribute('data-tab') !== 'vendas') {
+                        tab.classList.add('permission-restricted');
+                    }
+                });
+            }
+        }
+
+        // ---------- Produtos: Add / Edit ----------
+        document.getElementById('addProductBtn').addEventListener('click', () => {
+            // Verificar permissão
+            if (!hasPermission('estoque')) {
+                alert('Você não tem permissão para adicionar produtos.');
+                return;
+            }
+            
+            openNewProductModal();
+        });
+        document.getElementById('cancelProductBtn').addEventListener('click', () => {
+            hideModal('productModal');
+        });
+
+        let editingProductId = null;
+
+        function openNewProductModal() {
+            editingProductId = null;
+            document.getElementById('productModalTitle').textContent = 'Novo Produto';
+            document.getElementById('prodName').value = '';
+            document.getElementById('prodPrice').value = '';
+            document.getElementById('prodStock').value = '';
+            document.getElementById('prodMinStock').value = '10';
+            document.getElementById('prodIcon').value = '';
+            
+            // Preencher o select de categorias
+            const categorySelect = document.getElementById('prodCategory');
+            categorySelect.innerHTML = '';
+            
+            // Adicionar categorias existentes
+            categories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category;
+                option.textContent = category;
+                categorySelect.appendChild(option);
+            });
+            
+            // Adicionar opção para nova categoria
+            const newOption = document.createElement('option');
+            newOption.value = 'new';
+            newOption.textContent = '+ Adicionar nova categoria';
+            categorySelect.appendChild(newOption);
+            
+            // Esconder campo de nova categoria
+            document.getElementById('newCategoryContainer').style.display = 'none';
+            document.getElementById('newCategoryInput').value = '';
+            
+            showModal('productModal');
+        }
+
+        function openEditProductModal(id) {
+            const p = products.find(x => x.id === id);
+            if (!p) return;
+            editingProductId = id;
+            document.getElementById('productModalTitle').textContent = 'Editar Produto';
+            document.getElementById('prodName').value = p.name;
+            document.getElementById('prodPrice').value = p.price;
+            document.getElementById('prodStock').value = p.stock;
+            document.getElementById('prodMinStock').value = p.minStock || 10;
+            document.getElementById('prodIcon').value = p.icon || '';
+            
+            // Preencher o select de categorias
+            const categorySelect = document.getElementById('prodCategory');
+            categorySelect.innerHTML = '';
+            
+            // Adicionar categorias existentes
+            categories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category;
+                option.textContent = category;
+                option.selected = (category === p.category);
+                categorySelect.appendChild(option);
+            });
+            
+            // Adicionar opção para nova categoria
+            const newOption = document.createElement('option');
+            newOption.value = 'new';
+            newOption.textContent = '+ Adicionar nova categoria';
+            categorySelect.appendChild(newOption);
+            
+            // Esconder campo de nova categoria
+            document.getElementById('newCategoryContainer').style.display = 'none';
+            document.getElementById('newCategoryInput').value = '';
+            
+            showModal('productModal');
+        }
+
+        document.getElementById('saveProductBtn').addEventListener('click', () => {
+            const name = document.getElementById('prodName').value.trim();
+            const price = parseFloat(document.getElementById('prodPrice').value);
+            const stock = parseInt(document.getElementById('prodStock').value);
+            const minStock = parseInt(document.getElementById('prodMinStock').value) || 10;
+            const icon = document.getElementById('prodIcon').value.trim() || 'fas fa-box';
+            
+            // Obter a categoria
+            const categorySelect = document.getElementById('prodCategory');
+            let category = categorySelect.value;
+            
+            // Se a opção for "nova categoria", usar o valor do campo de texto
+            if (category === 'new') {
+                category = document.getElementById('newCategoryInput').value.trim();
+                if (!category) {
+                    alert('Digite o nome da nova categoria.');
+                    return;
+                }
+                
+                // Adicionar a nova categoria à lista
+                if (!categories.includes(category)) {
+                    categories.push(category);
+                    saveCategoriesToStorage();
+                }
+            }
+
+            if (!name || isNaN(price) || isNaN(stock)) { alert('Preencha nome, preço e estoque corretamente.'); return; }
+
+            if (editingProductId) {
+                // editar
+                const p = products.find(x => x.id === editingProductId);
+                if (p) {
+                    p.name = name; p.price = price; p.stock = stock; p.minStock = minStock; p.category = category; p.icon = icon;
+                }
+            } else {
+                // novo
+                const newId = products.reduce((m, x) => Math.max(m, x.id), 0) + 1;
+                products.push({ id: newId, name, price, stock, minStock, category, icon });
+            }
+            saveProductsToStorage();
+            buildCategoryBar();
+            renderProducts(getActiveCategory());
+            renderInventoryTable(document.getElementById('searchProduct').value);
+            updateLowStockCount();
+            hideModal('productModal');
+        });
+
+        // ---------- Gestão de Categorias ----------
+        function addNewCategory() {
+            const categoryName = document.getElementById('newCategoryName').value.trim();
+            
+            if (!categoryName) {
+                alert('Digite o nome da categoria.');
+                return;
+            }
+            
+            if (categories.includes(categoryName)) {
+                alert('Esta categoria já existe.');
+                return;
+            }
+            
+            categories.push(categoryName);
+            saveCategoriesToStorage();
+            
+            // Limpar o campo e atualizar a tabela
+            document.getElementById('newCategoryName').value = '';
+            renderCategoriesTable();
+            
+            alert(`Categoria "${categoryName}" adicionada com sucesso!`);
+        }
+        
+        function renderCategoriesTable() {
+            const categoriesTable = document.getElementById('categoriesTable').querySelector('tbody');
+            categoriesTable.innerHTML = '';
+            
+            categories.forEach(category => {
+                const productCount = products.filter(p => p.category === category).length;
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${category}</td>
+                    <td>${productCount} produto(s)</td>
+                    <td>
+                        <button class="btn btn-danger btn-sm delete-category" data-category="${category}">
+                            <i class="fas fa-trash"></i> Excluir
+                        </button>
+                    </td>
+                `;
+                categoriesTable.appendChild(row);
+            });
+            
+            // Adicionar event listeners para os botões de exclusão
+            document.querySelectorAll('.delete-category').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const category = btn.getAttribute('data-category');
+                    deleteCategory(category);
+                });
+            });
+        }
+        
+        function deleteCategory(category) {
+            // Verificar se há produtos nesta categoria
+            const productsInCategory = products.filter(p => p.category === category);
+            
+            if (productsInCategory.length > 0) {
+                alert(`Não é possível excluir a categoria "${category}" porque existem ${productsInCategory.length} produto(s) nela.`);
+                return;
+            }
+            
+            if (!confirm(`Tem certeza que deseja excluir a categoria "${category}"?`)) return;
+            
+            // Remover a categoria
+            categories = categories.filter(c => c !== category);
+            saveCategoriesToStorage();
+            renderCategoriesTable();
+            
+            alert(`Categoria "${category}" excluída com sucesso!`);
+        }
+
+        // ---------- Estoque: renderizar tabela, adicionar/editar/excluir ----------
+        function renderInventoryTable(filterText = '') {
+            const inventoryTable = document.getElementById('inventoryTable').querySelector('tbody');
+            inventoryTable.innerHTML = '';
+            products
+                .filter(p => p.name.toLowerCase().includes(filterText.toLowerCase()) || p.category.toLowerCase().includes(filterText.toLowerCase()))
+                .forEach(product => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${product.name}</td>
+                    <td class="${product.stock < (product.minStock || 10) ? 'low-stock' : ''}">${product.stock}</td>
+                    <td>R$ ${product.price.toFixed(2)}</td>
+                    <td>${product.category}</td>
+                    <td>
+                        <button class="btn btn-warning btn-sm edit-product" data-id="${product.id}"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-danger btn-sm delete-product" data-id="${product.id}"><i class="fas fa-trash"></i></button>
+                    </td>
+                `;
+                inventoryTable.appendChild(row);
+            });
+
+            // bind edit/delete
+            document.querySelectorAll('.edit-product').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    // Verificar permissão
+                    if (!hasPermission('estoque')) {
+                        alert('Você não tem permissão para editar produtos.');
+                        return;
+                    }
+                    
+                    const id = parseInt(btn.getAttribute('data-id'));
+                    openEditProductModal(id);
+                });
+            });
+            document.querySelectorAll('.delete-product').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    // Verificar permissão
+                    if (!hasPermission('estoque')) {
+                        alert('Você não tem permissão para excluir produtos.');
+                        return;
+                    }
+                    
+                    const id = parseInt(btn.getAttribute('data-id'));
+                    if (!confirm('Confirma exclusão deste produto?')) return;
+                    products = products.filter(p => p.id !== id);
+                    saveProductsToStorage();
+                    buildCategoryBar();
+                    renderProducts(getActiveCategory());
+                    renderInventoryTable(document.getElementById('searchProduct').value);
+                    updateLowStockCount();
+                });
+            });
+        }
+
+        document.getElementById('searchProduct').addEventListener('input', (e) => {
+            renderInventoryTable(e.target.value);
+        });
+
+        // ---------- Baixo estoque ----------
+        function updateLowStockCount() {
+            const lowStockCount = products.filter(product => product.stock < (product.minStock || 10)).length;
+            document.getElementById('lowStockCount').textContent = lowStockCount;
+            if (lowStockCount > 0) document.getElementById('lowStockAlert').style.display = 'block';
+            else document.getElementById('lowStockAlert').style.display = 'none';
+        }
+
+        // ---------- Gestão de Usuários ----------
+        document.getElementById('createUserBtn').addEventListener('click', () => {
+            const name = document.getElementById('newUserName').value.trim();
+            const username = document.getElementById('newUserUsername').value.trim();
+            const password = document.getElementById('newUserPassword').value;
+            const role = document.getElementById('newUserRole').value;
+
+            if (!name || !username || !password) {
+                alert('Preencha todos os campos obrigatórios.');
+                return;
+            }
+
+            // Verificar si el usuario ya existe
+            if (users.find(u => u.username === username)) {
+                alert('Já existe um usuário com este nome de usuário.');
+                return;
+            }
+
+            // Crear nuevo usuario
+            const newId = users.reduce((max, user) => Math.max(max, user.id), 0) + 1;
+            users.push({
+                id: newId,
+                username: username,
+                password: password,
+                role: role,
+                displayName: name
+            });
+
+            saveUsersToStorage();
+            renderUsersTable();
+            
+            // Limpar formulário
+            document.getElementById('newUserName').value = '';
+            document.getElementById('newUserUsername').value = '';
+            document.getElementById('newUserPassword').value = '';
+            document.getElementById('newUserRole').value = 'operator';
+
+            alert('Usuário criado com sucesso!');
+        });
+
+        function renderUsersTable() {
+            const usersTable = document.getElementById('usersTable').querySelector('tbody');
+            usersTable.innerHTML = '';
+
+            users.forEach(user => {
+                const roleNames = {
+                    'admin': 'Administrador',
+                    'manager': 'Gerente',
+                    'operator': 'Operador'
+                };
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${user.displayName}</td>
+                    <td>${user.username}</td>
+                    <td>${roleNames[user.role] || user.role}</td>
+                    <td>
+                        ${user.id !== currentUser.id ? `
+                            <button class="btn btn-warning btn-sm edit-user" data-id="${user.id}"><i class="fas fa-edit"></i></button>
+                            <button class="btn btn-danger btn-sm delete-user" data-id="${user.id}"><i class="fas fa-trash"></i></button>
+                        ` : '<em>Usuário atual</em>'}
+                    </td>
+                `;
+                usersTable.appendChild(row);
+            });
+
+            // Adicionar event listeners para os botões
+            document.querySelectorAll('.edit-user').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const userId = parseInt(btn.getAttribute('data-id'));
+                    editUser(userId);
+                });
+            });
+
+            document.querySelectorAll('.delete-user').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const userId = parseInt(btn.getAttribute('data-id'));
+                    deleteUser(userId);
+                });
+            });
+        }
+
+        function editUser(userId) {
+            const user = users.find(u => u.id === userId);
+            if (!user) return;
+
+            const newName = prompt('Novo nome:', user.displayName);
+            if (newName === null) return; // Usuário cancelou
+
+            const newUsername = prompt('Novo nome de usuário:', user.username);
+            if (newUsername === null) return;
+
+            // Verificar si el nuevo nombre de usuario ya existe (excluyendo al propio usuario)
+            if (users.find(u => u.username === newUsername && u.id !== userId)) {
+                alert('Já existe um usuário com este nome de usuário.');
+                return;
+            }
+
+            const newRole = prompt('Nova permissão (admin, manager, operator):', user.role);
+            if (newRole === null) return;
+
+            if (!['admin', 'manager', 'operator'].includes(newRole)) {
+                alert('Permissão inválida. Use: admin, manager ou operator.');
+                return;
+            }
+
+            // Solicitar nova senha se desejar alterar
+            let newPassword = user.password;
+            if (confirm('Deseja alterar a senha?')) {
+                const password = prompt('Nova senha:');
+                if (password !== null) {
+                    newPassword = password;
+                }
+            }
+
+            // Atualizar usuário
+            user.displayName = newName;
+            user.username = newUsername;
+            user.role = newRole;
+            user.password = newPassword;
+
+            saveUsersToStorage();
+            renderUsersTable();
+            alert('Usuário atualizado com sucesso!');
+        }
+
+        function deleteUser(userId) {
+            if (!confirm('Tem certeza que deseja excluir este usuário?')) return;
+
+            // Não permitir excluir a si mesmo
+            if (userId === currentUser.id) {
+                alert('Você não pode excluir seu próprio usuário.');
+                return;
+            }
+
+            users = users.filter(u => u.id !== userId);
+            saveUsersToStorage();
+            renderUsersTable();
+            alert('Usuário excluído com sucesso!');
+        }
+
+        // ---------- Relatórios ----------
+        function generateReport() {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            const reportType = document.getElementById('reportType').value;
+            
+            if (!startDate || !endDate) {
+                alert('Selecione as datas de início e fim.');
+                return;
+            }
+            
+            // Filtrar vendas pelo período
+            const filteredSales = salesHistory.filter(sale => {
+                return sale.date >= startDate && sale.date <= endDate;
+            });
+            
+            if (filteredSales.length === 0) {
+                alert('Nenhuma venda encontrada para o período selecionado.');
+                return;
+            }
+            
+            // Gerar relatório baseado no tipo selecionado
+            switch(reportType) {
+                case 'sales':
+                    generateSalesReport(filteredSales);
+                    break;
+                case 'categories':
+                    generateCategoriesReport(filteredSales);
+                    break;
+                case 'payment':
+                    generatePaymentReport(filteredSales);
+                    break;
+                case 'general':
+                    generateGeneralReport(filteredSales);
+                    break;
+                default:
+                    alert('Tipo de relatório não reconhecido.');
+            }
+        }
+        
+        function generateSalesReport(sales) {
+            // Calcular vendas por produto
+            const productSales = {};
+            
+            sales.forEach(sale => {
+                sale.items.forEach(item => {
+                    const productId = item.product.id;
+                    if (!productSales[productId]) {
+                        productSales[productId] = {
+                            name: item.product.name,
+                            quantity: 0,
+                            revenue: 0
+                        };
+                    }
+                    productSales[productId].quantity += item.quantity;
+                    productSales[productId].revenue += item.quantity * item.product.price;
+                });
+            });
+            
+            // Converter para array e ordenar por quantidade
+            const productSalesArray = Object.values(productSales).sort((a, b) => b.quantity - a.quantity);
+            
+            // Limpar conteúdo anterior
+            document.getElementById('reportDashboard').innerHTML = '';
+            document.getElementById('reportContent').innerHTML = '';
+            
+            // Criar dashboard
+            const dashboard = document.getElementById('reportDashboard');
+            
+            // Card de resumo
+            const totalRevenue = productSalesArray.reduce((sum, product) => sum + product.revenue, 0);
+            const totalItems = productSalesArray.reduce((sum, product) => sum + product.quantity, 0);
+            
+            dashboard.innerHTML += `
+                <div class="dashboard-card">
+                    <h3><i class="fas fa-chart-pie"></i> Resumo de Vendas</h3>
+                    <p>Total de Vendas: <strong>R$ ${totalRevenue.toFixed(2)}</strong></p>
+                    <p>Itens Vendidos: <strong>${totalItems}</strong></p>
+                    <p>Período: ${document.getElementById('startDate').value} até ${document.getElementById('endDate').value}</p>
+                </div>
+            `;
+            
+            // Gráfico de produtos mais vendidos
+            const topProducts = productSalesArray.slice(0, 5);
+            const chartCanvas = document.createElement('canvas');
+            chartCanvas.id = 'productsChart';
+            
+            dashboard.innerHTML += `
+                <div class="dashboard-card">
+                    <h3><i class="fas fa-star"></i> Top 5 Produtos Mais Vendidos</h3>
+                    <div class="chart-container">
+                        <canvas id="productsChart"></canvas>
+                    </div>
+                </div>
+            `;
+            
+            // Tabela de produtos
+            let tableHTML = `
+                <h3>Relatório de Vendas por Produto</h3>
+                <table class="report-table">
+                    <thead>
+                        <tr>
+                            <th>Produto</th>
+                            <th>Quantidade Vendida</th>
+                            <th>Faturamento</th>
+                            <th>% do Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            productSalesArray.forEach(product => {
+                const percentage = ((product.revenue / totalRevenue) * 100).toFixed(2);
+                tableHTML += `
+                    <tr>
+                        <td>${product.name}</td>
+                        <td>${product.quantity}</td>
+                        <td>R$ ${product.revenue.toFixed(2)}</td>
+                        <td>${percentage}%</td>
+                    </tr>
+                `;
+            });
+            
+            tableHTML += `
+                    </tbody>
+                </table>
+            `;
+            
+            document.getElementById('reportContent').innerHTML = tableHTML;
+            
+            // Renderizar gráfico
+            setTimeout(() => {
+                const ctx = document.getElementById('productsChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: topProducts.map(p => p.name),
+                        datasets: [{
+                            label: 'Quantidade Vendida',
+                            data: topProducts.map(p => p.quantity),
+                            backgroundColor: [
+                                'rgba(216, 27, 96, 0.7)',
+                                'rgba(236, 64, 122, 0.7)',
+                                'rgba(248, 187, 208, 0.7)',
+                                'rgba(136, 14, 79, 0.7)',
+                                'rgba(233, 30, 99, 0.7)'
+                            ],
+                            borderColor: [
+                                'rgb(216, 27, 96)',
+                                'rgb(236, 64, 122)',
+                                'rgb(248, 187, 208)',
+                                'rgb(136, 14, 79)',
+                                'rgb(233, 30, 99)'
+                            ],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            }, 100);
+        }
+        
+        function generateCategoriesReport(sales) {
+            // Calcular vendas por categoria
+            const categorySales = {};
+            
+            sales.forEach(sale => {
+                sale.items.forEach(item => {
+                    const category = item.product.category;
+                    if (!categorySales[category]) {
+                        categorySales[category] = {
+                            name: category,
+                            quantity: 0,
+                            revenue: 0
+                        };
+                    }
+                    categorySales[category].quantity += item.quantity;
+                    categorySales[category].revenue += item.quantity * item.product.price;
+                });
+            });
+            
+            // Converter para array e ordenar por faturamento
+            const categorySalesArray = Object.values(categorySales).sort((a, b) => b.revenue - a.revenue);
+            
+            // Limpar conteúdo anterior
+            document.getElementById('reportDashboard').innerHTML = '';
+            document.getElementById('reportContent').innerHTML = '';
+            
+            // Criar dashboard
+            const dashboard = document.getElementById('reportDashboard');
+            
+            // Card de resumo
+            const totalRevenue = categorySalesArray.reduce((sum, category) => sum + category.revenue, 0);
+            
+            dashboard.innerHTML += `
+                <div class="dashboard-card">
+                    <h3><i class="fas fa-chart-pie"></i> Resumo por Categoria</h3>
+                    <p>Total de Vendas: <strong>R$ ${totalRevenue.toFixed(2)}</strong></p>
+                    <p>Categorias: <strong>${categorySalesArray.length}</strong></p>
+                    <p>Período: ${document.getElementById('startDate').value} até ${document.getElementById('endDate').value}</p>
+                </div>
+            `;
+            
+            // Gráfico de pizza para categorias
+            dashboard.innerHTML += `
+                <div class="dashboard-card">
+                    <h3><i class="fas fa-chart-pie"></i> Distribuição por Categoria</h3>
+                    <div class="chart-container">
+                        <canvas id="categoriesChart"></canvas>
+                    </div>
+                </div>
+            `;
+            
+            // Tabela de categorias
+            let tableHTML = `
+                <h3>Relatório de Vendas por Categoria</h3>
+                <table class="report-table">
+                    <thead>
+                        <tr>
+                            <th>Categoria</th>
+                            <th>Quantidade Vendida</th>
+                            <th>Faturamento</th>
+                            <th>% do Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            categorySalesArray.forEach(category => {
+                const percentage = ((category.revenue / totalRevenue) * 100).toFixed(2);
+                tableHTML += `
+                    <tr>
+                        <td>${category.name}</td>
+                        <td>${category.quantity}</td>
+                        <td>R$ ${category.revenue.toFixed(2)}</td>
+                        <td>${percentage}%</td>
+                    </tr>
+                `;
+            });
+            
+            tableHTML += `
+                    </tbody>
+                </table>
+            `;
+            
+            document.getElementById('reportContent').innerHTML = tableHTML;
+            
+            // Renderizar gráfico
+            setTimeout(() => {
+                const ctx = document.getElementById('categoriesChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        labels: categorySalesArray.map(c => c.name),
+                        datasets: [{
+                            data: categorySalesArray.map(c => c.revenue),
+                            backgroundColor: [
+                                'rgba(216, 27, 96, 0.7)',
+                                'rgba(236, 64, 122, 0.7)',
+                                'rgba(248, 187, 208, 0.7)',
+                                'rgba(136, 14, 79, 0.7)',
+                                'rgba(233, 30, 99, 0.7)',
+                                'rgba(156, 39, 176, 0.7)',
+                                'rgba(103, 58, 183, 0.7)'
+                            ],
+                            borderColor: [
+                                'rgb(216, 27, 96)',
+                                'rgb(236, 64, 122)',
+                                'rgb(248, 187, 208)',
+                                'rgb(136, 14, 79)',
+                                'rgb(233, 30, 99)',
+                                'rgb(156, 39, 176)',
+                                'rgb(103, 58, 183)'
+                            ],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false
+                    }
+                });
+            }, 100);
+        }
+        
+        function generatePaymentReport(sales) {
+            // Calcular vendas por método de pagamento
+            const paymentSales = {
+                'dinheiro': { name: 'Dinheiro', count: 0, revenue: 0 },
+                'cartao': { name: 'Cartão', count: 0, revenue: 0 },
+                'pix': { name: 'PIX', count: 0, revenue: 0 }
+            };
+            
+            sales.forEach(sale => {
+                if (paymentSales[sale.paymentMethod]) {
+                    paymentSales[sale.paymentMethod].count++;
+                    paymentSales[sale.paymentMethod].revenue += sale.total;
+                }
+            });
+            
+            // Converter para array
+            const paymentSalesArray = Object.values(paymentSales).filter(p => p.count > 0);
+            
+            // Limpar conteúdo anterior
+            document.getElementById('reportDashboard').innerHTML = '';
+            document.getElementById('reportContent').innerHTML = '';
+            
+            // Criar dashboard
+            const dashboard = document.getElementById('reportDashboard');
+            
+            // Card de resumo
+            const totalRevenue = paymentSalesArray.reduce((sum, payment) => sum + payment.revenue, 0);
+            
+            dashboard.innerHTML += `
+                <div class="dashboard-card">
+                    <h3><i class="fas fa-money-bill-wave"></i> Resumo por Pagamento</h3>
+                    <p>Total de Vendas: <strong>R$ ${totalRevenue.toFixed(2)}</strong></p>
+                    <p>Transações: <strong>${sales.length}</strong></p>
+                    <p>Período: ${document.getElementById('startDate').value} até ${document.getElementById('endDate').value}</p>
+                </div>
+            `;
+            
+            // Gráfico de métodos de pagamento
+            dashboard.innerHTML += `
+                <div class="dashboard-card">
+                    <h3><i class="fas fa-chart-bar"></i> Distribuição por Método de Pagamento</h3>
+                    <div class="chart-container">
+                        <canvas id="paymentChart"></canvas>
+                    </div>
+                </div>
+            `;
+            
+            // Tabela de métodos de pagamento
+            let tableHTML = `
+                <h3>Relatório por Método de Pagamento</h3>
+                <table class="report-table">
+                    <thead>
+                        <tr>
+                            <th>Método de Pagamento</th>
+                            <th>Transações</th>
+                            <th>Faturamento</th>
+                            <th>% do Total</th>
+                            <th>Ticket Médio</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            paymentSalesArray.forEach(payment => {
+                const percentage = ((payment.revenue / totalRevenue) * 100).toFixed(2);
+                const averageTicket = payment.count > 0 ? (payment.revenue / payment.count) : 0;
+                
+                tableHTML += `
+                    <tr>
+                        <td>${payment.name}</td>
+                        <td>${payment.count}</td>
+                        <td>R$ ${payment.revenue.toFixed(2)}</td>
+                        <td>${percentage}%</td>
+                        <td>R$ ${averageTicket.toFixed(2)}</td>
+                    </tr>
+                `;
+            });
+            
+            tableHTML += `
+                    </tbody>
+                </table>
+            `;
+            
+            document.getElementById('reportContent').innerHTML = tableHTML;
+            
+            // Renderizar gráfico
+            setTimeout(() => {
+                const ctx = document.getElementById('paymentChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: paymentSalesArray.map(p => p.name),
+                        datasets: [{
+                            data: paymentSalesArray.map(p => p.revenue),
+                            backgroundColor: [
+                                'rgba(67, 160, 71, 0.7)',   // Verde - Dinheiro
+                                'rgba(3, 155, 229, 0.7)',   // Azul - Cartão
+                                'rgba(156, 39, 176, 0.7)'   // Roxo - PIX
+                            ],
+                            borderColor: [
+                                'rgb(67, 160, 71)',
+                                'rgb(3, 155, 229)',
+                                'rgb(156, 39, 176)'
+                            ],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false
+                    }
+                });
+            }, 100);
+        }
+        
+        function generateGeneralReport(sales) {
+            // Calcular totais gerais
+            const totalRevenue = sales.reduce((sum, sale) => sum + sale.total, 0);
+            const totalTransactions = sales.length;
+            
+            // Calcular vendas por dia
+            const dailySales = {};
+            
+            sales.forEach(sale => {
+                if (!dailySales[sale.date]) {
+                    dailySales[sale.date] = {
+                        date: sale.date,
+                        revenue: 0,
+                        transactions: 0
+                    };
+                }
+                dailySales[sale.date].revenue += sale.total;
+                dailySales[sale.date].transactions++;
+            });
+            
+            const dailySalesArray = Object.values(dailySales).sort((a, b) => new Date(a.date) - new Date(b.date));
+            
+            // Limpar conteúdo anterior
+            document.getElementById('reportDashboard').innerHTML = '';
+            document.getElementById('reportContent').innerHTML = '';
+            
+            // Criar dashboard
+            const dashboard = document.getElementById('reportDashboard');
+            
+            // Cards de resumo
+            dashboard.innerHTML = `
+                <div class="dashboard-card">
+                    <h3><i class="fas fa-money-bill-wave"></i> Faturamento Total</h3>
+                    <div style="font-size: 24px; font-weight: bold; color: var(--primary);">R$ ${totalRevenue.toFixed(2)}</div>
+                </div>
+                
+                <div class="dashboard-card">
+                    <h3><i class="fas fa-receipt"></i> Total de Transações</h3>
+                    <div style="font-size: 24px; font-weight: bold; color: var(--info);">${totalTransactions}</div>
+                </div>
+                
+                <div class="dashboard-card">
+                    <h3><i class="fas fa-shopping-cart"></i> Ticket Médio</h3>
+                    <div style="font-size: 24px; font-weight: bold; color: var(--success);">R$ ${(totalRevenue / totalTransactions).toFixed(2)}</div>
+                </div>
+            `;
+            
+            // Gráfico de vendas por dia
+            dashboard.innerHTML += `
+                <div class="dashboard-card">
+                    <h3><i class="fas fa-chart-line"></i> Vendas por Dia</h3>
+                    <div class="chart-container">
+                        <canvas id="dailySalesChart"></canvas>
+                    </div>
+                </div>
+            `;
+            
+            // Tabela de vendas por dia
+            let tableHTML = `
+                <h3>Relatório Geral de Vendas</h3>
+                <table class="report-table">
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Transações</th>
+                            <th>Faturamento</th>
+                            <th>Ticket Médio</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            dailySalesArray.forEach(day => {
+                const averageTicket = day.transactions > 0 ? (day.revenue / day.transactions) : 0;
+                
+                tableHTML += `
+                    <tr>
+                        <td>${new Date(day.date).toLocaleDateString('pt-BR')}</td>
+                        <td>${day.transactions}</td>
+                        <td>R$ ${day.revenue.toFixed(2)}</td>
+                        <td>R$ ${averageTicket.toFixed(2)}</td>
+                    </tr>
+                `;
+            });
+            
+            // Adicionar linha de total
+            tableHTML += `
+                    <tr style="font-weight: bold;">
+                        <td>TOTAL</td>
+                        <td>${totalTransactions}</td>
+                        <td>R$ ${totalRevenue.toFixed(2)}</td>
+                        <td>R$ ${(totalRevenue / totalTransactions).toFixed(2)}</td>
+                    </tr>
+                </tbody>
+            </table>
+            `;
+            
+            document.getElementById('reportContent').innerHTML = tableHTML;
+            
+            // Renderizar gráfico
+            setTimeout(() => {
+                const ctx = document.getElementById('dailySalesChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: dailySalesArray.map(d => new Date(d.date).toLocaleDateString('pt-BR')),
+                        datasets: [{
+                            label: 'Faturamento por Dia (R$)',
+                            data: dailySalesArray.map(d => d.revenue),
+                            backgroundColor: 'rgba(216, 27, 96, 0.2)',
+                            borderColor: 'rgb(216, 27, 96)',
+                            borderWidth: 2,
+                            tension: 0.3,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            }, 100);
+        }
+        
+        function exportReportToExcel() {
+            // Verificar permissões
+            if (!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'manager')) {
+                alert('Você não tem permissão para exportar relatórios para Excel.');
+                return;
+            }
+            
+            const reportContent = document.getElementById('reportContent');
+            if (!reportContent || reportContent.innerHTML === '') {
+                alert('Gere um relatório antes de exportar.');
+                return;
+            }
+            
+            // Extrair dados da tabela
+            const table = reportContent.querySelector('table');
+            if (!table) {
+                alert('Nenhuma tabela encontrada para exportar.');
+                return;
+            }
+            
+            const data = [];
+            const headers = [];
+            
+            // Extrair cabeçalhos
+            table.querySelectorAll('thead th').forEach(header => {
+                headers.push(header.textContent);
+            });
+            data.push(headers);
+            
+            // Extrair dados
+            table.querySelectorAll('tbody tr').forEach(row => {
+                const rowData = [];
+                row.querySelectorAll('td').forEach(cell => {
+                    rowData.push(cell.textContent);
+                });
+                data.push(rowData);
+            });
+            
+            // Criar planilha
+            const worksheet = XLSX.utils.aoa_to_sheet(data);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'Relatório');
+            
+            // Gerar arquivo
+            const date = new Date().toISOString().slice(0, 10);
+            const reportType = document.getElementById('reportType').value;
+            const reportTypeName = {
+                'sales': 'vendas_produto',
+                'categories': 'vendas_categoria',
+                'payment': 'metodos_pagamento',
+                'general': 'geral'
+            }[reportType] || 'relatorio';
+            
+            XLSX.writeFile(workbook, `${reportTypeName}_${date}.xlsx`);
+            
+            alert('Relatório exportado com sucesso!');
+        }
+        
+        function exportReportToPDF() {
+            const reportContent = document.getElementById('reportContent');
+            if (!reportContent || reportContent.innerHTML === '') {
+                alert('Gere um relatório antes de exportar.');
+                return;
+            }
+            
+            alert('Funcionalidade de exportação para PDF será implementada em breve!');
+        }
+
+        // ---------- Estatísticas simples ----------
+        function renderStats() {
+            const tbody = document.getElementById('statsTable').querySelector('tbody');
+            tbody.innerHTML = '';
+            const totalProducts = products.length;
+            const lowStock = products.filter(p => p.stock < (p.minStock || 10)).length;
+            const totalCash = cashFlow.reduce((s, c) => s + (c.income - c.outcome), 0);
+
+            const rows = [
+                { desc: 'Total de produtos', val: totalProducts },
+                { desc: 'Produtos com estoque baixo', val: lowStock },
+                { desc: 'Saldo do caixa (movimentações)', val: `R$ ${totalCash.toFixed(2)}` }
+            ];
+            rows.forEach(r => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${r.desc}</td><td>${r.val}</td>`;
+                tbody.appendChild(tr);
+            });
+        }
+        // atualiza stats de tempos em tempos
+        setInterval(renderStats, 2000);
+        renderStats();
+
+        // ---------- Utilitários ----------
+        // Expor funções úteis para console para debug
+        window.__APP = {
+            products, cashFlow, currentSale, saveProductsToStorage, saveCashFlowToStorage
+        };
+
+        // Atualizar UI inicial
+        renderProducts();
+    </script>
+</body>
+</html>
