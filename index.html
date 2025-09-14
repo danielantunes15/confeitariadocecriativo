@@ -4,11 +4,18 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Doces Criativos - Sistema de Gestão</title>
+    
+    <!-- Scripts do Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    
     <style>
         :root {
             --primary: #d81b60;
@@ -105,6 +112,34 @@
         .filter-group{flex:1;min-width:200px}
         @media(max-width:768px){.product-grid{grid-template-columns:repeat(auto-fill,minmax(120px,1fr))}.tabs{flex-wrap:wrap}.tab{flex:1 0 33%}.payment-options{flex-direction:column}.cash-summary{grid-template-columns:1fr}.dashboard-grid{grid-template-columns:1fr}.report-filters{flex-direction:column}}
     </style>
+
+    <!-- ✅✅✅ CONFIGURAÇÃO DO FIREBASE - EXATAMENTE AQUI ✅✅✅ -->
+    <script>
+        // Verificar se o Firebase já foi inicializado
+        if (!firebase.apps.length) {
+            // Configuração do Firebase
+            const firebaseConfig = {
+                apiKey: "AIzaSyC4W47ZHAbsqav8A0Q9c4CUl9Vul-DJQ6Y",
+                authDomain: "confeitaria-doce-criativo.firebaseapp.com",
+                projectId: "confeitaria-doce-criativo",
+                storageBucket: "confeitaria-doce-criativo.firebasestorage.app",
+                messagingSenderId: "636671968740",
+                appId: "1:636671968740:web:96a2a8e345e92c720b73f1"
+            };
+
+            // Inicializar Firebase
+            firebase.initializeApp(firebaseConfig);
+        }
+        
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+
+        // Ativar persistência offline
+        db.enablePersistence()
+          .catch((err) => {
+              console.log('Falha ao ativar persistência: ', err);
+          });
+    </script>
 </head>
 <body>
     <div class="container">
@@ -176,91 +211,89 @@
                 <button class="btn btn-danger" id="cancelSale" style="flex:1;"><i class="fas fa-ban"></i> Cancelar Venda</button>
             </div>
         </div>
+<!-- Controle de Caixa -->
+<div class="tab-content" id="caixa">
+    <h2><i class="fas fa-cash-register"></i> Controle de Caixa</h2>
 
-        <!-- Controle de Caixa -->
-        <div class="tab-content" id="caixa">
-            <h2><i class="fas fa-cash-register"></i> Controle de Caixa</h2>
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle"></i> 
+        <span id="cashInfoText">Visualizando movimentações do dia</span>
+    </div>
 
-            <div class="alert alert-info">
-                <i class="fas fa-info-circle"></i> 
-                <span id="cashInfoText">Visualizando movimentações do dia</span>
+    <div style="display:flex;gap:15px;margin:20px 0;">
+        <div class="form-group" style="flex:1;">
+            <label for="cashDateFilter">Filtrar por data:</label>
+            <input type="date" class="form-control" id="cashDateFilter">
+        </div>
+        <div class="form-group" style="flex:1;display:flex;align-items:flex-end;">
+            <button class="btn btn-primary" id="applyDateFilter"><i class="fas fa-filter"></i> Aplicar Filtro</button>
+        </div>
+        <div class="form-group" style="flex:1;display:flex;align-items:flex-end;">
+            <button class="btn btn-secondary" id="resetDateFilter"><i class="fas fa-times"></i> Limpar Filtro</button>
+        </div>
+    </div>
+
+    <div style="display:flex;gap:15px;margin:20px 0;">
+        <button class="btn btn-success" id="addValueBtn" style="flex:1;"><i class="fas fa-plus-circle"></i> Adicionar Valor</button>
+        <button class="btn btn-danger" id="removeValueBtn" style="flex:1;"><i class="fas fa-minus-circle"></i> Retirar Valor</button>
+        <button class="btn btn-primary" id="closeRegisterBtn" style="flex:1;"><i class="fas fa-lock"></i> Fechar Caixa</button>
+    </div>
+
+    <!-- Resumo de Caixa -->
+    <div id="cashSummary">
+        <h3>Resumo do Caixa</h3>
+        <div class="cash-summary">
+            <div class="cash-card dinheiro">
+                <h3><i class="fas fa-money-bill-wave"></i> Dinheiro</h3>
+                <div class="amount" id="cashAmount">R$ 0,00</div>
             </div>
-
-            <div style="display:flex;gap:15px;margin:20px 0;">
-                <div class="form-group" style="flex:1;">
-                    <label for="cashDateFilter">Filtrar por data:</label>
-                    <input type="date" class="form-control" id="cashDateFilter">
-                </div>
-                <div class="form-group" style="flex:1;display:flex;align-items:flex-end;">
-                    <button class="btn btn-primary" id="applyDateFilter"><i class="fas fa-filter"></i> Aplicar Filtro</button>
-                </div>
-                <div class="form-group" style="flex:1;display:flex;align-items:flex-end;">
-                    <button class="btn btn-secondary" id="resetDateFilter"><i class="fas fa-times"></i> Limpar Filtro</button>
-                </div>
+            <div class="cash-card cartao">
+                <h3><i class="fas fa-credit-card"></i> Cartão</h3>
+                <div class="amount" id="cardAmount">R$ 0,00</div>
             </div>
-
-            <div style="display:flex;gap:15px;margin:20px 0;">
-                <button class="btn btn-success" id="addValueBtn" style="flex:1;"><i class="fas fa-plus-circle"></i> Adicionar Valor</button>
-                <button class="btn btn-danger" id="removeValueBtn" style="flex:1;"><i class="fas fa-minus-circle"></i> Retirar Valor</button>
-                <button class="btn btn-primary" id="closeRegisterBtn" style="flex:1;"><i class="fas fa-lock"></i> Fechar Caixa</button>
+            <div class="cash-card pix">
+                <h3><i class="fas fa-mobile-alt"></i> PIX</h3>
+                <div class="amount" id="pixAmount">R$ 0,00</div>
             </div>
-
-            <!-- Resumo de Caixa -->
-            <div id="cashSummary">
-                <h3>Resumo do Caixa</h3>
-                <div class="cash-summary">
-                    <div class="cash-card dinheiro">
-                        <h3><i class="fas fa-money-bill-wave"></i> Dinheiro</h3>
-                        <div class="amount" id="cashAmount">R$ 0,00</div>
-                    </div>
-                    <div class="cash-card cartao">
-                        <h3><i class="fas fa-credit-card"></i> Cartão</h3>
-                        <div class="amount" id="cardAmount">R$ 0,00</div>
-                    </div>
-                    <div class="cash-card pix">
-                        <h3><i class="fas fa-mobile-alt"></i> PIX</h3>
-                        <div class="amount" id="pixAmount">R$ 0,00</div>
-                    </div>
-                    <div class="cash-card total">
-                        <h3><i class="fas fa-calculator"></i> Total</h3>
-                        <div class="amount" id="totalAmount">R$ 0,00</div>
-                    </div>
-                </div>
-            </div>
-
-            <h3>Movimentações</h3>
-            <table id="cashFlowTable">
-                <thead>
-                    <tr>
-                        <th>Data/Hora</th>
-                        <th>Descrição</th>
-                        <th>Forma de Pagamento</th>
-                        <th>Entrada</th>
-                        <th>Saída</th>
-                        <th>Operador</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-
-            <h3>Fechamento do Caixa</h3>
-            <table id="closingTable">
-                <thead>
-                    <tr>
-                        <th>Forma de Pagamento</th>
-                        <th>Quantidade</th>
-                        <th>Total</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-
-            <div style="margin-top:20px;text-align:center;">
-                <button class="btn btn-primary" id="printReportBtn"><i class="fas fa-print"></i> Imprimir Relatório</button>
-                <button class="btn btn-secondary" id="exportExcelBtn"><i class="fas fa-file-excel"></i> Exportar para Excel</button>
+            <div class="cash-card total">
+                <h3><i class="fas fa-calculator"></i> Total</h3>
+                <div class="amount" id="totalAmount">R$ 0,00</div>
             </div>
         </div>
+    </div>
 
+    <h3>Movimentações</h3>
+    <table id="cashFlowTable">
+        <thead>
+            <tr>
+                <th>Data/Hora</th>
+                <th>Descrição</th>
+                <th>Forma de Pagamento</th>
+                <th>Entrada</th>
+                <th>Saída</th>
+                <th>Operador</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <h3>Fechamento do Caixa</h3>
+    <table id="closingTable">
+        <thead>
+            <tr>
+                <th>Forma de Pagamento</th>
+                <th>Quantidade</th>
+                <th>Total</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <div style="margin-top:20px;text-align:center;">
+        <button class="btn btn-primary" id="printReportBtn"><i class="fas fa-print"></i> Imprimir Relatório</button>
+        <button class="btn btn-secondary" id="exportExcelBtn"><i class="fas fa-file-excel"></i> Exportar para Excel</button>
+    </div>
+</div>
         <!-- Estoque -->
         <div class="tab-content" id="estoque">
             <h2><i class="fas fa-boxes"></i> Controle de Estoque</h2>
@@ -649,12 +682,17 @@
         });
 
         function initializeApp() {
-            const openingTime = new Date();
-            const openingTimeString = openingTime.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-            document.getElementById('openingTime').textContent = openingTimeString;
-            document.getElementById('currentUser').textContent = currentUser.displayName || currentUser.username;
-            document.getElementById('currentUserLabel').textContent = currentUser.displayName || currentUser.username;
+    const openingTime = new Date();
+    const openingTimeString = openingTime.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    document.getElementById('openingTime').textContent = openingTimeString;
+    document.getElementById('currentUser').textContent = currentUser.displayName || currentUser.username;
+    document.getElementById('currentUserLabel').textContent = currentUser.displayName || currentUser.username;
 
+    // Carregar dados do Firestore
+    loadProductsFromFirestore();
+    loadCashFlowFromFirestore();
+    loadSalesHistoryFromFirestore();
+}
             // carregar cashFlow se tiver no storage
             const storedCash = localStorage.getItem('doces_cashflow');
             if (storedCash) {
