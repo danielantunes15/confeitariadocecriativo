@@ -315,11 +315,17 @@ document.addEventListener('DOMContentLoaded', async function() {
             // Contar itens
             const totalItens = venda.itens ? venda.itens.reduce((sum, item) => sum + item.quantidade, 0) : 0;
 
+            // Para usuário normal, mostrar apenas valor se for dinheiro
+            let valorExibido = venda.total?.toFixed(2) || '0.00';
+            if (!isAdmin && venda.forma_pagamento !== 'dinheiro') {
+                valorExibido = '**.**';
+            }
+
             tr.innerHTML = `
                 <td>${hora}</td>
                 <td>${venda.cliente || 'Cliente não identificado'}</td>
                 <td>${totalItens} item(s)</td>
-                <td>R$ ${venda.total?.toFixed(2) || '0.00'}</td>
+                <td>R$ ${valorExibido}</td>
                 <td>
                     <span class="badge badge-${venda.forma_pagamento}">
                         ${formatarFormaPagamento(venda.forma_pagamento)}
@@ -402,15 +408,17 @@ document.addEventListener('DOMContentLoaded', async function() {
         document.getElementById('total-pix').textContent = `R$ ${totalPix.toFixed(2)}`;
         document.getElementById('qtd-pix').textContent = `${vendasPix.length} venda(s)`;
         
-        document.getElementById('total-geral').textContent = `R$ ${totalGeral.toFixed(2)}`;
-        document.getElementById('qtd-total').textContent = `${vendasDoDia.length} venda(s)`;
-
-        // Para usuários normais, mostrar apenas dinheiro
+        // Para usuários normais, mostrar apenas dinheiro no total geral
         if (!isAdmin) {
             document.getElementById('total-cartao').textContent = 'R$ **,**';
             document.getElementById('qtd-cartao').textContent = '** venda(s)';
             document.getElementById('total-pix').textContent = 'R$ **,**';
             document.getElementById('qtd-pix').textContent = '** venda(s)';
+            document.getElementById('total-geral').textContent = `R$ ${totalDinheiro.toFixed(2)}`;
+            document.getElementById('qtd-total').textContent = `${vendasDinheiro.length} venda(s)`;
+        } else {
+            document.getElementById('total-geral').textContent = `R$ ${totalGeral.toFixed(2)}`;
+            document.getElementById('qtd-total').textContent = `${vendasDoDia.length} venda(s)`;
         }
     }
 
@@ -418,16 +426,22 @@ document.addEventListener('DOMContentLoaded', async function() {
     function atualizarRelatorio() {
         const dataSelecionada = dataFechamentoInput.value;
         const dataFormatada = new Date(dataSelecionada).toLocaleDateString('pt-BR');
-        const totalVendas = vendasDoDia.reduce((sum, v) => sum + (v.total || 0), 0);
-        const ticketMedio = vendasDoDia.length > 0 ? totalVendas / vendasDoDia.length : 0;
+        
+        const vendasDinheiro = vendasDoDia.filter(v => v.forma_pagamento === 'dinheiro');
+        const totalVendasDinheiro = vendasDinheiro.reduce((sum, v) => sum + (v.total || 0), 0);
+        const ticketMedioDinheiro = vendasDinheiro.length > 0 ? totalVendasDinheiro / vendasDinheiro.length : 0;
+        
+        const totalGeral = vendasDoDia.reduce((sum, v) => sum + (v.total || 0), 0);
 
         document.getElementById('relatorio-data').textContent = dataFormatada;
-        document.getElementById('relatorio-total-vendas').textContent = `R$ ${totalVendas.toFixed(2)}`;
-        document.getElementById('relatorio-qtd-vendas').textContent = vendasDoDia.length;
-        document.getElementById('relatorio-ticket-medio').textContent = `R$ ${ticketMedio.toFixed(2)}`;
+        document.getElementById('relatorio-total-vendas').textContent = `R$ ${totalVendasDinheiro.toFixed(2)}`;
+        document.getElementById('relatorio-qtd-vendas').textContent = vendasDinheiro.length;
+        document.getElementById('relatorio-ticket-medio').textContent = `R$ ${ticketMedioDinheiro.toFixed(2)}`;
 
-        // Calcular saldo final (apenas admin)
+        // Para admin, mostrar informações adicionais
         if (isAdmin) {
+            document.getElementById('relatorio-total-geral').textContent = `R$ ${totalGeral.toFixed(2)}`;
+            
             const totalEntradas = movimentacoesDoDia
                 .filter(m => m.tipo === 'entrada')
                 .reduce((sum, m) => sum + (m.valor || 0), 0);
@@ -436,11 +450,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 .filter(m => m.tipo === 'saida')
                 .reduce((sum, m) => sum + (m.valor || 0), 0);
             
-            const saldoFinal = totalEntradas - totalSaidas + totalVendas;
+            const saldoFinal = totalEntradas - totalSaidas + totalVendasDinheiro;
             document.getElementById('relatorio-saldo-final').textContent = `R$ ${saldoFinal.toFixed(2)}`;
-            
-            // Mostrar seção admin no relatório
-            document.querySelector('.admin-only').style.display = 'block';
         }
     }
 
@@ -472,6 +483,12 @@ document.addEventListener('DOMContentLoaded', async function() {
         // Formatar data e hora
         const dataHora = new Date(venda.created_at).toLocaleString('pt-BR');
         
+        // Para usuário normal, ocultar valor se não for dinheiro
+        let valorTotalExibido = (venda.total || 0).toFixed(2);
+        if (!isAdmin && venda.forma_pagamento !== 'dinheiro') {
+            valorTotalExibido = '**.**';
+        }
+        
         // Construir HTML dos detalhes
         let html = `
             <div class="detalhes-venda">
@@ -497,6 +514,15 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         if (venda.itens && venda.itens.length > 0) {
             venda.itens.forEach(item => {
+                // Para usuário normal, ocultar valores se não for dinheiro
+                let valorItemExibido = ((item.preco_unitario || 0) * (item.quantidade || 0)).toFixed(2);
+                let precoUnitarioExibido = (item.preco_unitario || 0).toFixed(2);
+                
+                if (!isAdmin && venda.forma_pagamento !== 'dinheiro') {
+                    valorItemExibido = '**.**';
+                    precoUnitarioExibido = '**.**';
+                }
+                
                 html += `
                     <div class="detalhes-item">
                         <div class="detalhes-produto">
@@ -507,8 +533,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                             </div>
                         </div>
                         <div>
-                            <strong>R$ ${((item.preco_unitario || 0) * (item.quantidade || 0)).toFixed(2)}</strong>
-                            <div>Unit: R$ ${(item.preco_unitario || 0).toFixed(2)}</div>
+                            <strong>R$ ${valorItemExibido}</strong>
+                            <div>Unit: R$ ${precoUnitarioExibido}</div>
                         </div>
                     </div>
                 `;
@@ -521,7 +547,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 <div class="detalhes-total">
                     <div class="info-item">
                         <span><strong>Total da Venda:</strong></span>
-                        <span><strong>R$ ${(venda.total || 0).toFixed(2)}</strong></span>
+                        <span><strong>R$ ${valorTotalExibido}</strong></span>
                     </div>
                 </div>
                 
@@ -581,13 +607,12 @@ document.addEventListener('DOMContentLoaded', async function() {
                             th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
                             th { background-color: #f2f2f2; }
                             .total { font-weight: bold; }
-                            .assinatura { margin-top: 50px; border-top: 1px solid #000; width: 300px; }
+                            .assinatura { margin-top: 50px; border-top: 1px solid #333; padding-top: 10px; }
                         </style>
                     </head>
                     <body>
-                        <h1>Relatório de Fechamento</h1>
-                        <h2>Confeitaria Doces Criativos</h2>
-                        <p><strong>Data:</strong> ${dataFormatada}</p>
+                        <h1>Relatório de Fechamento - Confeitaria Doces Criativos</h1>
+                        <h2>Data: ${dataFormatada}</h2>
                         
                         <h3>Resumo Financeiro</h3>
                         <table>
@@ -614,23 +639,36 @@ document.addEventListener('DOMContentLoaded', async function() {
                             </tr>
                             ` : ''}
                             <tr class="total">
-                                <td>TOTAL</td>
-                                <td>${vendasDoDia.length}</td>
-                                <td>R$ ${totalGeral.toFixed(2)}</td>
+                                <td>Total ${isAdmin ? 'Geral' : 'em Dinheiro'}</td>
+                                <td>${isAdmin ? vendasDoDia.length : vendasDinheiro.length}</td>
+                                <td>R$ ${isAdmin ? totalGeral.toFixed(2) : totalDinheiro.toFixed(2)}</td>
                             </tr>
                         </table>
                         
                         <div class="assinatura">
-                            <p>Vendedor: _________________________</p>
-                            ${isAdmin ? '<p>Gerente: _________________________</p>' : ''}
+                            <p>_________________________________</p>
+                            <p>Vendedor</p>
                         </div>
                         
-                        <p><small>Relatório gerado em: ${new Date().toLocaleString('pt-BR')}</small></p>
+                        ${isAdmin ? `
+                        <div class="assinatura">
+                            <p>_________________________________</p>
+                            <p>Gerente/Administrador</p>
+                        </div>
+                        ` : ''}
+                        
+                        <p style="margin-top: 30px; font-size: 12px; color: #666;">
+                            Relatório gerado em ${new Date().toLocaleString('pt-BR')}
+                        </p>
                     </body>
                 </html>
             `);
             
             relatorioWindow.document.close();
+            setTimeout(() => {
+                relatorioWindow.print();
+            }, 500);
+            
             mostrarMensagem('Relatório gerado com sucesso!', 'success');
             
         } catch (error) {
@@ -649,7 +687,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         return formas[forma] || forma;
     }
 
-    function mostrarMensagem(mensagem, tipo = 'info') {
+    function mostrarMensagem(mensagem, tipo) {
         const alertContainer = document.getElementById('alert-container');
         if (!alertContainer) return;
 
@@ -662,7 +700,6 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         alertContainer.appendChild(alert);
 
-        // Auto-remover após 5 segundos
         setTimeout(() => {
             if (alert.parentElement) {
                 alert.remove();
@@ -670,54 +707,3 @@ document.addEventListener('DOMContentLoaded', async function() {
         }, 5000);
     }
 });
-
-// CSS para alerts
-const style = document.createElement('style');
-style.textContent = `
-    .alert {
-        padding: 12px 16px;
-        margin: 10px 0;
-        border-radius: 4px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        animation: slideIn 0.3s ease-out;
-    }
-    
-    .alert-success {
-        background-color: #d4edda;
-        color: #155724;
-        border: 1px solid #c3e6cb;
-    }
-    
-    .alert-error {
-        background-color: #f8d7da;
-        color: #721c24;
-        border: 1px solid #f5c6cb;
-    }
-    
-    .alert-info {
-        background-color: #d1ecf1;
-        color: #0c5460;
-        border: 1px solid #bee5eb;
-    }
-    
-    .alert button {
-        background: none;
-        border: none;
-        font-size: 18px;
-        cursor: pointer;
-        padding: 0;
-        margin-left: 10px;
-    }
-    
-    @keyframes slideIn {
-        from { transform: translateY(-10px); opacity: 0; }
-        to { transform: translateY(0); opacity: 1; }
-    }
-    
-    .entrada { color: #2e7d32; font-weight: bold; }
-    .saida { color: #c62828; font-weight: bold; }
-`;
-
-document.head.appendChild(style);
