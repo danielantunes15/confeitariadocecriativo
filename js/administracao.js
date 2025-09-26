@@ -132,10 +132,14 @@ document.addEventListener('DOMContentLoaded', function() {
         usuarios.forEach(usuario => {
             const tr = document.createElement('tr');
             
+            // Formatar o tipo para exibição
+            const tipoDisplay = usuario.tipo === 'administrador' ? 'Administrador' : 
+                              usuario.tipo === 'usuario' ? 'Usuário Normal' : usuario.tipo;
+            
             tr.innerHTML = `
                 <td>${usuario.nome || 'N/A'}</td>
                 <td>${usuario.username}</td>
-                <td>${usuario.tipo === 'admin' ? 'Administrador' : 'Usuário Normal'}</td>
+                <td>${tipoDisplay}</td>
                 <td>
                     <span class="status-badge ${usuario.ativo ? 'active' : 'inactive'}">
                         ${usuario.ativo ? 'Ativo' : 'Inativo'}
@@ -209,60 +213,20 @@ document.addEventListener('DOMContentLoaded', function() {
             const senhaHash = await hashSenha(senha);
             console.log('Hash da nova senha:', senhaHash);
 
-            // TENTATIVA 1: Com senha_hash (mais comum)
-            let dadosUsuario = {
+            // Inserir usuário com os valores corretos para a constraint
+            const dadosUsuario = {
                 nome: nome,
                 username: username,
                 senha_hash: senhaHash,
-                tipo: tipo,
+                tipo: tipo, // Agora será 'usuario' ou 'administrador' (valores corretos)
                 ativo: ativo
             };
 
-            console.log('Tentativa 1 - Dados a serem inseridos:', dadosUsuario);
+            console.log('Dados a serem inseridos:', dadosUsuario);
 
-            let { error: insertError } = await supabase
+            const { error: insertError } = await supabase
                 .from('sistema_usuarios')
                 .insert(dadosUsuario);
-
-            // TENTATIVA 2: Se falhar, tentar com password (segunda opção comum)
-            if (insertError) {
-                console.log('Tentativa 1 falhou, tentando com "password":', insertError);
-                
-                dadosUsuario = {
-                    nome: nome,
-                    username: username,
-                    password: senhaHash,
-                    tipo: tipo,
-                    ativo: ativo
-                };
-
-                console.log('Tentativa 2 - Dados a serem inseridos:', dadosUsuario);
-                
-                insertError = null;
-                ({ error: insertError } = await supabase
-                    .from('sistema_usuarios')
-                    .insert(dadosUsuario));
-            }
-
-            // TENTATIVA 3: Se ainda falhar, tentar com senha (terceira opção)
-            if (insertError) {
-                console.log('Tentativa 2 falhou, tentando com "senha":', insertError);
-                
-                dadosUsuario = {
-                    nome: nome,
-                    username: username,
-                    senha: senhaHash,
-                    tipo: tipo,
-                    ativo: ativo
-                };
-
-                console.log('Tentativa 3 - Dados a serem inseridos:', dadosUsuario);
-                
-                insertError = null;
-                ({ error: insertError } = await supabase
-                    .from('sistema_usuarios')
-                    .insert(dadosUsuario));
-            }
 
             if (insertError) {
                 throw insertError;
@@ -276,21 +240,17 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (error) {
             console.error('Erro ao criar usuário:', error);
             
-            // Mensagem de erro detalhada
             let mensagemErro = 'Erro ao criar usuário. ';
             
-            if (error.message.includes('senha_hash')) {
-                mensagemErro += 'Problema com a coluna de senha. Verifique a estrutura da tabela.';
+            if (error.message.includes('tipo_check')) {
+                mensagemErro += 'Problema com o tipo de usuário. Verifique os valores permitidos.';
             } else if (error.message) {
                 mensagemErro += error.message;
             } else {
-                mensagemErro += 'Verifique se todos os campos obrigatórios existem na tabela.';
+                mensagemErro += 'Verifique se todos os campos estão corretos.';
             }
             
             mostrarMensagem(mensagemErro, 'error');
-            
-            // Executar diagnóstico para ajudar no debug
-            diagnosticarEstruturaTabela();
         }
     }
 
