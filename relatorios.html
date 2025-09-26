@@ -332,30 +332,13 @@
         </div>
     </main>
 
-    <script>
-        // Configuração do Supabase
-        const SUPABASE_URL = 'https://jdfijbhlujoiuraoxivb.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpkZmlqYmhsdWpvaXVyYW94aXZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg4NDE3MzgsImV4cCI6MjA3NDQxNzczOH0.yEMThoZdXPx1aNCO1a6wO-FPoMU-gTgxJlsW883rKvc';
-
-        // Inicializar Supabase
-        window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        
-        // Configurar data atual como padrão
-        document.addEventListener('DOMContentLoaded', function() {
-            const hoje = new Date();
-            document.getElementById('data-fim').value = hoje.toISOString().split('T')[0];
-            
-            const umaSemanaAtras = new Date(hoje);
-            umaSemanaAtras.setDate(hoje.getDate() - 7);
-            document.getElementById('data-inicio').value = umaSemanaAtras.toISOString().split('T')[0];
-        });
-    </script>
-
+    <!-- Scripts na ordem correta -->
+    <script src="js/supabase-client.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/relatorios.js"></script>
     
     <script>
-    // Script para o menu mobile
+    // Script para o menu mobile (padronizado com outras páginas)
     document.addEventListener('DOMContentLoaded', function() {
         const menuToggle = document.getElementById('menuToggle');
         const mainNav = document.getElementById('mainNav');
@@ -373,18 +356,30 @@
             }
         });
 
-        // Destacar página atual no menu
-        const currentPage = window.location.pathname.split('/').pop() || 'index.html';
-        const navLinks = document.querySelectorAll('.nav-link');
+        // Logout padronizado
+        const logoutBtn = document.getElementById('logout-btn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (confirm('Deseja realmente sair do sistema?')) {
+                    if (window.sistemaAuth) {
+                        window.sistemaAuth.fazerLogout();
+                    } else {
+                        // Fallback
+                        localStorage.removeItem('usuarioLogado');
+                        window.location.href = 'login.html';
+                    }
+                }
+            });
+        }
+
+        // Configurar data atual como padrão
+        const hoje = new Date();
+        document.getElementById('data-fim').value = hoje.toISOString().split('T')[0];
         
-        navLinks.forEach(link => {
-            const href = link.getAttribute('href');
-            if (href === currentPage) {
-                link.classList.add('active');
-            } else {
-                link.classList.remove('active');
-            }
-        });
+        const umaSemanaAtras = new Date(hoje);
+        umaSemanaAtras.setDate(hoje.getDate() - 7);
+        document.getElementById('data-inicio').value = umaSemanaAtras.toISOString().split('T')[0];
     });
     </script>
 </body>
