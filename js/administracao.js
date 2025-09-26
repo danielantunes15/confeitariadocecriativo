@@ -1,4 +1,4 @@
-// js/administracao.js - VERSÃO CORRIGIDA
+// js/administracao.js - VERSÃO DEFINITIVA CORRIGIDA
 document.addEventListener('DOMContentLoaded', function() {
     // Verificar se o usuário é administrador
     if (!window.sistemaAuth || !window.sistemaAuth.requerAdmin()) {
@@ -15,6 +15,33 @@ document.addEventListener('DOMContentLoaded', function() {
     const formEditarUsuario = document.getElementById('form-editar-usuario');
     const closeModalBtn = document.querySelector('.close');
     const fecharModalBtn = document.getElementById('fechar-modal');
+
+    // Diagnóstico da estrutura da tabela
+    async function diagnosticarEstruturaTabela() {
+        try {
+            const { data: usuarios, error } = await supabase
+                .from('sistema_usuarios')
+                .select('*')
+                .limit(1);
+
+            if (error) {
+                console.log('Erro ao diagnosticar tabela:', error);
+                return null;
+            }
+
+            console.log('Estrutura da tabela sistema_usuarios:', usuarios);
+            
+            if (usuarios && usuarios.length > 0) {
+                const campos = Object.keys(usuarios[0]);
+                console.log('Campos disponíveis:', campos);
+                return campos;
+            }
+            return null;
+        } catch (error) {
+            console.error('Erro no diagnóstico:', error);
+            return null;
+        }
+    }
 
     // Event Listeners
     tabBtns.forEach(btn => {
@@ -63,10 +90,9 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             usuariosBody.innerHTML = '<tr><td colspan="6" style="text-align: center;">Carregando...</td></tr>';
 
-            // CONSULTA SIMPLES - sem ordenação problemática
             const { data: usuarios, error } = await supabase
                 .from('sistema_usuarios')
-                .select('id, nome, username, tipo, ativo, created_at') // ← usar created_at que já existe
+                .select('id, nome, username, tipo, ativo, created_at')
                 .order('created_at', { ascending: false });
 
             if (error) {
@@ -183,36 +209,63 @@ document.addEventListener('DOMContentLoaded', function() {
             const senhaHash = await hashSenha(senha);
             console.log('Hash da nova senha:', senhaHash);
 
-            // Dados do usuário - USAR APENAS CAMPOS QUE EXISTEM
-            const dadosUsuario = {
+            // TENTATIVA 1: Com senha_hash (mais comum)
+            let dadosUsuario = {
                 nome: nome,
                 username: username,
                 senha_hash: senhaHash,
                 tipo: tipo,
                 ativo: ativo
-                // Não incluir criado_em - deixar o banco definir automaticamente
             };
 
-            console.log('Dados a serem inseridos:', dadosUsuario);
+            console.log('Tentativa 1 - Dados a serem inseridos:', dadosUsuario);
 
-            // Criar usuário
-            const { data: novoUsuario, error: insertError } = await supabase
+            let { error: insertError } = await supabase
                 .from('sistema_usuarios')
-                .insert(dadosUsuario)
-                .select()
-                .single();
+                .insert(dadosUsuario);
+
+            // TENTATIVA 2: Se falhar, tentar com password (segunda opção comum)
+            if (insertError) {
+                console.log('Tentativa 1 falhou, tentando com "password":', insertError);
+                
+                dadosUsuario = {
+                    nome: nome,
+                    username: username,
+                    password: senhaHash,
+                    tipo: tipo,
+                    ativo: ativo
+                };
+
+                console.log('Tentativa 2 - Dados a serem inseridos:', dadosUsuario);
+                
+                insertError = null;
+                ({ error: insertError } = await supabase
+                    .from('sistema_usuarios')
+                    .insert(dadosUsuario));
+            }
+
+            // TENTATIVA 3: Se ainda falhar, tentar com senha (terceira opção)
+            if (insertError) {
+                console.log('Tentativa 2 falhou, tentando com "senha":', insertError);
+                
+                dadosUsuario = {
+                    nome: nome,
+                    username: username,
+                    senha: senhaHash,
+                    tipo: tipo,
+                    ativo: ativo
+                };
+
+                console.log('Tentativa 3 - Dados a serem inseridos:', dadosUsuario);
+                
+                insertError = null;
+                ({ error: insertError } = await supabase
+                    .from('sistema_usuarios')
+                    .insert(dadosUsuario));
+            }
 
             if (insertError) {
-                console.error('Erro detalhado ao inserir usuário:', insertError);
-                
-                // Tentar inserção alternativa sem select
-                const { error: insertError2 } = await supabase
-                    .from('sistema_usuarios')
-                    .insert(dadosUsuario);
-
-                if (insertError2) {
-                    throw insertError2;
-                }
+                throw insertError;
             }
 
             mostrarMensagem('Usuário criado com sucesso!', 'success');
@@ -222,7 +275,22 @@ document.addEventListener('DOMContentLoaded', function() {
 
         } catch (error) {
             console.error('Erro ao criar usuário:', error);
-            mostrarMensagem('Erro ao criar usuário: ' + error.message, 'error');
+            
+            // Mensagem de erro detalhada
+            let mensagemErro = 'Erro ao criar usuário. ';
+            
+            if (error.message.includes('senha_hash')) {
+                mensagemErro += 'Problema com a coluna de senha. Verifique a estrutura da tabela.';
+            } else if (error.message) {
+                mensagemErro += error.message;
+            } else {
+                mensagemErro += 'Verifique se todos os campos obrigatórios existem na tabela.';
+            }
+            
+            mostrarMensagem(mensagemErro, 'error');
+            
+            // Executar diagnóstico para ajudar no debug
+            diagnosticarEstruturaTabela();
         }
     }
 
@@ -404,4 +472,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }, 5000);
     }
+
+    // Executar diagnóstico ao carregar
+    diagnosticarEstruturaTabela();
 });
