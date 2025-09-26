@@ -1,29 +1,36 @@
-/* css/vendas.css - VERSÃO MELHORADA */
+/* css/vendas.css - VERSÃO OTIMIZADA E RESPONSIVA */
 /* Estilos específicos para a página principal de vendas */
 
-/* Grid de categorias - MELHORADO */
+:root {
+    --primary-rgb: 233, 30, 99;
+    --categoria-hover: rgba(233, 30, 99, 0.1);
+    --produto-hover: rgba(233, 30, 99, 0.05);
+}
+
+/* Grid de categorias - OTIMIZADO */
 .categorias-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     gap: 1rem;
     margin-top: 1rem;
 }
 
 .categoria-card {
     background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
-    border-radius: 12px;
+    border-radius: 16px;
     padding: 1.5rem 1rem;
     text-align: center;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     border: 2px solid #e9ecef;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    min-height: 100px;
+    min-height: 110px;
     position: relative;
     overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.04);
 }
 
 .categoria-card::before {
@@ -33,8 +40,8 @@
     left: -100%;
     width: 100%;
     height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
-    transition: left 0.5s;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
+    transition: left 0.7s ease;
 }
 
 .categoria-card:hover::before {
@@ -42,27 +49,30 @@
 }
 
 .categoria-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    transform: translateY(-5px);
+    box-shadow: 0 12px 20px rgba(0, 0, 0, 0.15);
     border-color: var(--primary-color);
+    background: linear-gradient(135deg, #fff 0%, #f0f4f8 100%);
 }
 
 .categoria-card.active {
     border-color: var(--primary-color);
     background: linear-gradient(135deg, var(--primary-light) 0%, #e3f2fd 100%);
-    box-shadow: 0 4px 15px rgba(var(--primary-rgb), 0.2);
+    box-shadow: 0 8px 16px rgba(var(--primary-rgb), 0.2);
+    transform: translateY(-2px);
 }
 
 .categoria-card i {
-    font-size: 2.2rem;
+    font-size: 2.4rem;
     color: var(--primary-color);
     margin-bottom: 0.75rem;
     transition: all 0.3s ease;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
 }
 
 .categoria-card.active i {
     color: var(--primary-dark);
-    transform: scale(1.1);
+    transform: scale(1.15);
 }
 
 .categoria-card h3 {
@@ -71,6 +81,7 @@
     margin: 0;
     font-weight: 600;
     transition: all 0.3s ease;
+    line-height: 1.3;
 }
 
 .categoria-card.active h3 {
@@ -78,29 +89,30 @@
     font-weight: 700;
 }
 
-/* Grid de produtos - MELHORADO */
+/* Grid de produtos - OTIMIZADO */
 .produtos-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
     gap: 1.5rem;
     margin-top: 1rem;
 }
 
 .produto-card {
     background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
-    border-radius: 12px;
+    border-radius: 16px;
     padding: 1.5rem;
     text-align: center;
     cursor: pointer;
-    transition: all 0.4s ease;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     border: 2px solid #e9ecef;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: space-between;
-    min-height: 200px;
+    min-height: 220px;
     position: relative;
     overflow: hidden;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
 }
 
 .produto-card::before {
@@ -112,7 +124,7 @@
     height: 4px;
     background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
     transform: scaleX(0);
-    transition: transform 0.3s ease;
+    transition: transform 0.4s ease;
 }
 
 .produto-card:hover::before {
@@ -120,15 +132,21 @@
 }
 
 .produto-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    transform: translateY(-8px);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
     border-color: var(--primary-color);
 }
 
+.produto-card:active {
+    transform: translateY(-2px);
+    transition: transform 0.1s;
+}
+
 .produto-card.out-of-stock {
-    opacity: 0.5;
+    opacity: 0.6;
     cursor: not-allowed;
     background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    position: relative;
 }
 
 .produto-card.out-of-stock::after {
@@ -139,22 +157,30 @@
     transform: translate(-50%, -50%) rotate(-45deg);
     background: var(--error-color);
     color: white;
-    padding: 0.5rem 1rem;
+    padding: 0.5rem 1.5rem;
     border-radius: 4px;
     font-size: 0.9rem;
     font-weight: bold;
     z-index: 2;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.produto-card.out-of-stock:hover {
+    transform: none;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+    border-color: #e9ecef;
 }
 
 .produto-card i {
-    font-size: 3rem;
+    font-size: 3.2rem;
     color: var(--primary-color);
     margin-bottom: 1rem;
     transition: all 0.3s ease;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
 }
 
 .produto-card:hover i {
-    transform: scale(1.1);
+    transform: scale(1.15);
     color: var(--primary-dark);
 }
 
@@ -163,11 +189,11 @@
 }
 
 .produto-card h3 {
-    font-size: 1.1rem;
+    font-size: 1.15rem;
     color: var(--text-color);
     margin: 0 0 0.75rem 0;
     font-weight: 600;
-    line-height: 1.3;
+    line-height: 1.4;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
@@ -175,93 +201,208 @@
 }
 
 .produto-card .preco {
-    font-size: 1.3rem;
+    font-size: 1.4rem;
     font-weight: bold;
     color: var(--primary-dark);
     margin: 0.5rem 0;
+    display: block;
 }
 
 .produto-card .estoque {
     font-size: 0.85rem;
     color: var(--text-light);
     background: var(--bg-light);
-    padding: 0.25rem 0.5rem;
+    padding: 0.3rem 0.8rem;
     border-radius: 20px;
     display: inline-block;
+    font-weight: 500;
 }
 
-/* Estados de hover e foco melhorados */
-.categoria-card:focus,
-.produto-card:focus {
+/* Header dos produtos melhorado */
+.produtos-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    width: 100%;
+}
+
+.produtos-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.search-box {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.search-box input {
+    padding: 0.5rem 1rem 0.5rem 2.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    font-size: 0.9rem;
+    width: 200px;
+    transition: all 0.3s ease;
+}
+
+.search-box input:focus {
     outline: none;
-    box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.3);
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px var(--primary-light);
+    width: 250px;
 }
 
-/* Animações de loading para produtos */
-.produto-card.loading {
-    animation: pulse 1.5s infinite;
+.search-box i {
+    position: absolute;
+    left: 1rem;
+    color: var(--text-light);
 }
 
-@keyframes pulse {
-    0% { opacity: 0.6; }
-    50% { opacity: 1; }
-    100% { opacity: 0.6; }
+/* Carrinho melhorado */
+.carrinho-card {
+    position: sticky;
+    top: 100px;
 }
 
-/* Melhorias na responsividade */
-@media (max-width: 1024px) {
+.carrinho-vazio {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-light);
+}
+
+.carrinho-vazio i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    color: var(--border-color);
+}
+
+.carrinho-table {
+    width: 100%;
+}
+
+.carrinho-table th,
+.carrinho-table td {
+    padding: 0.75rem;
+    vertical-align: middle;
+}
+
+.carrinho-table th {
+    background-color: var(--primary-light);
+    font-weight: 600;
+}
+
+.carrinho-total {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 2px solid var(--border-color);
+}
+
+.total-info {
+    display: flex;
+    justify-content: space-between;
+    font-weight: bold;
+    font-size: 1.2rem;
+    color: var(--primary-dark);
+}
+
+/* Formas de pagamento melhoradas */
+.formas-pagamento {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.pagamento-option {
+    cursor: pointer;
+}
+
+.pagamento-option input {
+    display: none;
+}
+
+.pagamento-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1rem 0.5rem;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    text-align: center;
+}
+
+.pagamento-option input:checked + .pagamento-content {
+    border-color: var(--primary-color);
+    background-color: var(--primary-light);
+    color: var(--primary-dark);
+    font-weight: 600;
+}
+
+.pagamento-content i {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.pagamento-content span {
+    font-size: 0.9rem;
+}
+
+/* Botões de ação */
+.vendas-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.action-buttons .btn {
+    flex: 1;
+}
+
+/* Melhorias na responsividade - MOBILE */
+@media (max-width: 767px) {
     .categorias-grid {
-        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+        gap: 0.75rem;
     }
     
     .produtos-grid {
-        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
         gap: 1rem;
-    }
-}
-
-@media (max-width: 768px) {
-    .categorias-grid {
-        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-        gap: 0.75rem;
-    }
-    
-    .produtos-grid {
-        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-        gap: 0.75rem;
     }
     
     .categoria-card {
         padding: 1rem 0.5rem;
-        min-height: 90px;
+        min-height: 100px;
+        border-radius: 12px;
     }
     
     .categoria-card i {
-        font-size: 1.8rem;
+        font-size: 2rem;
         margin-bottom: 0.5rem;
-    }
-    
-    .produto-card {
-        padding: 1rem;
-        min-height: 180px;
-    }
-    
-    .produto-card i {
-        font-size: 2.5rem;
-    }
-}
-
-@media (max-width: 480px) {
-    .categorias-grid {
-        grid-template-columns: repeat(3, 1fr);
-    }
-    
-    .produtos-grid {
-        grid-template-columns: repeat(2, 1fr);
     }
     
     .categoria-card h3 {
         font-size: 0.9rem;
+    }
+    
+    .produto-card {
+        padding: 1rem;
+        min-height: 190px;
+        border-radius: 12px;
+    }
+    
+    .produto-card i {
+        font-size: 2.5rem;
     }
     
     .produto-card h3 {
@@ -269,30 +410,91 @@
     }
     
     .produto-card .preco {
-        font-size: 1.1rem;
+        font-size: 1.2rem;
+    }
+    
+    .produtos-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .produtos-info {
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    .search-box input {
+        width: 150px;
+    }
+    
+    .search-box input:focus {
+        width: 180px;
+    }
+    
+    .formas-pagamento {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    
+    .pagamento-content {
+        padding: 0.75rem 0.25rem;
+    }
+    
+    .pagamento-content i {
+        font-size: 1.2rem;
+    }
+    
+    .pagamento-content span {
+        font-size: 0.8rem;
     }
 }
 
-/* Scroll suave para categorias */
-.categorias-container {
-    overflow-x: auto;
-    padding-bottom: 0.5rem;
+@media (max-width: 480px) {
+    .categorias-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .produtos-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
+    }
+    
+    .categoria-card {
+        min-height: 90px;
+    }
+    
+    .produto-card {
+        min-height: 180px;
+        padding: 0.75rem;
+    }
+    
+    .produto-card i {
+        font-size: 2.2rem;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+    }
+    
+    .carrinho-table th,
+    .carrinho-table td {
+        padding: 0.5rem;
+        font-size: 0.9rem;
+    }
 }
 
-.categorias-grid {
-    min-width: min-content;
+/* Animações de entrada para os cards */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
-/* Badge para produtos novos ou em destaque */
-.produto-card .badge {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    background: var(--success-color);
-    color: white;
-    padding: 0.25rem 0.5rem;
-    border-radius: 12px;
-    font-size: 0.7rem;
-    font-weight: bold;
-    z-index: 1;
+.categoria-card,
+.produto-card {
+    animation: fadeInUp 0.5s ease forwards;
 }

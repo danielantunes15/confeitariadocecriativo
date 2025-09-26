@@ -10,156 +10,189 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
+    <!-- Header Mobile First -->
     <header class="header">
         <div class="container">
-            <h1 class="logo">Doces Criativos</h1>
-            <nav class="nav">
-                <a href="index.html" class="nav-link active">Vendas</a>
-                <a href="caixa-fechamento.html" class="nav-link">Caixa</a>
-                <a href="estoque.html" class="nav-link">Estoque</a>
-                <a href="relatorios.html" class="nav-link">Relatórios</a>
-                <a href="administracao.html" class="nav-link">Administração</a>
-                <button id="logout-btn" class="btn-logout">Sair</button>
-            </nav>
+            <div class="header-content">
+                <h1 class="logo">Doces Criativos</h1>
+                <button class="menu-toggle" id="menuToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <nav class="nav" id="mainNav">
+                    <a href="index.html" class="nav-link active">
+                        <i class="fas fa-shopping-cart"></i>
+                        <span>Vendas</span>
+                    </a>
+                    <a href="caixa-fechamento.html" class="nav-link">
+                        <i class="fas fa-cash-register"></i>
+                        <span>Caixa</span>
+                    </a>
+                    <a href="estoque.html" class="nav-link">
+                        <i class="fas fa-boxes"></i>
+                        <span>Estoque</span>
+                    </a>
+                    <a href="relatorios.html" class="nav-link">
+                        <i class="fas fa-chart-bar"></i>
+                        <span>Relatórios</span>
+                    </a>
+                    <a href="administracao.html" class="nav-link">
+                        <i class="fas fa-cog"></i>
+                        <span>Administração</span>
+                    </a>
+                    <button id="logout-btn" class="btn-logout">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>Sair</span>
+                    </button>
+                </nav>
+            </div>
         </div>
     </header>
 
     <main class="main">
         <div class="container">
+            <!-- Alertas -->
             <div id="alert-container"></div>
             
+            <!-- Loading -->
             <div id="loading" class="loading-container">
                 <div class="spinner"></div>
                 <p>Carregando sistema de vendas...</p>
             </div>
 
+            <!-- Conteúdo Principal -->
             <div id="content" style="display: none;">
-                <!-- Área de categorias -->
-                <section class="section-categorias">
-                    <div class="card">
-                        <div class="card-header">
-                            <h2><i class="fas fa-tags"></i> Categorias</h2>
-                        </div>
-                        <div class="card-body">
-                            <div id="categorias-container" class="categorias-grid">
-                                <!-- Categorias serão carregadas dinamicamente -->
+                <!-- Layout em Grid Responsivo -->
+                <div class="vendas-grid">
+                    <!-- Coluna 1: Categorias -->
+                    <section class="section-categorias">
+                        <div class="card">
+                            <div class="card-header">
+                                <h2><i class="fas fa-tags"></i> Categorias</h2>
                             </div>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- Área de produtos -->
-                <section class="section-produtos">
-                    <div class="card">
-                        <div class="card-header">
-                            <h2><i class="fas fa-boxes"></i> Produtos</h2>
-                            <div class="produtos-info">
-                                <span id="contador-produtos">0 produtos</span>
-                                <div class="search-box">
-                                    <input type="text" id="search-produtos" placeholder="Buscar produtos...">
-                                    <i class="fas fa-search"></i>
+                            <div class="card-body">
+                                <div id="categorias-container" class="categorias-grid">
+                                    <!-- Categorias serão carregadas dinamicamente -->
                                 </div>
                             </div>
                         </div>
-                        <div class="card-body">
-                            <div id="produtos-container" class="produtos-grid">
-                                <!-- Produtos serão carregados dinamicamente -->
-                            </div>
-                        </div>
-                    </div>
-                </section>
+                    </section>
 
-                <!-- Área do carrinho -->
-                <section class="section-carrinho">
-                    <div class="card carrinho-card">
-                        <div class="card-header">
-                            <h2><i class="fas fa-shopping-cart"></i> Carrinho de Vendas</h2>
-                            <span id="contador-carrinho" class="badge">0</span>
-                        </div>
-                        <div class="card-body">
-                            <div id="carrinho-container">
-                                <div id="carrinho-vazio" class="carrinho-vazio">
-                                    <i class="fas fa-shopping-cart"></i>
-                                    <h3>Seu carrinho está vazio</h3>
-                                    <p>Selecione produtos para adicionar ao carrinho</p>
-                                </div>
-                                <div id="carrinho-itens" class="carrinho-itens" style="display: none;">
-                                    <div class="table-container">
-                                        <table class="carrinho-table">
-                                            <thead>
-                                                <tr>
-                                                    <th>Produto</th>
-                                                    <th>Quantidade</th>
-                                                    <th>Preço Unit.</th>
-                                                    <th>Subtotal</th>
-                                                    <th>Ação</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody id="carrinho-lista">
-                                                <!-- Itens do carrinho serão carregados dinamicamente -->
-                                            </tbody>
-                                        </table>
+                    <!-- Coluna 2: Produtos -->
+                    <section class="section-produtos">
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="produtos-header">
+                                    <h2><i class="fas fa-boxes"></i> Produtos</h2>
+                                    <div class="produtos-info">
+                                        <span id="contador-produtos" class="badge">0</span>
+                                        <div class="search-box">
+                                            <input type="text" id="search-produtos" placeholder="Buscar produtos...">
+                                            <i class="fas fa-search"></i>
+                                        </div>
                                     </div>
-                                    
-                                    <div class="carrinho-total">
-                                        <div class="total-info">
-                                            <span>Subtotal:</span>
-                                            <span id="subtotal-carrinho">R$ 0,00</span>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div id="produtos-container" class="produtos-grid">
+                                    <!-- Produtos serão carregados dinamicamente -->
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Coluna 3: Carrinho e Pagamento -->
+                    <section class="section-lateral">
+                        <!-- Carrinho -->
+                        <div class="card carrinho-card">
+                            <div class="card-header">
+                                <h2><i class="fas fa-shopping-cart"></i> Carrinho</h2>
+                                <span id="contador-carrinho" class="badge">0</span>
+                            </div>
+                            <div class="card-body">
+                                <div id="carrinho-container">
+                                    <div id="carrinho-vazio" class="carrinho-vazio">
+                                        <i class="fas fa-shopping-cart"></i>
+                                        <h3>Carrinho vazio</h3>
+                                        <p>Selecione produtos para começar</p>
+                                    </div>
+                                    <div id="carrinho-itens" class="carrinho-itens" style="display: none;">
+                                        <div class="table-container">
+                                            <table class="carrinho-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Produto</th>
+                                                        <th>Qtd</th>
+                                                        <th>Preço</th>
+                                                        <th>Ação</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="carrinho-lista">
+                                                    <!-- Itens do carrinho serão carregados dinamicamente -->
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        
+                                        <div class="carrinho-total">
+                                            <div class="total-info">
+                                                <span>Subtotal:</span>
+                                                <span id="subtotal-carrinho">R$ 0,00</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </section>
 
-                <!-- Área de pagamento -->
-                <section class="section-pagamento">
-                    <div class="card">
-                        <div class="card-header">
-                            <h2><i class="fas fa-credit-card"></i> Forma de Pagamento</h2>
-                        </div>
-                        <div class="card-body">
-                            <div class="formas-pagamento">
-                                <label class="pagamento-option">
-                                    <input type="radio" name="forma-pagamento" value="dinheiro" checked>
-                                    <div class="pagamento-content">
-                                        <i class="fas fa-money-bill-wave"></i>
-                                        <span>Dinheiro</span>
-                                    </div>
-                                </label>
-                                <label class="pagamento-option">
-                                    <input type="radio" name="forma-pagamento" value="cartao">
-                                    <div class="pagamento-content">
-                                        <i class="fas fa-credit-card"></i>
-                                        <span>Cartão</span>
-                                    </div>
-                                </label>
-                                <label class="pagamento-option">
-                                    <input type="radio" name="forma-pagamento" value="pix">
-                                    <div class="pagamento-content">
-                                        <i class="fas fa-qrcode"></i>
-                                        <span>PIX</span>
-                                    </div>
-                                </label>
+                        <!-- Pagamento -->
+                        <div class="card pagamento-card">
+                            <div class="card-header">
+                                <h2><i class="fas fa-credit-card"></i> Pagamento</h2>
                             </div>
-                            
-                            <div class="form-actions vendas-actions">
-                                <button id="finalizar-venda" class="btn btn-success btn-lg">
-                                    <i class="fas fa-check"></i> Finalizar Venda
-                                </button>
-                                <button id="cancelar-item" class="btn btn-warning">
-                                    <i class="fas fa-times"></i> Cancelar Item
-                                </button>
-                                <button id="cancelar-venda" class="btn btn-danger">
-                                    <i class="fas fa-trash"></i> Cancelar Venda
-                                </button>
+                            <div class="card-body">
+                                <div class="formas-pagamento">
+                                    <label class="pagamento-option">
+                                        <input type="radio" name="forma-pagamento" value="dinheiro" checked>
+                                        <div class="pagamento-content">
+                                            <i class="fas fa-money-bill-wave"></i>
+                                            <span>Dinheiro</span>
+                                        </div>
+                                    </label>
+                                    <label class="pagamento-option">
+                                        <input type="radio" name="forma-pagamento" value="cartao">
+                                        <div class="pagamento-content">
+                                            <i class="fas fa-credit-card"></i>
+                                            <span>Cartão</span>
+                                        </div>
+                                    </label>
+                                    <label class="pagamento-option">
+                                        <input type="radio" name="forma-pagamento" value="pix">
+                                        <div class="pagamento-content">
+                                            <i class="fas fa-qrcode"></i>
+                                            <span>PIX</span>
+                                        </div>
+                                    </label>
+                                </div>
+                                
+                                <div class="form-actions vendas-actions">
+                                    <button id="finalizar-venda" class="btn btn-success btn-lg">
+                                        <i class="fas fa-check"></i> Finalizar Venda
+                                    </button>
+                                    <div class="action-buttons">
+                                        <button id="cancelar-item" class="btn btn-warning">
+                                            <i class="fas fa-times"></i> Cancelar Item
+                                        </button>
+                                        <button id="cancelar-venda" class="btn btn-danger">
+                                            <i class="fas fa-trash"></i> Cancelar Tudo
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </section>
+                    </section>
+                </div>
             </div>
 
+            <!-- Mensagem de Erro -->
             <div id="error-message" class="error-container" style="display: none;">
                 <div class="error-content">
                     <i class="fas fa-exclamation-triangle"></i>
@@ -186,7 +219,7 @@
             </div>
             <div class="modal-footer">
                 <button id="confirmar-cancelar-item" class="btn btn-danger">
-                    <i class="fas fa-check"></i> Confirmar Cancelamento
+                    <i class="fas fa-check"></i> Confirmar
                 </button>
                 <button id="cancelar-modal-item" class="btn btn-secondary">
                     <i class="fas fa-arrow-left"></i> Voltar
@@ -207,4 +240,24 @@
     <script src="js/auth.js"></script>
     <script src="js/vendas-principal.js"></script>
 </body>
+<script>
+// Menu mobile toggle
+document.addEventListener('DOMContentLoaded', function() {
+    const menuToggle = document.getElementById('menuToggle');
+    const mainNav = document.getElementById('mainNav');
+    
+    if (menuToggle && mainNav) {
+        menuToggle.addEventListener('click', function() {
+            mainNav.classList.toggle('show');
+        });
+    }
+    
+    // Fechar menu ao clicar fora
+    document.addEventListener('click', function(event) {
+        if (!event.target.closest('.header-content') && mainNav.classList.contains('show')) {
+            mainNav.classList.remove('show');
+        }
+    });
+});
+</script>
 </html>
