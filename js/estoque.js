@@ -444,6 +444,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         onclick="toggleProduto('${produto.id}', ${produto.ativo})">
                         ${produto.ativo ? 'Desativar' : 'Ativar'}
                     </button>
+                    <button class="btn-danger" onclick="excluirProduto('${produto.id}', '${produto.nome}')">
+                        Excluir
+                    </button>
                 </td>
             `;
 
@@ -624,14 +627,54 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
-    // Funções para categorias (placeholder - implementar conforme necessário)
+    // NOVA FUNÇÃO: Excluir produto
+    window.excluirProduto = async function(produtoId, produtoNome) {
+        if (!confirm(`Tem certeza que deseja excluir o produto "${produtoNome}"?\n\nEsta ação não pode ser desfeita!`)) {
+            return;
+        }
+
+        try {
+            const { error } = await supabase
+                .from('produtos')
+                .delete()
+                .eq('id', produtoId);
+
+            if (error) throw error;
+
+            mostrarMensagem(`Produto "${produtoNome}" excluído com sucesso!`, 'success');
+            await carregarListaProdutos();
+
+        } catch (error) {
+            console.error('Erro ao excluir produto:', error);
+            mostrarMensagem('Erro ao excluir produto: ' + error.message, 'error');
+        }
+    };
+
+    // Funções para categorias
     window.editarCategoria = function(categoriaId) {
         mostrarMensagem('Funcionalidade de editar categoria será implementada em breve', 'info');
     };
 
-    window.excluirCategoria = function(categoriaId, nome) {
-        if (confirm(`Tem certeza que deseja excluir a categoria "${nome}"?`)) {
-            mostrarMensagem('Funcionalidade de excluir categoria será implementada em breve', 'info');
+    window.excluirCategoria = async function(categoriaId, nome) {
+        if (!confirm(`Tem certeza que deseja excluir a categoria "${nome}"?`)) {
+            return;
+        }
+
+        try {
+            const { error } = await supabase
+                .from('categorias')
+                .delete()
+                .eq('id', categoriaId);
+
+            if (error) throw error;
+
+            mostrarMensagem(`Categoria "${nome}" excluída com sucesso!`, 'success');
+            await carregarCategorias();
+            await carregarListaCategorias();
+
+        } catch (error) {
+            console.error('Erro ao excluir categoria:', error);
+            mostrarMensagem('Erro ao excluir categoria: ' + error.message, 'error');
         }
     };
 
