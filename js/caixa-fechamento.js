@@ -1,4 +1,4 @@
-// js/caixa-fechamento.js - Sistema completo de fechamento de caixa
+// js/caixa-fechamento.js - Sistema completo de fechamento de caixa (CORRIGIDO)
 document.addEventListener('DOMContentLoaded', async function() {
     // Verificar autenticação
     const usuario = window.sistemaAuth?.verificarAutenticacao();
@@ -26,6 +26,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Aplicar classe admin se necessário
     if (isAdmin) {
         document.body.classList.add('is-admin');
+        // Mostrar seções admin
+        document.querySelectorAll('.admin-only').forEach(el => {
+            el.style.display = 'block';
+        });
+        document.getElementById('movimentacoes-admin').style.display = 'block';
     }
 
     try {
@@ -68,7 +73,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         try {
             const { data, error } = await supabase
                 .from('vendas')
-                .select('count')
+                .select('id')
                 .limit(1);
                 
             if (error) throw error;
@@ -137,30 +142,104 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
 
-    // Carregar vendas do dia
+    // Carregar vendas do dia - VERSÃO CORRIGIDA
     async function carregarVendas(data) {
         try {
+            console.log('📊 Carregando vendas para data:', data);
+            
+            // Primeiro, buscar as vendas básicas
             const { data: vendas, error } = await supabase
                 .from('vendas')
-                .select(`
-                    *,
-                    usuario:sistema_usuarios(nome),
-                    itens:vendas_itens(
-                        quantidade,
-                        preco_unitario,
-                        produto:produtos(nome, icone)
-                    )
-                `)
+                .select('*')
                 .eq('data_venda', data)
                 .order('created_at', { ascending: false });
 
-            if (error) throw error;
+            if (error) {
+                console.error('Erro ao buscar vendas:', error);
+                throw error;
+            }
 
+            console.log(`✅ Encontradas ${vendas?.length || 0} vendas`);
+
+            // Se não há vendas, definir array vazio
             vendasDoDia = vendas || [];
+            
+            // Para cada venda, buscar detalhes adicionais separadamente
+            if (vendasDoDia.length > 0) {
+                for (let venda of vendasDoDia) {
+                    try {
+                        // Buscar itens da venda
+                        const { data: itens, error: errorItens } = await supabase
+                            .from('vendas_itens')
+                            .select('*')
+                            .eq('venda_id', venda.id);
+
+                        if (!errorItens && itens) {
+                            venda.itens = itens;
+                            
+                            // Para cada item, buscar nome do produto se possível
+                            for (let item of venda.itens) {
+                                try {
+                                    const { data: produto, error: errorProduto } = await supabase
+                                        .from('produtos')
+                                        .select('nome, icone')
+                                        .eq('id', item.produto_id)
+                                        .single();
+
+                                    if (!errorProduto && produto) {
+                                        item.produto = produto;
+                                    }
+                                } catch (produtoError) {
+                                    console.warn('Erro ao buscar produto:', produtoError);
+                                    item.produto = { nome: 'Produto não encontrado', icone: 'fa-cube' };
+                                }
+                            }
+                        }
+
+                        // Buscar nome do usuário
+                        if (venda.usuario_id) {
+                            try {
+                                const { data: usuario, error: errorUsuario } = await supabase
+                                    .from('sistema_usuarios')
+                                    .select('nome')
+                                    .eq('id', venda.usuario_id)
+                                    .single();
+
+                                if (!errorUsuario && usuario) {
+                                    venda.usuario = usuario;
+                                }
+                            } catch (usuarioError) {
+                                console.warn('Erro ao buscar usuário:', usuarioError);
+                            }
+                        }
+                    } catch (detalhesError) {
+                        console.warn('Erro ao carregar detalhes da venda:', detalhesError);
+                    }
+                }
+            }
+
             exibirVendas(vendasDoDia);
 
         } catch (error) {
             console.error('Erro ao carregar vendas:', error);
+            // Tentar fallback mais simples
+            try {
+                const { data: vendasSimples, error: errorSimples } = await supabase
+                    .from('vendas')
+                    .select('*')
+                    .eq('data_venda', data)
+                    .order('created_at', { ascending: false });
+
+                if (!errorSimples) {
+                    vendasDoDia = vendasSimples || [];
+                    exibirVendas(vendasDoDia);
+                    mostrarMensagem('Dados carregados (modo simplificado)', 'info');
+                    return;
+                }
+            } catch (fallbackError) {
+                console.error('Erro no fallback:', fallbackError);
+            }
+            
             throw error;
         }
     }
@@ -170,21 +249,40 @@ document.addEventListener('DOMContentLoaded', async function() {
         try {
             const { data: movimentacoes, error } = await supabase
                 .from('caixa_movimentacoes')
-                .select(`
-                    *,
-                    usuario:sistema_usuarios(nome)
-                `)
+                .select('*')
                 .eq('data', data)
                 .order('created_at', { ascending: false });
 
             if (error) throw error;
 
             movimentacoesDoDia = movimentacoes || [];
+            
+            // Buscar nomes dos usuários para movimentações
+            for (let mov of movimentacoesDoDia) {
+                if (mov.usuario_id) {
+                    try {
+                        const { data: usuario, error: errorUsuario } = await supabase
+                            .from('sistema_usuarios')
+                            .select('nome')
+                            .eq('id', mov.usuario_id)
+                            .single();
+
+                        if (!errorUsuario && usuario) {
+                            mov.usuario = usuario;
+                        }
+                    } catch (usuarioError) {
+                        console.warn('Erro ao buscar usuário da movimentação:', usuarioError);
+                    }
+                }
+            }
+            
             exibirMovimentacoes(movimentacoesDoDia);
 
         } catch (error) {
             console.error('Erro ao carregar movimentações:', error);
-            throw error;
+            // Não lançar erro para não quebrar o fluxo principal
+            movimentacoesDoDia = [];
+            exibirMovimentacoes(movimentacoesDoDia);
         }
     }
 
@@ -215,13 +313,13 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
 
             // Contar itens
-            const totalItens = venda.itens.reduce((sum, item) => sum + item.quantidade, 0);
+            const totalItens = venda.itens ? venda.itens.reduce((sum, item) => sum + item.quantidade, 0) : 0;
 
             tr.innerHTML = `
                 <td>${hora}</td>
                 <td>${venda.cliente || 'Cliente não identificado'}</td>
                 <td>${totalItens} item(s)</td>
-                <td>R$ ${venda.total.toFixed(2)}</td>
+                <td>R$ ${venda.total?.toFixed(2) || '0.00'}</td>
                 <td>
                     <span class="badge badge-${venda.forma_pagamento}">
                         ${formatarFormaPagamento(venda.forma_pagamento)}
@@ -273,7 +371,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     </span>
                 </td>
                 <td class="${mov.tipo === 'entrada' ? 'entrada' : 'saida'}">
-                    R$ ${mov.valor.toFixed(2)}
+                    R$ ${mov.valor?.toFixed(2) || '0.00'}
                 </td>
                 <td>${mov.usuario?.nome || 'N/A'}</td>
             `;
@@ -289,9 +387,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         const vendasPix = vendasDoDia.filter(v => v.forma_pagamento === 'pix');
 
         // Totais por forma de pagamento
-        const totalDinheiro = vendasDinheiro.reduce((sum, v) => sum + v.total, 0);
-        const totalCartao = vendasCartao.reduce((sum, v) => sum + v.total, 0);
-        const totalPix = vendasPix.reduce((sum, v) => sum + v.total, 0);
+        const totalDinheiro = vendasDinheiro.reduce((sum, v) => sum + (v.total || 0), 0);
+        const totalCartao = vendasCartao.reduce((sum, v) => sum + (v.total || 0), 0);
+        const totalPix = vendasPix.reduce((sum, v) => sum + (v.total || 0), 0);
         const totalGeral = totalDinheiro + totalCartao + totalPix;
 
         // Atualizar elementos
@@ -320,7 +418,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     function atualizarRelatorio() {
         const dataSelecionada = dataFechamentoInput.value;
         const dataFormatada = new Date(dataSelecionada).toLocaleDateString('pt-BR');
-        const totalVendas = vendasDoDia.reduce((sum, v) => sum + v.total, 0);
+        const totalVendas = vendasDoDia.reduce((sum, v) => sum + (v.total || 0), 0);
         const ticketMedio = vendasDoDia.length > 0 ? totalVendas / vendasDoDia.length : 0;
 
         document.getElementById('relatorio-data').textContent = dataFormatada;
@@ -332,14 +430,17 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (isAdmin) {
             const totalEntradas = movimentacoesDoDia
                 .filter(m => m.tipo === 'entrada')
-                .reduce((sum, m) => sum + m.valor, 0);
+                .reduce((sum, m) => sum + (m.valor || 0), 0);
             
             const totalSaidas = movimentacoesDoDia
                 .filter(m => m.tipo === 'saida')
-                .reduce((sum, m) => sum + m.valor, 0);
+                .reduce((sum, m) => sum + (m.valor || 0), 0);
             
             const saldoFinal = totalEntradas - totalSaidas + totalVendas;
             document.getElementById('relatorio-saldo-final').textContent = `R$ ${saldoFinal.toFixed(2)}`;
+            
+            // Mostrar seção admin no relatório
+            document.querySelector('.admin-only').style.display = 'block';
         }
     }
 
@@ -394,29 +495,33 @@ document.addEventListener('DOMContentLoaded', async function() {
                 <h4>Itens da Venda:</h4>
         `;
 
-        venda.itens.forEach(item => {
-            html += `
-                <div class="detalhes-item">
-                    <div class="detalhes-produto">
-                        <i class="fas ${item.produto?.icone || 'fa-cube'}"></i>
+        if (venda.itens && venda.itens.length > 0) {
+            venda.itens.forEach(item => {
+                html += `
+                    <div class="detalhes-item">
+                        <div class="detalhes-produto">
+                            <i class="fas ${item.produto?.icone || 'fa-cube'}"></i>
+                            <div>
+                                <strong>${item.produto?.nome || 'Produto não encontrado'}</strong>
+                                <div>Quantidade: ${item.quantidade}</div>
+                            </div>
+                        </div>
                         <div>
-                            <strong>${item.produto?.nome || 'Produto não encontrado'}</strong>
-                            <div>Quantidade: ${item.quantidade}</div>
+                            <strong>R$ ${((item.preco_unitario || 0) * (item.quantidade || 0)).toFixed(2)}</strong>
+                            <div>Unit: R$ ${(item.preco_unitario || 0).toFixed(2)}</div>
                         </div>
                     </div>
-                    <div>
-                        <strong>R$ ${(item.preco_unitario * item.quantidade).toFixed(2)}</strong>
-                        <div>Unit: R$ ${item.preco_unitario.toFixed(2)}</div>
-                    </div>
-                </div>
-            `;
-        });
+                `;
+            });
+        } else {
+            html += `<p>Nenhum item encontrado para esta venda</p>`;
+        }
 
         html += `
                 <div class="detalhes-total">
                     <div class="info-item">
                         <span><strong>Total da Venda:</strong></span>
-                        <span><strong>R$ ${venda.total.toFixed(2)}</strong></span>
+                        <span><strong>R$ ${(venda.total || 0).toFixed(2)}</strong></span>
                     </div>
                 </div>
                 
@@ -452,8 +557,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         try {
             mostrarMensagem('Gerando relatório...', 'info');
             
-            // Aqui você pode implementar a geração de PDF
-            // Por enquanto, vamos criar um relatório simples em nova janela
             const dataSelecionada = dataFechamentoInput.value;
             const dataFormatada = new Date(dataSelecionada).toLocaleDateString('pt-BR');
             
@@ -461,9 +564,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             const vendasCartao = vendasDoDia.filter(v => v.forma_pagamento === 'cartao');
             const vendasPix = vendasDoDia.filter(v => v.forma_pagamento === 'pix');
             
-            const totalDinheiro = vendasDinheiro.reduce((sum, v) => sum + v.total, 0);
-            const totalCartao = vendasCartao.reduce((sum, v) => sum + v.total, 0);
-            const totalPix = vendasPix.reduce((sum, v) => sum + v.total, 0);
+            const totalDinheiro = vendasDinheiro.reduce((sum, v) => sum + (v.total || 0), 0);
+            const totalCartao = vendasCartao.reduce((sum, v) => sum + (v.total || 0), 0);
+            const totalPix = vendasPix.reduce((sum, v) => sum + (v.total || 0), 0);
             const totalGeral = totalDinheiro + totalCartao + totalPix;
             
             const relatorioWindow = window.open('', '_blank');
