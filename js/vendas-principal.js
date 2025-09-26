@@ -20,6 +20,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     const finalizarVendaBtn = document.getElementById('finalizar-venda');
     const cancelarItemBtn = document.getElementById('cancelar-item');
     const cancelarVendaBtn = document.getElementById('cancelar-venda');
+    const contadorProdutos = document.getElementById('contador-produtos');
+    const contadorCarrinho = document.getElementById('contador-carrinho');
+    const searchInput = document.getElementById('search-produtos');
 
     // Variáveis globais
     let categorias = [];
@@ -30,7 +33,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     try {
         // Mostrar loading
-        if (loadingElement) loadingElement.style.display = 'block';
+        if (loadingElement) loadingElement.style.display = 'flex';
         if (contentElement) contentElement.style.display = 'none';
         if (errorElement) errorElement.style.display = 'none';
 
@@ -48,12 +51,15 @@ document.addEventListener('DOMContentLoaded', async function() {
         console.error('Erro na inicialização:', error);
         if (loadingElement) loadingElement.style.display = 'none';
         if (errorElement) {
-            errorElement.style.display = 'block';
+            errorElement.style.display = 'flex';
             errorElement.innerHTML = `
-                <h2>Erro de Conexão</h2>
-                <p>Não foi possível conectar ao banco de dados.</p>
-                <p>Detalhes do erro: ${error.message}</p>
-                <button onclick="location.reload()" class="btn btn-primary">Tentar Novamente</button>
+                <div class="error-content">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <h2>Erro de Conexão</h2>
+                    <p>Não foi possível conectar ao banco de dados.</p>
+                    <p>Detalhes do erro: ${error.message}</p>
+                    <button onclick="location.reload()" class="btn btn-primary">Tentar Novamente</button>
+                </div>
             `;
         }
     }
@@ -132,11 +138,29 @@ document.addEventListener('DOMContentLoaded', async function() {
             
             produtos = data;
             produtosFiltrados = [...produtos];
+            atualizarContadorProdutos();
             console.log(`✅ ${produtos.length} produtos carregados`);
             
         } catch (error) {
             console.error('Erro ao carregar produtos:', error);
             throw error;
+        }
+    }
+
+    // Função para atualizar contador de produtos
+    function atualizarContadorProdutos() {
+        if (contadorProdutos) {
+            const count = produtosFiltrados.length;
+            contadorProdutos.textContent = `${count} produto${count !== 1 ? 's' : ''}`;
+        }
+    }
+
+    // Função para atualizar contador do carrinho
+    function atualizarContadorCarrinho() {
+        if (contadorCarrinho) {
+            const totalItens = carrinho.reduce((total, item) => total + item.quantidade, 0);
+            contadorCarrinho.textContent = totalItens;
+            contadorCarrinho.style.display = totalItens > 0 ? 'block' : 'none';
         }
     }
 
@@ -150,8 +174,11 @@ document.addEventListener('DOMContentLoaded', async function() {
         const categoriaTodos = document.createElement('div');
         categoriaTodos.className = `categoria-card ${!categoriaSelecionada ? 'active' : ''}`;
         categoriaTodos.innerHTML = `
-            <i class="fas fa-th-large"></i>
+            <div class="categoria-icon">
+                <i class="fas fa-th-large"></i>
+            </div>
             <h3>Todos</h3>
+            <span class="categoria-count">${produtos.length}</span>
         `;
         categoriaTodos.addEventListener('click', () => {
             categoriaSelecionada = null;
@@ -169,11 +196,15 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         // Adicionar categorias do banco
         categorias.forEach(categoria => {
+            const produtosNaCategoria = produtos.filter(p => p.categoria_id === categoria.id).length;
             const categoriaCard = document.createElement('div');
             categoriaCard.className = `categoria-card ${categoriaSelecionada === categoria.id ? 'active' : ''}`;
             categoriaCard.innerHTML = `
-                <i class="fas fa-tag"></i>
+                <div class="categoria-icon">
+                    <i class="fas ${categoria.icone || 'fa-tag'}"></i>
+                </div>
                 <h3>${categoria.nome}</h3>
+                <span class="categoria-count">${produtosNaCategoria}</span>
             `;
             categoriaCard.addEventListener('click', () => {
                 categoriaSelecionada = categoria.id;
@@ -196,9 +227,16 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (!produtosContainer) return;
         
         produtosContainer.innerHTML = '';
+        atualizarContadorProdutos();
         
         if (!produtosParaExibir || produtosParaExibir.length === 0) {
-            produtosContainer.innerHTML = '<p style="text-align: center; grid-column: 1 / -1;">Nenhum produto encontrado para esta categoria.</p>';
+            produtosContainer.innerHTML = `
+                <div class="produtos-vazios">
+                    <i class="fas fa-search"></i>
+                    <h3>Nenhum produto encontrado</h3>
+                    <p>Tente selecionar outra categoria ou ajustar sua busca</p>
+                </div>
+            `;
             return;
         }
         
@@ -206,17 +244,29 @@ document.addEventListener('DOMContentLoaded', async function() {
             const produtoCard = document.createElement('div');
             produtoCard.className = `produto-card ${produto.estoque_atual <= 0 ? 'out-of-stock' : ''}`;
             produtoCard.innerHTML = `
-                <i class="fas ${produto.icone || 'fa-cube'}"></i>
-                <div class="produto-info">
-                    <h3>${produto.nome}</h3>
-                    <div class="preco">R$ ${produto.preco_venda.toFixed(2)}</div>
-                    <div class="estoque">Estoque: ${produto.estoque_atual}</div>
+                <div class="produto-image">
+                    <i class="fas ${produto.icone || 'fa-cube'}"></i>
+                    ${produto.estoque_atual <= 0 ? '<div class="out-of-stock-badge">ESGOTADO</div>' : ''}
                 </div>
+                <div class="produto-info">
+                    <h3 class="produto-nome">${produto.nome}</h3>
+                    <p class="produto-categoria">${produto.categoria?.nome || 'Sem categoria'}</p>
+                    <div class="produto-details">
+                        <div class="produto-preco">R$ ${produto.preco_venda.toFixed(2)}</div>
+                        <div class="produto-estoque">Estoque: ${produto.estoque_atual}</div>
+                    </div>
+                </div>
+                ${produto.estoque_atual > 0 ? '<div class="produto-action"><i class="fas fa-plus"></i></div>' : ''}
             `;
             
             if (produto.estoque_atual > 0) {
                 produtoCard.addEventListener('click', () => {
                     adicionarAoCarrinho(produto);
+                    // Efeito visual de confirmação
+                    produtoCard.classList.add('added');
+                    setTimeout(() => {
+                        produtoCard.classList.remove('added');
+                    }, 500);
                 });
             }
             
@@ -257,8 +307,10 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // Função para atualizar exibição do carrinho
     function atualizarCarrinho() {
+        atualizarContadorCarrinho();
+        
         if (carrinho.length === 0) {
-            carrinhoVazio.style.display = 'block';
+            carrinhoVazio.style.display = 'flex';
             carrinhoItens.style.display = 'none';
         } else {
             carrinhoVazio.style.display = 'none';
@@ -278,22 +330,31 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td>
-                        <div style="display: flex; align-items: center; gap: 0.5rem;">
-                            <i class="fas ${item.produto.icone || 'fa-cube'}"></i>
-                            <span>${item.produto.nome}</span>
+                        <div class="carrinho-item-produto">
+                            <div class="produto-icon">
+                                <i class="fas ${item.produto.icone || 'fa-cube'}"></i>
+                            </div>
+                            <div class="produto-desc">
+                                <div class="produto-nome">${item.produto.nome}</div>
+                                <div class="produto-categoria">${item.produto.categoria?.nome || 'Sem categoria'}</div>
+                            </div>
                         </div>
                     </td>
                     <td>
                         <div class="carrinho-item-quantidade">
-                            <button class="diminuir-quantidade" data-index="${index}">-</button>
+                            <button class="btn-quantidade diminuir-quantidade" data-index="${index}">
+                                <i class="fas fa-minus"></i>
+                            </button>
                             <input type="number" value="${item.quantidade}" min="1" max="${item.produto.estoque_atual}" data-index="${index}">
-                            <button class="aumentar-quantidade" data-index="${index}">+</button>
+                            <button class="btn-quantidade aumentar-quantidade" data-index="${index}">
+                                <i class="fas fa-plus"></i>
+                            </button>
                         </div>
                     </td>
-                    <td>R$ ${item.produto.preco_venda.toFixed(2)}</td>
-                    <td>R$ ${itemSubtotal.toFixed(2)}</td>
+                    <td class="preco-unitario">R$ ${item.produto.preco_venda.toFixed(2)}</td>
+                    <td class="subtotal">R$ ${itemSubtotal.toFixed(2)}</td>
                     <td>
-                        <button class="btn btn-danger remover-item" data-index="${index}">
+                        <button class="btn btn-danger btn-remover remover-item" data-index="${index}" title="Remover item">
                             <i class="fas fa-trash"></i>
                         </button>
                     </td>
@@ -395,6 +456,11 @@ document.addEventListener('DOMContentLoaded', async function() {
             cancelarVendaBtn.addEventListener('click', cancelarVenda);
         }
         
+        // Busca de produtos
+        if (searchInput) {
+            searchInput.addEventListener('input', filtrarProdutos);
+        }
+        
         // Modal cancelar item
         const modalCancelarItem = document.getElementById('modal-cancelar-item');
         const closeModalBtn = modalCancelarItem?.querySelector('.close');
@@ -422,6 +488,24 @@ document.addEventListener('DOMContentLoaded', async function() {
                 modalCancelarItem.style.display = 'none';
             }
         });
+    }
+
+    // Função para filtrar produtos
+    function filtrarProdutos() {
+        const termo = searchInput.value.toLowerCase().trim();
+        
+        if (!termo) {
+            produtosFiltrados = categoriaSelecionada 
+                ? produtos.filter(p => p.categoria_id === categoriaSelecionada)
+                : [...produtos];
+        } else {
+            produtosFiltrados = produtos.filter(produto => 
+                produto.nome.toLowerCase().includes(termo) ||
+                (produto.categoria?.nome || '').toLowerCase().includes(termo)
+            );
+        }
+        
+        exibirProdutos(produtosFiltrados);
     }
 
     // Função para finalizar venda
@@ -524,11 +608,13 @@ document.addEventListener('DOMContentLoaded', async function() {
             itemDiv.dataset.index = index;
             itemDiv.innerHTML = `
                 <div class="item-cancelar-info">
-                    <i class="fas ${item.produto.icone || 'fa-cube'}"></i>
-                    <div>
-                        <div><strong>${item.produto.nome}</strong></div>
-                        <div>Quantidade: ${item.quantidade}</div>
-                        <div>Subtotal: R$ ${(item.produto.preco_venda * item.quantidade).toFixed(2)}</div>
+                    <div class="item-icon">
+                        <i class="fas ${item.produto.icone || 'fa-cube'}"></i>
+                    </div>
+                    <div class="item-details">
+                        <div class="item-nome"><strong>${item.produto.nome}</strong></div>
+                        <div class="item-quantidade">Quantidade: ${item.quantidade}</div>
+                        <div class="item-subtotal">Subtotal: R$ ${(item.produto.preco_venda * item.quantidade).toFixed(2)}</div>
                     </div>
                 </div>
             `;
@@ -593,7 +679,10 @@ document.addEventListener('DOMContentLoaded', async function() {
         const alertDiv = document.createElement('div');
         alertDiv.className = `alert alert-${tipo}`;
         alertDiv.innerHTML = `
-            <span>${mensagem}</span>
+            <div class="alert-content">
+                <i class="fas ${tipo === 'success' ? 'fa-check' : tipo === 'error' ? 'fa-exclamation-triangle' : tipo === 'warning' ? 'fa-exclamation' : 'fa-info'}"></i>
+                <span>${mensagem}</span>
+            </div>
             <button class="alert-close">&times;</button>
         `;
         

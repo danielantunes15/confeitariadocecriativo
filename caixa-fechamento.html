@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fechamento de Caixa - Confeitaria Doces Criativos</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/caixa-fechamento.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <h1 class="logo">Doces Criativos</h1>
+            <nav class="nav">
+                <a href="index.html" class="nav-link">Vendas</a>
+                <a href="caixa-fechamento.html" class="nav-link">Caixa</a>
+                <a href="estoque.html" class="nav-link">Estoque</a>
+                <a href="relatorios.html" class="nav-link">Relatórios</a>
+                <a href="administracao.html" class="nav-link">Administração</a>
+                <button id="logout-btn" class="btn-logout">Sair</button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main">
+        <div class="container">
+            <div id="alert-container"></div>
+            
+            <div id="loading" class="card">
+                <div class="spinner"></div>
+                <p style="text-align: center;">Carregando fechamento...</p>
+            </div>
+
+            <div id="content" style="display: none;">
+                <!-- Cabeçalho do Fechamento -->
+                <div class="card">
+                    <div class="fechamento-header">
+                        <h2>Fechamento de Caixa</h2>
+                        <div class="data-selecao">
+                            <label for="data-fechamento">Data do Fechamento:</label>
+                            <input type="date" id="data-fechamento" value="">
+                            <button id="carregar-dados" class="btn btn-primary">Carregar Dados</button>
+                            <button id="gerar-relatorio" class="btn btn-success">Gerar Relatório</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Resumo Financeiro -->
+                <div class="card">
+                    <h3>Resumo Financeiro</h3>
+                    <div class="resumo-grid">
+                        <div class="resumo-card">
+                            <div class="resumo-icon dinheiro">
+                                <i class="fas fa-money-bill-wave"></i>
+                            </div>
+                            <div class="resumo-info">
+                                <h4>Dinheiro</h4>
+                                <span class="valor" id="total-dinheiro">R$ 0,00</span>
+                                <span class="quantidade" id="qtd-dinheiro">0 vendas</span>
+                            </div>
+                        </div>
+                        
+                        <div class="resumo-card">
+                            <div class="resumo-icon cartao">
+                                <i class="fas fa-credit-card"></i>
+                            </div>
+                            <div class="resumo-info">
+                                <h4>Cartão</h4>
+                                <span class="valor" id="total-cartao">R$ 0,00</span>
+                                <span class="quantidade" id="qtd-cartao">0 vendas</span>
+                            </div>
+                        </div>
+                        
+                        <div class="resumo-card">
+                            <div class="resumo-icon pix">
+                                <i class="fas fa-qrcode"></i>
+                            </div>
+                            <div class="resumo-info">
+                                <h4>PIX</h4>
+                                <span class="valor" id="total-pix">R$ 0,00</span>
+                                <span class="quantidade" id="qtd-pix">0 vendas</span>
+                            </div>
+                        </div>
+                        
+                        <div class="resumo-card total">
+                            <div class="resumo-icon total">
+                                <i class="fas fa-cash-register"></i>
+                            </div>
+                            <div class="resumo-info">
+                                <h4>Total do Dia</h4>
+                                <span class="valor" id="total-geral">R$ 0,00</span>
+                                <span class="quantidade" id="qtd-total">0 vendas</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Detalhamento das Vendas -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Detalhamento das Vendas</h3>
+                        <div class="filtros">
+                            <select id="filtro-pagamento">
+                                <option value="todos">Todos os Pagamentos</option>
+                                <option value="dinheiro">Dinheiro</option>
+                                <option value="cartao">Cartão</option>
+                                <option value="pix">PIX</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="table-container">
+                        <table id="tabela-vendas">
+                            <thead>
+                                <tr>
+                                    <th>Hora</th>
+                                    <th>Cliente</th>
+                                    <th>Itens</th>
+                                    <th>Valor Total</th>
+                                    <th>Forma Pagamento</th>
+                                    <th>Vendedor</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="vendas-body">
+                                <tr>
+                                    <td colspan="7" style="text-align: center;">Selecione uma data para visualizar as vendas</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Movimentações de Caixa -->
+                <div class="card" id="movimentacoes-admin" style="display: none;">
+                    <h3>Movimentações de Caixa (Admin)</h3>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Hora</th>
+                                    <th>Descrição</th>
+                                    <th>Tipo</th>
+                                    <th>Valor</th>
+                                    <th>Usuário</th>
+                                </tr>
+                            </thead>
+                            <tbody id="movimentacoes-body">
+                                <tr>
+                                    <td colspan="5" style="text-align: center;">Nenhuma movimentação encontrada</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Relatório de Fechamento -->
+                <div class="card">
+                    <h3>Relatório de Fechamento</h3>
+                    <div class="relatorio-info">
+                        <div class="info-item">
+                            <span>Data do Fechamento:</span>
+                            <strong id="relatorio-data">--/--/----</strong>
+                        </div>
+                        <div class="info-item">
+                            <span>Total em Vendas:</span>
+                            <strong id="relatorio-total-vendas">R$ 0,00</strong>
+                        </div>
+                        <div class="info-item">
+                            <span>Quantidade de Vendas:</span>
+                            <strong id="relatorio-qtd-vendas">0</strong>
+                        </div>
+                        <div class="info-item">
+                            <span>Ticket Médio:</span>
+                            <strong id="relatorio-ticket-medio">R$ 0,00</strong>
+                        </div>
+                        <div class="info-item admin-only" style="display: none;">
+                            <span>Saldo Final do Caixa:</span>
+                            <strong id="relatorio-saldo-final">R$ 0,00</strong>
+                        </div>
+                    </div>
+                    
+                    <div class="assinaturas">
+                        <div class="assinatura">
+                            <p>_________________________________</p>
+                            <p>Vendedor</p>
+                        </div>
+                        <div class="assinatura admin-only" style="display: none;">
+                            <p>_________________________________</p>
+                            <p>Gerente/Administrador</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="error-message" class="card" style="display: none;">
+                <h2>Erro de Conexão</h2>
+                <p>Não foi possível conectar ao banco de dados.</p>
+                <button onclick="location.reload()" class="btn btn-primary">Tentar Novamente</button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal de Detalhes da Venda -->
+    <div id="modal-detalhes-venda" class="modal">
+        <div class="modal-content large">
+            <span class="close">&times;</span>
+            <h3>Detalhes da Venda</h3>
+            <div id="detalhes-venda-content">
+                <!-- Conteúdo será preenchido via JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuração do Supabase
+        const SUPABASE_URL = 'https://jdfijbhlujoiuraoxivb.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpkZmlqYmhsdWpvaXVyYW94aXZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg4NDE3MzgsImV4cCI6MjA3NDQxNzczOH0.yEMThoZdXPx1aNCO1a6wO-FPoMU-gTgxJlsW883rKvc';
+
+        // Inicializar Supabase
+        window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        // Configurar data atual como padrão
+        document.addEventListener('DOMContentLoaded', function() {
+            const hoje = new Date().toISOString().split('T')[0];
+            document.getElementById('data-fechamento').value = hoje;
+        });
+    </script>
+
+    <script src="js/auth.js"></script>
+    <script src="js/caixa-fechamento.js"></script>
+</body>
+</html>
