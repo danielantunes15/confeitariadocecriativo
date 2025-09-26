@@ -433,6 +433,28 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 5000);
     }
 
+    // js/administracao.js - ADICIONAR NO FINAL
+
+// Configurar logout específico para esta página
+function configurarLogout() {
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (window.sistemaAuth) {
+                window.sistemaAuth.fazerLogout();
+            } else {
+                window.fazerLogoutGlobal();
+            }
+        });
+    }
+}
+
+// Chamar a configuração quando o DOM carregar
+document.addEventListener('DOMContentLoaded', function() {
+    configurarLogout();
+});
+
     // Executar diagnóstico ao carregar
     diagnosticarEstruturaTabela();
 });

@@ -165,5 +165,41 @@ async function hashSenha(senha) {
     }
 }
 
+// js/auth.js - ADICIONAR NO FINAL DO ARQUIVO
+
+// Função global para logout que pode ser chamada de qualquer lugar
+window.fazerLogoutGlobal = function() {
+    if (window.sistemaAuth) {
+        window.sistemaAuth.fazerLogout();
+    } else {
+        // Fallback: limpar localStorage e redirecionar
+        localStorage.removeItem('usuarioLogado');
+        localStorage.removeItem('usuarioNome');
+        localStorage.removeItem('usuarioTipo');
+        localStorage.removeItem('usuarioUsername');
+        window.location.href = 'login.html';
+    }
+};
+
+// Configurar event listener global para botões de logout
+document.addEventListener('DOMContentLoaded', function() {
+    // Configurar logout para todos os botões com id 'logout-btn'
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            window.fazerLogoutGlobal();
+        });
+    }
+    
+    // Também configurar para elementos com classe 'btn-logout'
+    document.querySelectorAll('.btn-logout').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            window.fazerLogoutGlobal();
+        });
+    });
+});
+
 // Instância global
 window.sistemaAuth = new SistemaAuth();

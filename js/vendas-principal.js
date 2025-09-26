@@ -460,7 +460,22 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (searchInput) {
             searchInput.addEventListener('input', filtrarProdutos);
         }
-        
+        // Logout
+        const logoutBtn = document.getElementById('logout-btn');
+        if (logoutBtn) {
+        logoutBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        if (confirm('Deseja realmente sair do sistema?')) {
+            if (window.sistemaAuth) {
+                window.sistemaAuth.fazerLogout();
+            } else {
+                // Fallback
+                localStorage.removeItem('usuarioLogado');
+                window.location.href = 'login.html';
+            }
+        }
+    });
+}
         // Modal cancelar item
         const modalCancelarItem = document.getElementById('modal-cancelar-item');
         const closeModalBtn = modalCancelarItem?.querySelector('.close');

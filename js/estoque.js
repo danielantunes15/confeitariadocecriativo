@@ -784,4 +784,28 @@ document.addEventListener('DOMContentLoaded', function() {
     // Exportar funções para uso global
     window.fecharModais = fecharModais;
     window.mostrarMensagem = mostrarMensagem;
+
+    // js/estoque.js - ADICIONAR NO FINAL
+
+// Configurar logout
+function configurarLogoutEstoque() {
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (confirm('Deseja realmente sair do sistema?')) {
+                if (window.sistemaAuth) {
+                    window.sistemaAuth.fazerLogout();
+                } else {
+                    window.fazerLogoutGlobal();
+                }
+            }
+        });
+    }
+}
+
+// Chamar quando o DOM carregar
+document.addEventListener('DOMContentLoaded', function() {
+    configurarLogoutEstoque();
+});
 });
