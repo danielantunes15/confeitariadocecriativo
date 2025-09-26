@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estoque - Confeitaria Doces Criativos</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/estoque.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <h1 class="logo">Doces Criativos</h1>
+            <nav class="nav">
+                <a href="index.html" class="nav-link">Vendas</a>
+                <a href="caixa.html" class="nav-link">Caixa</a>
+                <a href="estoque.html" class="nav-link active">Estoque</a>
+                <a href="relatorios.html" class="nav-link">Relatórios</a>
+                <a href="administracao.html" class="nav-link">Administração</a>
+                <button id="logout-btn" class="btn-logout">Sair</button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main">
+        <div class="container">
+            <div id="alert-container"></div>
+            
+            <div id="loading" class="card">
+                <div class="spinner"></div>
+                <p style="text-align: center;">Carregando...</p>
+            </div>
+
+            <div id="content" style="display: none;">
+                <div class="card">
+                    <h2>Gestão de Estoque</h2>
+
+                    <div class="tabs">
+                        <button class="tab-btn active" data-tab="lista-produtos">Lista de Produtos</button>
+                        <button class="tab-btn" data-tab="novo-produto">Novo Produto</button>
+                        <button class="tab-btn" data-tab="categorias">Categorias</button>
+                    </div>
+
+                    <!-- Aba: Lista de Produtos -->
+                    <div id="lista-produtos" class="tab-content active">
+                        <div class="filtros">
+                            <div class="form-group">
+                                <label for="filtro-categoria">Filtrar por Categoria</label>
+                                <select id="filtro-categoria">
+                                    <option value="">Todas as categorias</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="filtro-estoque">Filtrar por Estoque</label>
+                                <select id="filtro-estoque">
+                                    <option value="">Todos</option>
+                                    <option value="baixo">Estoque Baixo</option>
+                                    <option value="zerado">Estoque Zerado</option>
+                                </select>
+                            </div>
+                            <button id="aplicar-filtro" class="btn btn-secondary">Aplicar Filtros</button>
+                        </div>
+
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Ícone</th>
+                                        <th>Produto</th>
+                                        <th>Categoria</th>
+                                        <th>Preço Venda (R$)</th>
+                                        <th>Estoque Atual</th>
+                                        <th>Estoque Mínimo</th>
+                                        <th>Status</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="produtos-body">
+                                    <tr>
+                                        <td colspan="8" style="text-align: center;">Carregando produtos...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Aba: Novo Produto -->
+                    <div id="novo-produto" class="tab-content">
+                        <form id="form-novo-produto" class="form">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="produto-nome">Nome do Produto *</label>
+                                    <input id="produto-nome" type="text" required />
+                                </div>
+                                <div class="form-group">
+                                    <label for="produto-categoria">Categoria *</label>
+                                    <select id="produto-categoria" required>
+                                        <option value="">Selecione uma categoria</option>
+                                    </select>
+                                    <button type="button" id="nova-categoria-btn" class="btn-link">+ Nova Categoria</button>
+                                </div>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="produto-preco-venda">Preço de Venda (R$) *</label>
+                                    <input id="produto-preco-venda" type="number" step="0.01" min="0" required />
+                                </div>
+                                <div class="form-group">
+                                    <label for="produto-icone">Ícone do Produto *</label>
+                                    <div class="icones-container">
+                                        <div class="icones-grid" id="icones-grid">
+                                            <!-- Ícones serão carregados via JavaScript -->
+                                        </div>
+                                        <input type="hidden" id="produto-icone" required />
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="produto-estoque-atual">Estoque Atual *</label>
+                                    <input id="produto-estoque-atual" type="number" min="0" value="0" required />
+                                </div>
+                                <div class="form-group">
+                                    <label for="produto-estoque-minimo">Estoque Mínimo *</label>
+                                    <input id="produto-estoque-minimo" type="number" min="0" value="5" required />
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="produto-descricao">Descrição</label>
+                                <textarea id="produto-descricao" rows="3" placeholder="Descrição do produto"></textarea>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="produto-ativo">
+                                    <input type="checkbox" id="produto-ativo" checked />
+                                    Produto Ativo
+                                </label>
+                            </div>
+                            
+                            <div class="form-actions">
+                                <button class="btn btn-primary" type="submit">Salvar Produto</button>
+                                <button class="btn btn-secondary" type="reset">Limpar</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Aba: Categorias -->
+                    <div id="categorias" class="tab-content">
+                        <div class="categorias-header">
+                            <h3>Gerenciar Categorias</h3>
+                            <button id="adicionar-categoria" class="btn btn-primary">Nova Categoria</button>
+                        </div>
+                        
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Nome da Categoria</th>
+                                        <th>Quantidade de Produtos</th>
+                                        <th>Status</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="categorias-body">
+                                    <tr>
+                                        <td colspan="4" style="text-align: center;">Carregando categorias...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="error-message" class="card" style="display: none;">
+                <h2>Erro de Conexão</h2>
+                <p>Não foi possível conectar ao banco de dados.</p>
+                <button onclick="location.reload()" class="btn btn-primary">Tentar Novamente</button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal para editar produto -->
+    <div id="modal-editar-produto" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h3>Editar Produto</h3>
+            <form id="form-editar-produto">
+                <input type="hidden" id="editar-produto-id" />
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="editar-produto-nome">Nome do Produto *</label>
+                        <input id="editar-produto-nome" type="text" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="editar-produto-categoria">Categoria *</label>
+                        <select id="editar-produto-categoria" required>
+                            <option value="">Selecione uma categoria</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="editar-produto-preco-venda">Preço de Venda (R$) *</label>
+                        <input id="editar-produto-preco-venda" type="number" step="0.01" min="0" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="editar-produto-icone">Ícone do Produto *</label>
+                        <div class="icones-container">
+                            <div class="icones-grid" id="editar-icones-grid">
+                                <!-- Ícones serão carregados via JavaScript -->
+                            </div>
+                            <input type="hidden" id="editar-produto-icone" required />
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="editar-produto-estoque-atual">Estoque Atual *</label>
+                        <input id="editar-produto-estoque-atual" type="number" min="0" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="editar-produto-estoque-minimo">Estoque Mínimo *</label>
+                        <input id="editar-produto-estoque-minimo" type="number" min="0" required />
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="editar-produto-descricao">Descrição</label>
+                    <textarea id="editar-produto-descricao" rows="3"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="editar-produto-ativo" />
+                        Produto Ativo
+                    </label>
+                </div>
+                
+                <div class="form-actions">
+                    <button class="btn btn-primary" type="submit">Salvar Alterações</button>
+                    <button class="btn btn-secondary" type="button" id="fechar-modal-produto">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal para nova categoria -->
+    <div id="modal-nova-categoria" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h3>Nova Categoria</h3>
+            <form id="form-nova-categoria">
+                <div class="form-group">
+                    <label for="categoria-nome">Nome da Categoria *</label>
+                    <input id="categoria-nome" type="text" required />
+                </div>
+                <div class="form-group">
+                    <label for="categoria-descricao">Descrição</label>
+                    <textarea id="categoria-descricao" rows="3" placeholder="Descrição da categoria"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="categoria-ativa" checked />
+                        Categoria Ativa
+                    </label>
+                </div>
+                <div class="form-actions">
+                    <button class="btn btn-primary" type="submit">Salvar Categoria</button>
+                    <button class="btn btn-secondary" type="button" id="fechar-modal-categoria">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Configuração do Supabase
+        const SUPABASE_URL = 'https://jdfijbhlujoiuraoxivb.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpkZmlqYmhsdWpvaXVyYW94aXZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg4NDE3MzgsImV4cCI6MjA3NDQxNzczOH0.yEMThoZdXPx1aNCO1a6wO-FPoMU-gTgxJlsW883rKvc';
+
+        // Inicializar Supabase
+        window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    </script>
+
+    <script src="js/auth.js"></script>
+    <script src="js/estoque.js"></script>
+</body>
+</html>

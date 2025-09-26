@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Caixa - Confeitaria Doces Criativos</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/caixa.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <h1 class="logo">Doces Criativos</h1>
+            <nav class="nav">
+                <a href="index.html" class="nav-link">Vendas</a>
+                <a href="caixa.html" class="nav-link active">Caixa</a>
+                <a href="estoque.html" class="nav-link">Estoque</a>
+                <a href="relatorios.html" class="nav-link">Relatórios</a>
+                <a href="administracao.html" class="nav-link">Administração</a>
+                <button id="logout-btn" class="btn-logout">Sair</button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main">
+        <div class="container">
+            <div id="loading" class="card">
+                <div class="spinner"></div>
+                <p style="text-align: center;">Carregando...</p>
+            </div>
+
+            <div id="content" style="display: none;">
+                <div class="card">
+                    <h2>Controle de Caixa</h2>
+                    
+                    <div class="caixa-info">
+                        <div class="info-card">
+                            <h3>Saldo Atual</h3>
+                            <p class="valor" id="saldo-atual">R$ 0,00</p>
+                        </div>
+                        <div class="info-card">
+                            <h3>Vendas do Dia</h3>
+                            <p class="valor" id="vendas-dia">R$ 0,00</p>
+                        </div>
+                        <div class="info-card">
+                            <h3>Movimentações</h3>
+                            <p class="valor" id="total-movimentacoes">0</p>
+                        </div>
+                    </div>
+                    
+                    <div class="caixa-actions">
+                        <button id="abrir-caixa" class="btn btn-success">Abrir Caixa</button>
+                        <button id="fechar-caixa" class="btn btn-danger">Fechar Caixa</button>
+                        <button id="nova-movimentacao" class="btn btn-primary">Nova Movimentação</button>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h2>Movimentações do Dia</h2>
+                    <div class="filtros">
+                        <div class="form-group">
+                            <label for="data-filtro">Data</label>
+                            <input type="date" id="data-filtro">
+                        </div>
+                        <button id="aplicar-filtro" class="btn btn-secondary">Aplicar</button>
+                    </div>
+                    
+                    <div id="movimentacoes-list" class="table-container">
+                        <p>Carregando movimentações...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="error-message" class="card" style="display: none;">
+                <h2>Erro de Conexão</h2>
+                <p>Não foi possível conectar ao banco de dados.</p>
+                <button onclick="location.reload()" class="btn btn-primary">Tentar Novamente</button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal para nova movimentação -->
+    <div id="modal-movimentacao" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Nova Movimentação</h2>
+            <form id="movimentacao-form">
+                <div class="form-group">
+                    <label for="tipo-movimentacao">Tipo *</label>
+                    <select id="tipo-movimentacao" required>
+                        <option value="">Selecione</option>
+                        <option value="entrada">Entrada</option>
+                        <option value="saida">Saída</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="valor-movimentacao">Valor (R$) *</label>
+                    <input type="number" id="valor-movimentacao" step="0.01" min="0.01" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="descricao-movimentacao">Descrição *</label>
+                    <textarea id="descricao-movimentacao" rows="3" required></textarea>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Salvar</button>
+                    <button type="button" id="cancelar-movimentacao" class="btn btn-secondary">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Configuração do Supabase
+        const SUPABASE_URL = 'https://fwkybhfzfrovjausuqgn.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ3a3liaGZ6ZnJvdmphdXN1cWduIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg1MDI4OTgsImV4cCI6MjA3NDA3ODg5OH0.M7fN2ML2C4Lc1skLZx9YWyA9CUq813V6DNXP2QdTV0E';
+
+        // Inicializar Supabase
+        window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        // Configurar data atual como padrão
+        document.addEventListener('DOMContentLoaded', function() {
+            const dataFiltroInput = document.getElementById('data-filtro');
+            if (dataFiltroInput) {
+                const hoje = new Date().toISOString().split('T')[0];
+                dataFiltroInput.value = hoje;
+            }
+        });
+    </script>
+
+    <script src="js/auth.js"></script>
+    <script src="js/caixa.js"></script>
+</body>
+</html>

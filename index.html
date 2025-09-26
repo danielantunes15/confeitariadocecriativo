@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vendas - Confeitaria Doces Criativos</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/vendas.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <h1 class="logo">Doces Criativos</h1>
+            <nav class="nav">
+                <a href="index.html" class="nav-link active">Vendas</a>
+                <a href="caixa.html" class="nav-link">Caixa</a>
+                <a href="estoque.html" class="nav-link">Estoque</a>
+                <a href="relatorios.html" class="nav-link">Relatórios</a>
+                <a href="administracao.html" class="nav-link">Administração</a>
+                <button id="logout-btn" class="btn-logout">Sair</button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main">
+        <div class="container">
+            <div id="loading" class="card">
+                <div class="spinner"></div>
+                <p style="text-align: center;">Carregando...</p>
+            </div>
+
+            <div id="content" style="display: none;">
+                <div class="card">
+                    <h2>Nova Venda</h2>
+                    
+                    <form id="venda-form" class="form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="data-venda">Data da Venda *</label>
+                                <input type="date" id="data-venda" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="cliente">Cliente</label>
+                                <input type="text" id="cliente" placeholder="Nome do cliente">
+                            </div>
+                        </div>
+                        
+                        <div class="produtos-section">
+                            <h3>Produtos</h3>
+                            <div id="produtos-container">
+                                <div class="produto-item">
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label>Produto *</label>
+                                            <select class="produto-select" required>
+                                                <option value="">Selecione o produto</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Quantidade *</label>
+                                            <input type="number" class="quantidade-input" min="1" value="1" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Preço Unitário (R$)</label>
+                                            <input type="number" class="preco-input" step="0.01" min="0" readonly>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Subtotal (R$)</label>
+                                            <input type="number" class="subtotal-input" step="0.01" min="0" readonly>
+                                        </div>
+                                        <button type="button" class="btn btn-danger btn-remove" style="display: none;">×</button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button type="button" id="add-produto" class="btn btn-secondary">+ Adicionar Produto</button>
+                        </div>
+                        
+                        <div class="resumo-venda">
+                            <div class="total-section">
+                                <h3>Total da Venda: <span id="total-venda">R$ 0,00</span></h3>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="forma-pagamento">Forma de Pagamento *</label>
+                                    <select id="forma-pagamento" required>
+                                        <option value="">Selecione</option>
+                                        <option value="dinheiro">Dinheiro</option>
+                                        <option value="cartao_credito">Cartão de Crédito</option>
+                                        <option value="cartao_debito">Cartão de Débito</option>
+                                        <option value="pix">PIX</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="observacoes">Observações</label>
+                                    <textarea id="observacoes" rows="2" placeholder="Observações sobre a venda"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">Finalizar Venda</button>
+                            <button type="button" id="limpar-form" class="btn btn-secondary">Limpar</button>
+                        </div>
+                    </form>
+                </div>
+                
+                <div class="card">
+                    <h2>Vendas Recentes</h2>
+                    <div id="vendas-list" class="table-container">
+                        <p>Carregando vendas...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="error-message" class="card" style="display: none;">
+                <h2>Erro de Conexão</h2>
+                <p>Não foi possível conectar ao banco de dados.</p>
+                <button onclick="location.reload()" class="btn btn-primary">Tentar Novamente</button>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Configuração do Supabase
+        const SUPABASE_URL = 'https://jdfijbhlujoiuraoxivb.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpkZmlqYmhsdWpvaXVyYW94aXZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg4NDE3MzgsImV4cCI6MjA3NDQxNzczOH0.yEMThoZdXPx1aNCO1a6wO-FPoMU-gTgxJlsW883rKvc';
+
+        // Inicializar Supabase
+        window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        // Configurar data atual como padrão
+        document.addEventListener('DOMContentLoaded', function() {
+            const dataVendaInput = document.getElementById('data-venda');
+            if (dataVendaInput) {
+                const hoje = new Date().toISOString().split('T')[0];
+                dataVendaInput.value = hoje;
+            }
+        });
+    </script>
+
+    <script src="js/auth.js"></script>
+    <script src="js/vendas.js"></script>
+
+    <script>
+        // Correção para o botão Sair
+        document.addEventListener('DOMContentLoaded', function() {
+            const logoutBtn = document.getElementById('logout-btn');
+            
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    if (window.sistemaAuth && typeof window.sistemaAuth.fazerLogout === 'function') {
+                        window.sistemaAuth.fazerLogout();
+                    } else {
+                        localStorage.removeItem('usuarioLogado');
+                        window.location.href = 'login.html';
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>

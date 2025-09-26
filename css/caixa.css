@@ -1,0 +1,86 @@
+/* Estilos específicos para a página de caixa */
+.caixa-info {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin: 1.5rem 0;
+}
+
+.info-card {
+    background: linear-gradient(135deg, var(--primary-light), white);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    text-align: center;
+    box-shadow: var(--shadow);
+}
+
+.info-card h3 {
+    color: var(--primary-dark);
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
+}
+
+.info-card .valor {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+.caixa-actions {
+    display: flex;
+    gap: 1rem;
+    margin: 1.5rem 0;
+    flex-wrap: wrap;
+}
+
+.filtros {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-end;
+    margin-bottom: 1rem;
+}
+
+.filtros .form-group {
+    margin-bottom: 0;
+}
+
+.filtros label {
+    margin-bottom: 0.25rem;
+}
+
+/* Estilo para tabela de movimentações */
+#movimentacoes-list table th:nth-child(3),
+#movimentacoes-list table td:nth-child(3) {
+    text-align: right;
+}
+
+#movimentacoes-list table th:nth-child(4),
+#movimentacoes-list table td:nth-child(4) {
+    text-align: center;
+}
+
+.entrada {
+    color: var(--success-color);
+    font-weight: 600;
+}
+
+.saida {
+    color: var(--error-color);
+    font-weight: 600;
+}
+
+/* Responsividade para página de caixa */
+@media (max-width: 768px) {
+    .caixa-info {
+        grid-template-columns: 1fr;
+    }
+    
+    .caixa-actions {
+        flex-direction: column;
+    }
+    
+    .filtros {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}

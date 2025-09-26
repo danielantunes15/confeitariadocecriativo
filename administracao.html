@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administração - Confeitaria Doces Criativos</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/administracao.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <h1 class="logo">Doces Criativos</h1>
+            <nav class="nav">
+                <a href="index.html" class="nav-link">Vendas</a>
+                <a href="caixa.html" class="nav-link">Caixa</a>
+                <a href="estoque.html" class="nav-link">Estoque</a>
+                <a href="relatorios.html" class="nav-link">Relatórios</a>
+                <a href="administracao.html" class="nav-link active">Administração</a>
+                <button id="logout-btn" class="btn-logout">Sair</button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main">
+        <div class="container">
+            <div id="alert-container"></div>
+            
+            <div id="admin-content">
+                <div class="card">
+                    <h2>Gerenciamento de Usuários</h2>
+
+                    <div class="tabs">
+                        <button class="tab-btn active" data-tab="lista-usuarios">Lista de Usuários</button>
+                        <button class="tab-btn" data-tab="novo-usuario">Novo Usuário</button>
+                    </div>
+
+                    <div id="lista-usuarios" class="tab-content active">
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Nome</th>
+                                        <th>Usuário</th>
+                                        <th>Tipo</th>
+                                        <th>Status</th>
+                                        <th>Criado em</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="usuarios-body">
+                                    <tr>
+                                        <td colspan="6" style="text-align: center;">Carregando usuários...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div id="novo-usuario" class="tab-content">
+                        <form id="form-novo-usuario" class="form">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="novo-nome">Nome Completo *</label>
+                                    <input id="novo-nome" type="text" required />
+                                </div>
+                                <div class="form-group">
+                                    <label for="novo-username">Usuário (login) *</label>
+                                    <input id="novo-username" type="text" required />
+                                </div>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="nova-senha">Senha (mínimo 6 caracteres) *</label>
+                                    <input id="nova-senha" type="password" minlength="6" required />
+                                </div>
+                                <div class="form-group">
+                                    <label for="confirmar-senha">Confirmar Senha *</label>
+                                    <input id="confirmar-senha" type="password" minlength="6" required />
+                                </div>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="tipo-usuario">Tipo de Usuário *</label>
+                                    <select id="tipo-usuario" required>
+                                        <option value="user">Usuário Normal</option>
+                                        <option value="admin">Administrador</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="usuario-ativo">
+                                        <input type="checkbox" id="usuario-ativo" checked />
+                                        Usuário Ativo
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="form-actions">
+                                <button class="btn btn-primary" type="submit">Criar Usuário</button>
+                                <button class="btn btn-secondary" type="reset">Limpar</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal editar usuário -->
+    <div id="modal-editar" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h3>Editar Usuário</h3>
+            <form id="form-editar-usuario">
+                <input type="hidden" id="editar-id" />
+                <div class="form-group">
+                    <label for="editar-nome">Nome Completo *</label>
+                    <input id="editar-nome" type="text" required />
+                </div>
+                <div class="form-group">
+                    <label for="editar-username">Usuário (login) *</label>
+                    <input id="editar-username" type="text" required />
+                </div>
+                <div class="form-group">
+                    <label for="editar-tipo">Tipo de Usuário *</label>
+                    <select id="editar-tipo" required>
+                        <option value="user">Usuário Normal</option>
+                        <option value="admin">Administrador</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="editar-ativo" />
+                        Usuário Ativo
+                    </label>
+                </div>
+                <div class="form-actions">
+                    <button class="btn btn-primary" type="submit">Salvar Alterações</button>
+                    <button class="btn btn-secondary" type="button" id="fechar-modal">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Configuração do Supabase
+        const SUPABASE_URL = 'https://jdfijbhlujoiuraoxivb.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpkZmlqYmhsdWpvaXVyYW94aXZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg4NDE3MzgsImV4cCI6MjA3NDQxNzczOH0.yEMThoZdXPx1aNCO1a6wO-FPoMU-gTgxJlsW883rKvc';
+
+        // Inicializar Supabase
+        window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    </script>
+
+    <script src="js/auth.js"></script>
+    <script src="js/administracao.js"></script>
+</body>
+</html>
