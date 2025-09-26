@@ -142,149 +142,162 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
 
-    // Carregar vendas do dia - VERSÃO CORRIGIDA
-    async function carregarVendas(data) {
+    // Carregar vendas do dia - VERSÃO CORRIGIDA (FILTRO POR DATA)
+async function carregarVendas(data) {
+    try {
+        console.log('📊 Carregando vendas para data:', data);
+        
+        // CORREÇÃO: Converter a data para o formato ISO e garantir o filtro correto
+        // Criar data no formato YYYY-MM-DD para comparação exata
+        const dataISO = new Date(data + 'T00:00:00').toISOString();
+        const dataInicio = new Date(data + 'T00:00:00').toISOString();
+        const dataFim = new Date(data + 'T23:59:59').toISOString();
+        
+        console.log('🔍 Filtro de data - Início:', dataInicio, 'Fim:', dataFim);
+
+        // Primeiro, buscar as vendas básicas com filtro por intervalo de data
+        const { data: vendas, error } = await supabase
+            .from('vendas')
+            .select('*')
+            .gte('created_at', dataInicio)  // Maior ou igual à meia-noite do dia
+            .lte('created_at', dataFim)     // Menor ou igual ao final do dia
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            console.error('Erro ao buscar vendas:', error);
+            throw error;
+        }
+
+        console.log(`✅ Encontradas ${vendas?.length || 0} vendas para ${data}`);
+
+        // Se não há vendas, definir array vazio
+        vendasDoDia = vendas || [];
+        
+        // Para cada venda, buscar detalhes adicionais separadamente
+        if (vendasDoDia.length > 0) {
+            for (let venda of vendasDoDia) {
+                try {
+                    // Buscar itens da venda
+                    const { data: itens, error: errorItens } = await supabase
+                        .from('vendas_itens')
+                        .select('*')
+                        .eq('venda_id', venda.id);
+
+                    if (!errorItens && itens) {
+                        venda.itens = itens;
+                        
+                        // Para cada item, buscar nome do produto se possível
+                        for (let item of venda.itens) {
+                            try {
+                                const { data: produto, error: errorProduto } = await supabase
+                                    .from('produtos')
+                                    .select('nome, icone')
+                                    .eq('id', item.produto_id)
+                                    .single();
+
+                                if (!errorProduto && produto) {
+                                    item.produto = produto;
+                                }
+                            } catch (produtoError) {
+                                console.warn('Erro ao buscar produto:', produtoError);
+                                item.produto = { nome: 'Produto não encontrado', icone: 'fa-cube' };
+                            }
+                        }
+                    }
+
+                    // Buscar nome do usuário
+                    if (venda.usuario_id) {
+                        try {
+                            const { data: usuario, error: errorUsuario } = await supabase
+                                .from('sistema_usuarios')
+                                .select('nome')
+                                .eq('id', venda.usuario_id)
+                                .single();
+
+                            if (!errorUsuario && usuario) {
+                                venda.usuario = usuario;
+                            }
+                        } catch (usuarioError) {
+                            console.warn('Erro ao buscar usuário:', usuarioError);
+                        }
+                    }
+                } catch (detalhesError) {
+                    console.warn('Erro ao carregar detalhes da venda:', detalhesError);
+                }
+            }
+        }
+
+        exibirVendas(vendasDoDia);
+
+    } catch (error) {
+        console.error('Erro ao carregar vendas:', error);
+        // Tentar fallback mais simples com filtro por data_venda (se existir)
         try {
-            console.log('📊 Carregando vendas para data:', data);
-            
-            // Primeiro, buscar as vendas básicas
-            const { data: vendas, error } = await supabase
+            const { data: vendasSimples, error: errorSimples } = await supabase
                 .from('vendas')
                 .select('*')
                 .eq('data_venda', data)
                 .order('created_at', { ascending: false });
 
-            if (error) {
-                console.error('Erro ao buscar vendas:', error);
-                throw error;
+            if (!errorSimples) {
+                vendasDoDia = vendasSimples || [];
+                exibirVendas(vendasDoDia);
+                mostrarMensagem('Dados carregados (modo simplificado)', 'info');
+                return;
             }
-
-            console.log(`✅ Encontradas ${vendas?.length || 0} vendas`);
-
-            // Se não há vendas, definir array vazio
-            vendasDoDia = vendas || [];
-            
-            // Para cada venda, buscar detalhes adicionais separadamente
-            if (vendasDoDia.length > 0) {
-                for (let venda of vendasDoDia) {
-                    try {
-                        // Buscar itens da venda
-                        const { data: itens, error: errorItens } = await supabase
-                            .from('vendas_itens')
-                            .select('*')
-                            .eq('venda_id', venda.id);
-
-                        if (!errorItens && itens) {
-                            venda.itens = itens;
-                            
-                            // Para cada item, buscar nome do produto se possível
-                            for (let item of venda.itens) {
-                                try {
-                                    const { data: produto, error: errorProduto } = await supabase
-                                        .from('produtos')
-                                        .select('nome, icone')
-                                        .eq('id', item.produto_id)
-                                        .single();
-
-                                    if (!errorProduto && produto) {
-                                        item.produto = produto;
-                                    }
-                                } catch (produtoError) {
-                                    console.warn('Erro ao buscar produto:', produtoError);
-                                    item.produto = { nome: 'Produto não encontrado', icone: 'fa-cube' };
-                                }
-                            }
-                        }
-
-                        // Buscar nome do usuário
-                        if (venda.usuario_id) {
-                            try {
-                                const { data: usuario, error: errorUsuario } = await supabase
-                                    .from('sistema_usuarios')
-                                    .select('nome')
-                                    .eq('id', venda.usuario_id)
-                                    .single();
-
-                                if (!errorUsuario && usuario) {
-                                    venda.usuario = usuario;
-                                }
-                            } catch (usuarioError) {
-                                console.warn('Erro ao buscar usuário:', usuarioError);
-                            }
-                        }
-                    } catch (detalhesError) {
-                        console.warn('Erro ao carregar detalhes da venda:', detalhesError);
-                    }
-                }
-            }
-
-            exibirVendas(vendasDoDia);
-
-        } catch (error) {
-            console.error('Erro ao carregar vendas:', error);
-            // Tentar fallback mais simples
-            try {
-                const { data: vendasSimples, error: errorSimples } = await supabase
-                    .from('vendas')
-                    .select('*')
-                    .eq('data_venda', data)
-                    .order('created_at', { ascending: false });
-
-                if (!errorSimples) {
-                    vendasDoDia = vendasSimples || [];
-                    exibirVendas(vendasDoDia);
-                    mostrarMensagem('Dados carregados (modo simplificado)', 'info');
-                    return;
-                }
-            } catch (fallbackError) {
-                console.error('Erro no fallback:', fallbackError);
-            }
-            
-            throw error;
+        } catch (fallbackError) {
+            console.error('Erro no fallback:', fallbackError);
         }
+        
+        throw error;
     }
+}
+    // Carregar movimentações do dia (apenas admin) - VERSÃO CORRIGIDA
+async function carregarMovimentacoes(data) {
+    try {
+        // CORREÇÃO: Usar o mesmo filtro de data que as vendas
+        const dataInicio = new Date(data + 'T00:00:00').toISOString();
+        const dataFim = new Date(data + 'T23:59:59').toISOString();
+        
+        const { data: movimentacoes, error } = await supabase
+            .from('caixa_movimentacoes')
+            .select('*')
+            .gte('created_at', dataInicio)
+            .lte('created_at', dataFim)
+            .order('created_at', { ascending: false });
 
-    // Carregar movimentações do dia (apenas admin)
-    async function carregarMovimentacoes(data) {
-        try {
-            const { data: movimentacoes, error } = await supabase
-                .from('caixa_movimentacoes')
-                .select('*')
-                .eq('data', data)
-                .order('created_at', { ascending: false });
+        if (error) throw error;
 
-            if (error) throw error;
+        movimentacoesDoDia = movimentacoes || [];
+        
+        // Buscar nomes dos usuários para movimentações
+        for (let mov of movimentacoesDoDia) {
+            if (mov.usuario_id) {
+                try {
+                    const { data: usuario, error: errorUsuario } = await supabase
+                        .from('sistema_usuarios')
+                        .select('nome')
+                        .eq('id', mov.usuario_id)
+                        .single();
 
-            movimentacoesDoDia = movimentacoes || [];
-            
-            // Buscar nomes dos usuários para movimentações
-            for (let mov of movimentacoesDoDia) {
-                if (mov.usuario_id) {
-                    try {
-                        const { data: usuario, error: errorUsuario } = await supabase
-                            .from('sistema_usuarios')
-                            .select('nome')
-                            .eq('id', mov.usuario_id)
-                            .single();
-
-                        if (!errorUsuario && usuario) {
-                            mov.usuario = usuario;
-                        }
-                    } catch (usuarioError) {
-                        console.warn('Erro ao buscar usuário da movimentação:', usuarioError);
+                    if (!errorUsuario && usuario) {
+                        mov.usuario = usuario;
                     }
+                } catch (usuarioError) {
+                    console.warn('Erro ao buscar usuário da movimentação:', usuarioError);
                 }
             }
-            
-            exibirMovimentacoes(movimentacoesDoDia);
-
-        } catch (error) {
-            console.error('Erro ao carregar movimentações:', error);
-            // Não lançar erro para não quebrar o fluxo principal
-            movimentacoesDoDia = [];
-            exibirMovimentacoes(movimentacoesDoDia);
         }
+        
+        exibirMovimentacoes(movimentacoesDoDia);
+
+    } catch (error) {
+        console.error('Erro ao carregar movimentações:', error);
+        // Não lançar erro para não quebrar o fluxo principal
+        movimentacoesDoDia = [];
+        exibirMovimentacoes(movimentacoesDoDia);
     }
+}
 
     // Exibir vendas na tabela
     function exibirVendas(vendas) {

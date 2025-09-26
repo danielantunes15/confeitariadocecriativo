@@ -219,19 +219,28 @@
     </div>
 
     <script>
-        // Configuração do Supabase
-        const SUPABASE_URL = 'https://jdfijbhlujoiuraoxivb.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpkZmlqYmhsdWpvaXVyYW94aXZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg4NDE3MzgsImV4cCI6MjA3NDQxNzczOH0.yEMThoZdXPx1aNCO1a6wO-FPoMU-gTgxJlsW883rKvc';
+    // Configuração do Supabase
+    const SUPABASE_URL = 'https://jdfijbhlujoiuraoxivb.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpkZmlqYmhsdWpvaXVyYW94aXZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg4NDE3MzgsImV4cCI6MjA3NDQxNzczOH0.yEMThoZdXPx1aNCO1a6wO-FPoMU-gTgxJlsW883rKvc';
 
-        // Inicializar Supabase
-        window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // Inicializar Supabase
+    window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
+    // Configurar data atual como padrão E CARREGAR AUTOMATICAMENTE
+    document.addEventListener('DOMContentLoaded', function() {
+        const hoje = new Date().toISOString().split('T')[0];
+        const dataInput = document.getElementById('data-fechamento');
+        dataInput.value = hoje;
         
-        // Configurar data atual como padrão
-        document.addEventListener('DOMContentLoaded', function() {
-            const hoje = new Date().toISOString().split('T')[0];
-            document.getElementById('data-fechamento').value = hoje;
-        });
-    </script>
+        // Disparar o carregamento automático após um pequeno delay
+        setTimeout(() => {
+            const carregarBtn = document.getElementById('carregar-dados');
+            if (carregarBtn) {
+                carregarBtn.click();
+            }
+        }, 500);
+    });
+</script>
 
     <script src="js/auth.js"></script>
     <script src="js/caixa-fechamento.js"></script>

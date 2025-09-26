@@ -339,15 +339,30 @@ tbody tr:hover {
     color: inherit;
 }
 
-/* Classes para admin */
-.is-admin .resumo-card:not(.total) .valor,
-.is-admin .resumo-card:not(.total) .quantidade {
-    color: inherit;
-}
-
+/* CORREÇÃO: Ajustar as regras de blur para usuários não-admin */
 :not(.is-admin) .resumo-card:not(.dinheiro):not(.total) .valor,
 :not(.is-admin) .resumo-card:not(.dinheiro):not(.total) .quantidade {
     color: #ccc;
     filter: blur(2px);
     user-select: none;
+}
+
+/* ADICIONAR: Regra para o cartão específico */
+:not(.is-admin) .resumo-card.cartao .valor,
+:not(.is-admin) .resumo-card.cartao .quantidade,
+:not(.is-admin) .resumo-card.pix .valor,
+:not(.is-admin) .resumo-card.pix .quantidade {
+    color: #ccc;
+    filter: blur(2px);
+    user-select: none;
+}
+
+/* GARANTIR que dinheiro e total sempre sejam visíveis */
+.resumo-card.dinheiro .valor,
+.resumo-card.dinheiro .quantidade,
+.resumo-card.total .valor,
+.resumo-card.total .quantidade {
+    color: #333 !important;
+    filter: none !important;
+    user-select: auto !important;
 }
