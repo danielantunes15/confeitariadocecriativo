@@ -1,92 +1,358 @@
-/* Estilos específicos para a página de vendas */
-.produtos-section {
-    margin: 1.5rem 0;
-    padding: 1rem;
-    background-color: var(--bg-light);
+/* css/vendas.css */
+/* Estilos específicos para a página principal de vendas */
+
+/* Grid de categorias */
+.categorias-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.categoria-card {
+    background: white;
     border-radius: var(--radius);
-}
-
-.produto-item {
-    margin-bottom: 1rem;
-    padding: 1rem;
-    background-color: white;
-    border-radius: var(--radius);
-    border: 1px solid var(--border-color);
-}
-
-.produto-item .form-row {
-    align-items: flex-end;
-}
-
-.btn-remove {
-    background-color: var(--error-color);
-    color: white;
-    border: none;
-    border-radius: 50%;
-    width: 30px;
-    height: 30px;
+    padding: 1.5rem 1rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 2px solid var(--border-color);
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    cursor: pointer;
-    font-size: 1.2rem;
+    min-height: 120px;
 }
 
-.btn-remove:hover {
-    background-color: #d32f2f;
+.categoria-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    border-color: var(--primary-color);
 }
 
-.resumo-venda {
-    margin-top: 1.5rem;
-    padding: 1rem;
-    background-color: var(--bg-light);
+.categoria-card.active {
+    border-color: var(--primary-color);
+    background-color: var(--primary-light);
+}
+
+.categoria-card i {
+    font-size: 2rem;
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+}
+
+.categoria-card h3 {
+    font-size: 1rem;
+    color: var(--text-color);
+    margin: 0;
+}
+
+/* Grid de produtos */
+.produtos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.produto-card {
+    background: white;
     border-radius: var(--radius);
+    padding: 1rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 2px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 180px;
+    position: relative;
 }
 
-.total-section {
-    text-align: right;
+.produto-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    border-color: var(--primary-color);
+}
+
+.produto-card.out-of-stock {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.produto-card.out-of-stock::after {
+    content: "SEM ESTOQUE";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--error-color);
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.produto-card i {
+    font-size: 2.5rem;
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+}
+
+.produto-info {
+    width: 100%;
+}
+
+.produto-card h3 {
+    font-size: 1rem;
+    color: var(--text-color);
+    margin: 0 0 0.5rem 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.produto-card .preco {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: var(--primary-dark);
+    margin: 0.25rem 0;
+}
+
+.produto-card .estoque {
+    font-size: 0.8rem;
+    color: var(--text-light);
+}
+
+/* Carrinho de vendas */
+.carrinho-vazio {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-light);
+}
+
+.carrinho-vazio i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    color: var(--border-color);
+}
+
+.carrinho-itens table {
+    width: 100%;
+    border-collapse: collapse;
     margin-bottom: 1rem;
 }
 
-.total-section h3 {
-    color: var(--primary-color);
-    font-size: 1.5rem;
+.carrinho-itens th,
+.carrinho-itens td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
 }
 
-#total-venda {
+.carrinho-itens th {
+    background-color: var(--primary-light);
     color: var(--primary-dark);
-    font-weight: 700;
-}
-
-/* Estilo para inputs de preço */
-.preco-input, .subtotal-input {
-    background-color: #f5f5f5;
     font-weight: 600;
 }
 
-/* Estilo para tabela de vendas recentes */
-#vendas-list table th:nth-child(5),
-#vendas-list table td:nth-child(5) {
-    text-align: right;
+.carrinho-item-quantidade {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 }
 
-#vendas-list table th:nth-child(6),
-#vendas-list table td:nth-child(6) {
-    text-align: right;
+.carrinho-item-quantidade button {
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
 }
 
-/* Responsividade para página de vendas */
+.carrinho-item-quantidade button:hover {
+    background: var(--primary-dark);
+}
+
+.carrinho-item-quantidade input {
+    width: 50px;
+    text-align: center;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 0.25rem;
+}
+
+.carrinho-total {
+    text-align: right;
+    padding: 1rem;
+    background: var(--bg-light);
+    border-radius: var(--radius);
+}
+
+.total-info {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: var(--primary-dark);
+}
+
+/* Formas de pagamento */
+.formas-pagamento {
+    display: flex;
+    gap: 1rem;
+    margin: 1rem 0;
+    flex-wrap: wrap;
+}
+
+.pagamento-option {
+    flex: 1;
+    min-width: 120px;
+}
+
+.pagamento-option input[type="radio"] {
+    display: none;
+}
+
+.pagamento-option label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1rem;
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+}
+
+.pagamento-option label:hover {
+    border-color: var(--primary-color);
+}
+
+.pagamento-option input[type="radio"]:checked + label {
+    border-color: var(--primary-color);
+    background-color: var(--primary-light);
+}
+
+.pagamento-option i {
+    font-size: 2rem;
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+}
+
+.pagamento-option span {
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+/* Ações de venda */
+.vendas-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-top: 2rem;
+}
+
+.vendas-actions .btn {
+    min-width: 150px;
+    padding: 1rem 1.5rem;
+    font-size: 1.1rem;
+}
+
+/* Modal cancelar item */
+#lista-itens-cancelar {
+    max-height: 300px;
+    overflow-y: auto;
+    margin: 1rem 0;
+}
+
+.item-cancelar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    margin-bottom: 0.5rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.item-cancelar:hover {
+    background-color: var(--bg-light);
+}
+
+.item-cancelar.selected {
+    border-color: var(--error-color);
+    background-color: #ffebee;
+}
+
+.item-cancelar-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.item-cancelar i {
+    font-size: 1.5rem;
+    color: var(--primary-color);
+}
+
+/* Responsividade */
 @media (max-width: 768px) {
-    .produto-item .form-row {
+    .categorias-grid {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    }
+    
+    .produtos-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    }
+    
+    .formas-pagamento {
         flex-direction: column;
     }
     
-    .btn-remove {
-        align-self: flex-end;
-        margin-top: 0.5rem;
+    .pagamento-option {
+        min-width: 100%;
     }
     
-    .total-section {
-        text-align: center;
+    .vendas-actions {
+        flex-direction: column;
+    }
+    
+    .vendas-actions .btn {
+        min-width: 100%;
+    }
+    
+    .carrinho-itens table {
+        font-size: 0.9rem;
+    }
+    
+    .carrinho-itens th,
+    .carrinho-itens td {
+        padding: 0.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .categorias-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .produtos-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .carrinho-itens table {
+        display: block;
+        overflow-x: auto;
     }
 }
