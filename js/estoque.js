@@ -132,6 +132,11 @@ document.addEventListener('DOMContentLoaded', function() {
             formNovaCategoria.addEventListener('submit', criarCategoria);
         }
 
+        const formEditarCategoria = document.getElementById('form-editar-categoria');
+        if (formEditarCategoria) {
+            formEditarCategoria.addEventListener('submit', salvarEdicaoCategoria);
+        }
+
         // Botões
         const novaCategoriaBtn = document.getElementById('nova-categoria-btn');
         if (novaCategoriaBtn) {
@@ -151,6 +156,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Modais
         const modalProduto = document.getElementById('modal-editar-produto');
         const modalCategoria = document.getElementById('modal-nova-categoria');
+        const modalEditarCategoria = document.getElementById('modal-editar-categoria');
         
         // Fechar modais
         document.querySelectorAll('.close').forEach(closeBtn => {
@@ -159,9 +165,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
         document.getElementById('fechar-modal-produto')?.addEventListener('click', fecharModais);
         document.getElementById('fechar-modal-categoria')?.addEventListener('click', fecharModais);
+        document.getElementById('fechar-modal-editar-categoria')?.addEventListener('click', fecharModais);
 
         window.addEventListener('click', (e) => {
-            if (e.target === modalProduto || e.target === modalCategoria) {
+            if (e.target === modalProduto || e.target === modalCategoria || e.target === modalEditarCategoria) {
                 fecharModais();
             }
         });
@@ -356,6 +363,69 @@ document.addEventListener('DOMContentLoaded', function() {
             mostrarMensagem('Erro ao criar categoria: ' + error.message, 'error');
         }
     }
+
+    // NOVA FUNÇÃO: Editar categoria
+    window.editarCategoria = async function(categoriaId) {
+        try {
+            const { data: categoria, error } = await supabase
+                .from('categorias')
+                .select('*')
+                .eq('id', categoriaId)
+                .single();
+
+            if (error) throw error;
+
+            // Preencher o formulário de edição
+            document.getElementById('editar-categoria-id').value = categoria.id;
+            document.getElementById('editar-categoria-nome').value = categoria.nome || '';
+            document.getElementById('editar-categoria-descricao').value = categoria.descricao || '';
+            document.getElementById('editar-categoria-ativa').checked = categoria.ativo;
+
+            // Abrir modal de edição
+            document.getElementById('modal-editar-categoria').style.display = 'block';
+
+        } catch (error) {
+            console.error('Erro ao carregar categoria para edição:', error);
+            mostrarMensagem('Erro ao carregar categoria: ' + error.message, 'error');
+        }
+    };
+
+    // NOVA FUNÇÃO: Salvar edição da categoria
+    window.salvarEdicaoCategoria = async function(e) {
+        e.preventDefault();
+
+        const categoriaId = document.getElementById('editar-categoria-id').value;
+        const nome = document.getElementById('editar-categoria-nome').value.trim();
+        const descricao = document.getElementById('editar-categoria-descricao').value.trim();
+        const ativa = document.getElementById('editar-categoria-ativa').checked;
+
+        if (!nome) {
+            mostrarMensagem('Preencha o nome da categoria', 'error');
+            return;
+        }
+
+        try {
+            const { error } = await supabase
+                .from('categorias')
+                .update({
+                    nome: nome,
+                    descricao: descricao,
+                    ativo: ativa
+                })
+                .eq('id', categoriaId);
+
+            if (error) throw error;
+
+            mostrarMensagem('Categoria atualizada com sucesso!', 'success');
+            fecharModais();
+            await carregarCategorias();
+            await carregarListaCategorias();
+
+        } catch (error) {
+            console.error('Erro ao atualizar categoria:', error);
+            mostrarMensagem('Erro ao atualizar categoria: ' + error.message, 'error');
+        }
+    };
 
     // Funções para Produtos
     async function carregarListaProdutos() {
@@ -627,7 +697,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
-    // NOVA FUNÇÃO: Excluir produto
+    // Função: Excluir produto
     window.excluirProduto = async function(produtoId, produtoNome) {
         if (!confirm(`Tem certeza que deseja excluir o produto "${produtoNome}"?\n\nEsta ação não pode ser desfeita!`)) {
             return;
@@ -650,11 +720,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
-    // Funções para categorias
-    window.editarCategoria = function(categoriaId) {
-        mostrarMensagem('Funcionalidade de editar categoria será implementada em breve', 'info');
-    };
-
+    // Função: Excluir categoria
     window.excluirCategoria = async function(categoriaId, nome) {
         if (!confirm(`Tem certeza que deseja excluir a categoria "${nome}"?`)) {
             return;
@@ -686,6 +752,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function fecharModais() {
         document.getElementById('modal-editar-produto').style.display = 'none';
         document.getElementById('modal-nova-categoria').style.display = 'none';
+        document.getElementById('modal-editar-categoria').style.display = 'none';
     }
 
     function mostrarMensagem(mensagem, tipo) {
