@@ -51,7 +51,7 @@
                 <div class="card">
                     <h3>Resumo Financeiro</h3>
                     <div class="resumo-grid">
-                        <div class="resumo-card">
+                        <div class="resumo-card dinheiro">
                             <div class="resumo-icon dinheiro">
                                 <i class="fas fa-money-bill-wave"></i>
                             </div>
@@ -62,7 +62,7 @@
                             </div>
                         </div>
                         
-                        <div class="resumo-card">
+                        <div class="resumo-card cartao">
                             <div class="resumo-icon cartao">
                                 <i class="fas fa-credit-card"></i>
                             </div>
@@ -73,7 +73,7 @@
                             </div>
                         </div>
                         
-                        <div class="resumo-card">
+                        <div class="resumo-card pix">
                             <div class="resumo-icon pix">
                                 <i class="fas fa-qrcode"></i>
                             </div>
@@ -91,7 +91,7 @@
                             <div class="resumo-info">
                                 <h4>Total do Dia (Dinheiro)</h4>
                                 <span class="valor" id="total-geral">R$ 0,00</span>
-                                <span class="quantidade" id="qtd-total">0 vendas</span>
+                                <span class="quantitude" id="qtd-total">0 vendas</span>
                             </div>
                         </div>
                     </div>
@@ -219,28 +219,50 @@
     </div>
 
     <script>
-    // Configuração do Supabase
-    const SUPABASE_URL = 'https://jdfijbhlujoiuraoxivb.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpkZmlqYmhsdWpvaXVyYW94aXZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg4NDE3MzgsImV4cCI6MjA3NDQxNzczOH0.yEMThoZdXPx1aNCO1a6wO-FPoMU-gTgxJlsW883rKvc';
+        // Configuração do Supabase
+        const SUPABASE_URL = 'https://jdfijbhlujoiuraoxivb.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpkZmlqYmhsdWpvaXVyYW94aXZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg4NDE3MzgsImV4cCI6MjA3NDQxNzczOH0.yEMThoZdXPx1aNCO1a6wO-FPoMU-gTgxJlsW883rKvc';
 
-    // Inicializar Supabase
-    window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    
-    // Configurar data atual como padrão E CARREGAR AUTOMATICAMENTE
-    document.addEventListener('DOMContentLoaded', function() {
-        const hoje = new Date().toISOString().split('T')[0];
-        const dataInput = document.getElementById('data-fechamento');
-        dataInput.value = hoje;
+        // Inicializar Supabase
+        window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
-        // Disparar o carregamento automático após um pequeno delay
-        setTimeout(() => {
-            const carregarBtn = document.getElementById('carregar-dados');
-            if (carregarBtn) {
-                carregarBtn.click();
+        // Configurar data atual como padrão
+        document.addEventListener('DOMContentLoaded', function() {
+            const hoje = new Date().toISOString().split('T')[0];
+            document.getElementById('data-fechamento').value = hoje;
+            
+            // Verificar se usuário é admin e aplicar classe correta
+            verificarPermissaoUsuario();
+        });
+
+        // Função para verificar se usuário é admin
+        async function verificarPermissaoUsuario() {
+            try {
+                const { data: { user } } = await supabase.auth.getUser();
+                if (user) {
+                    // Verificar se usuário tem role de admin
+                    const { data: userData, error } = await supabase
+                        .from('usuarios')
+                        .select('role')
+                        .eq('id', user.id)
+                        .single();
+
+                    if (!error && userData && userData.role === 'admin') {
+                        document.body.classList.add('is-admin');
+                        // Mostrar seções administrativas
+                        document.getElementById('movimentacoes-admin').style.display = 'block';
+                        document.querySelectorAll('.admin-only').forEach(el => {
+                            el.style.display = 'flex';
+                        });
+                    } else {
+                        document.body.classList.remove('is-admin');
+                    }
+                }
+            } catch (error) {
+                console.error('Erro ao verificar permissões:', error);
             }
-        }, 500);
-    });
-</script>
+        }
+    </script>
 
     <script src="js/auth.js"></script>
     <script src="js/caixa-fechamento.js"></script>

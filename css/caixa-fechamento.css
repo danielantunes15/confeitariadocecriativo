@@ -339,25 +339,19 @@ tbody tr:hover {
     color: inherit;
 }
 
-/* CORREÇÃO: Ajustar as regras de blur para usuários não-admin */
-:not(.is-admin) .resumo-card:not(.dinheiro):not(.total) .valor,
-:not(.is-admin) .resumo-card:not(.dinheiro):not(.total) .quantidade {
-    color: #ccc;
-    filter: blur(2px);
-    user-select: none;
+/* CORREÇÃO: Regras de blur CORRIGIDAS */
+/* Apenas cartão e PIX ficam borrados para não-admins */
+body:not(.is-admin) .resumo-card.cartao .valor,
+body:not(.is-admin) .resumo-card.cartao .quantidade,
+body:not(.is-admin) .resumo-card.pix .valor,
+body:not(.is-admin) .resumo-card.pix .quantidade {
+    color: #ccc !important;
+    filter: blur(2px) !important;
+    user-select: none !important;
+    pointer-events: none !important;
 }
 
-/* ADICIONAR: Regra para o cartão específico */
-:not(.is-admin) .resumo-card.cartao .valor,
-:not(.is-admin) .resumo-card.cartao .quantidade,
-:not(.is-admin) .resumo-card.pix .valor,
-:not(.is-admin) .resumo-card.pix .quantidade {
-    color: #ccc;
-    filter: blur(2px);
-    user-select: none;
-}
-
-/* GARANTIR que dinheiro e total sempre sejam visíveis */
+/* GARANTIR que dinheiro e total SEMPRE sejam visíveis */
 .resumo-card.dinheiro .valor,
 .resumo-card.dinheiro .quantidade,
 .resumo-card.total .valor,
@@ -365,4 +359,14 @@ tbody tr:hover {
     color: #333 !important;
     filter: none !important;
     user-select: auto !important;
+    pointer-events: auto !important;
+}
+
+/* Para administradores: tudo visível */
+body.is-admin .resumo-card .valor,
+body.is-admin .resumo-card .quantidade {
+    color: #333 !important;
+    filter: none !important;
+    user-select: auto !important;
+    pointer-events: auto !important;
 }
