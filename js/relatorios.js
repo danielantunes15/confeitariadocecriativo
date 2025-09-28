@@ -1,9 +1,15 @@
-// js/relatorios.js - VERSÃO COMPLETA E CORRIGIDA
+// js/relatorios.js - VERSÃO COMPLETA COM CONTROLE DE ACESSO E NOVAS FUNCIONALIDADES
 document.addEventListener('DOMContentLoaded', async function() {
-    // Verificar autenticação
+    // Verificar autenticação E se é administrador
     const usuario = window.sistemaAuth?.verificarAutenticacao();
     if (!usuario) {
         window.location.href = 'login.html';
+        return;
+    }
+
+    // Verificar se é administrador
+    if (!window.sistemaAuth.isAdmin()) {
+        mostrarAcessoRestrito();
         return;
     }
 
@@ -62,6 +68,36 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
 
+    // Função para mostrar acesso restrito
+    function mostrarAcessoRestrito() {
+        const container = document.querySelector('.container');
+        container.innerHTML = `
+            <div class="card" style="text-align: center; padding: 3rem;">
+                <div style="font-size: 4rem; color: #dc3545; margin-bottom: 1rem;">
+                    <i class="fas fa-lock"></i>
+                </div>
+                <h2 style="color: #dc3545; margin-bottom: 1rem;">Acesso Restrito</h2>
+                <p style="font-size: 1.1rem; margin-bottom: 2rem; color: #666;">
+                    Esta página é restrita a administradores do sistema.
+                </p>
+                <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                    <button onclick="window.location.href='index.html'" class="btn btn-primary">
+                        <i class="fas fa-home"></i> Voltar para Vendas
+                    </button>
+                    <button onclick="window.sistemaAuth.fazerLogout()" class="btn btn-secondary">
+                        <i class="fas fa-sign-out-alt"></i> Fazer Logout
+                    </button>
+                </div>
+                <div style="margin-top: 2rem; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+                    <small style="color: #666;">
+                        <i class="fas fa-info-circle"></i>
+                        Se você deveria ter acesso, contate o administrador do sistema.
+                    </small>
+                </div>
+            </div>
+        `;
+    }
+
     // Função para testar conexão
     async function testarConexaoSupabase() {
         try {
@@ -109,6 +145,12 @@ document.addEventListener('DOMContentLoaded', async function() {
             logoutBtn.addEventListener('click', () => {
                 window.sistemaAuth.fazerLogout();
             });
+        }
+
+        // Nova funcionalidade: Atualizar automaticamente ao mudar datas
+        if (dataInicioInput && dataFimInput) {
+            dataInicioInput.addEventListener('change', carregarRelatorios);
+            dataFimInput.addEventListener('change', carregarRelatorios);
         }
     }
 
@@ -166,6 +208,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         try {
             mostrarMensagem('Carregando relatórios...', 'info');
             
+            // Mostrar loading nos gráficos
+            mostrarLoadingGraficos();
+            
             // Carregar dados em sequência para evitar muitos requests
             await carregarDadosVendas(dataInicio, dataFim);
             await carregarDadosEstoque();
@@ -182,6 +227,22 @@ document.addEventListener('DOMContentLoaded', async function() {
             console.error('Erro ao carregar relatórios:', error);
             mostrarMensagem('Erro ao carregar relatórios: ' + error.message, 'error');
         }
+    }
+
+    // Mostrar loading nos gráficos
+    function mostrarLoadingGraficos() {
+        const graficos = ['grafico-pagamento', 'grafico-categorias', 'grafico-diario', 'grafico-produtos'];
+        graficos.forEach(id => {
+            const elemento = document.getElementById(id);
+            if (elemento) {
+                elemento.innerHTML = `
+                    <div style="text-align: center; color: #666; padding: 40px;">
+                        <div class="spinner" style="width: 30px; height: 30px; margin: 0 auto 10px;"></div>
+                        <p>Carregando...</p>
+                    </div>
+                `;
+            }
+        });
     }
 
     // Carregar dados de vendas - VERSÃO ROBUSTA
@@ -911,7 +972,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         // Criar conteúdo do relatório
         let conteudo = `RELATÓRIO DE VENDAS - DOCES CRIATIVOS\n`;
         conteudo += `Período: ${periodo} (${dataInicio} a ${dataFim})\n`;
-        conteudo += `Gerado em: ${new Date().toLocaleString('pt-BR')}\n\n`;
+        conteudo += `Gerado em: ${new Date().toLocaleString('pt-BR')}\n`;
+        conteudo += `Gerado por: ${window.sistemaAuth.usuarioLogado?.nome || 'Administrador'}\n\n`;
         
         // Adicionar resumo
         conteudo += `RESUMO:\n`;
@@ -969,4 +1031,31 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
         }, 5000);
     }
+
+    // Nova funcionalidade: Atualização automática a cada 5 minutos
+    setInterval(() => {
+        if (document.visibilityState === 'visible') {
+            console.log('🔄 Atualização automática dos relatórios');
+            carregarRelatorios();
+        }
+    }, 5 * 60 * 1000); // 5 minutos
+
+    // Nova funcionalidade: Tecla F5 para atualizar
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'F5') {
+            e.preventDefault();
+            carregarRelatorios();
+        }
+    });
+
+    // Nova funcionalidade: Mostrar informações do administrador
+    function mostrarInfoAdmin() {
+        const usuario = window.sistemaAuth.usuarioLogado;
+        if (usuario && window.sistemaAuth.isAdmin()) {
+            console.log(`👤 Administrador logado: ${usuario.nome} (${usuario.username})`);
+        }
+    }
+
+    // Executar ao carregar
+    mostrarInfoAdmin();
 });
