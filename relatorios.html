@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Relatórios - Confeitaria Doces Criativos</title>
+    <title>Dashboard de Relatórios - Confeitaria Doces Criativos</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/relatorios.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/date-fns@2.29.3/index.min.js"></script>
 </head>
 <body>
     <header class="header">
@@ -53,16 +54,32 @@
             <div id="alert-container"></div>
             
             <div id="loading" class="card">
-                <div class="spinner"></div>
-                <p style="text-align: center;">Carregando relatórios...</p>
+                <div class="spinner-moderno"></div>
+                <p style="text-align: center; margin-top: 1rem;">Carregando dashboard...</p>
             </div>
 
             <div id="content" style="display: none;">
-                <!-- Cabeçalho dos Relatórios -->
+                <!-- Header do Dashboard -->
+                <div class="relatorios-header">
+                    <h2><i class="fas fa-chart-line"></i> Dashboard de Performance</h2>
+                    <p>Análise completa das vendas e performance da confeitaria</p>
+                    
+                    <!-- Filtros Rápidos -->
+                    <div class="filtros-rapidos">
+                        <button class="filtro-rapido active" data-periodo="hoje">Hoje</button>
+                        <button class="filtro-rapido" data-periodo="ontem">Ontem</button>
+                        <button class="filtro-rapido" data-periodo="semana">Esta Semana</button>
+                        <button class="filtro-rapido" data-periodo="mes">Este Mês</button>
+                        <button class="filtro-rapido" data-periodo="trimestre">Este Trimestre</button>
+                        <button class="filtro-rapido" data-periodo="ano">Este Ano</button>
+                    </div>
+                </div>
+
+                <!-- Filtros Avançados -->
                 <div class="card">
-                    <div class="relatorios-header">
-                        <h2>Relatórios e Análises</h2>
-                        <div class="filtros-relatorios">
+                    <div class="filtros-avancados">
+                        <h3><i class="fas fa-filter"></i> Filtros Avançados</h3>
+                        <div class="filtros-grid">
                             <div class="filtro-item">
                                 <label for="periodo">Período:</label>
                                 <select id="periodo">
@@ -81,158 +98,319 @@
                                 <label for="data-fim">Até:</label>
                                 <input type="date" id="data-fim">
                             </div>
-                            <button id="aplicar-filtro" class="btn btn-primary">Aplicar Filtros</button>
-                            <button id="exportar-relatorio" class="btn btn-success">Exportar Relatório</button>
+                            <div class="filtro-item">
+                                <label for="filtro-vendedor">Vendedor:</label>
+                                <select id="filtro-vendedor">
+                                    <option value="todos">Todos os Vendedores</option>
+                                </select>
+                            </div>
+                            <div class="filtro-item">
+                                <label for="filtro-pagamento">Forma de Pagamento:</label>
+                                <select id="filtro-pagamento">
+                                    <option value="todos">Todas as Formas</option>
+                                    <option value="dinheiro">Dinheiro</option>
+                                    <option value="cartao">Cartão</option>
+                                    <option value="pix">PIX</option>
+                                </select>
+                            </div>
+                            <div class="filtro-item">
+                                <label for="filtro-categoria">Categoria:</label>
+                                <select id="filtro-categoria">
+                                    <option value="todos">Todas as Categorias</option>
+                                </select>
+                            </div>
+                            <div class="filtro-item">
+                                <label for="filtro-status">Status:</label>
+                                <select id="filtro-status">
+                                    <option value="todos">Todos os Status</option>
+                                    <option value="concluido">Concluídas</option>
+                                    <option value="cancelado">Canceladas</option>
+                                </select>
+                            </div>
                         </div>
+                        <div class="acoes-relatorio">
+                            <button id="aplicar-filtro" class="btn btn-primary">
+                                <i class="fas fa-check"></i> Aplicar Filtros
+                            </button>
+                            <button id="limpar-filtros" class="btn btn-secondary">
+                                <i class="fas fa-broom"></i> Limpar Filtros
+                            </button>
+                            <button id="exportar-relatorio" class="btn btn-success">
+                                <i class="fas fa-file-export"></i> Exportar Relatório
+                            </button>
+                            <button id="atualizar-dados" class="btn btn-info">
+                                <i class="fas fa-sync-alt"></i> Atualizar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Métricas em Tempo Real -->
+                <div class="metricas-tempo-real">
+                    <div class="metrica-card">
+                        <div class="valor" id="metricas-vendas-hoje">R$ 0,00</div>
+                        <div class="label">Vendas Hoje</div>
+                    </div>
+                    <div class="metrica-card">
+                        <div class="valor" id="metricas-pedidos-hoje">0</div>
+                        <div class="label">Pedidos Hoje</div>
+                    </div>
+                    <div class="metrica-card">
+                        <div class="valor" id="metricas-clientes-hoje">0</div>
+                        <div class="label">Clientes Atendidos</div>
+                    </div>
+                    <div class="metrica-card">
+                        <div class="valor" id="metricas-ticket-medio">R$ 0,00</div>
+                        <div class="label">Ticket Médio</div>
                     </div>
                 </div>
 
                 <!-- Cards de Resumo -->
                 <div class="resumo-grid">
-                    <div class="card resumo-card">
-                        <div class="resumo-icon">
-                            <i class="fas fa-money-bill-wave"></i>
-                        </div>
-                        <div class="resumo-info">
-                            <h3>Total de Vendas</h3>
-                            <span class="valor" id="total-vendas">R$ 0,00</span>
-                            <span class="variacao" id="variacao-vendas">+0%</span>
-                        </div>
-                    </div>
-                    
-                    <div class="card resumo-card">
-                        <div class="resumo-icon">
-                            <i class="fas fa-shopping-cart"></i>
-                        </div>
-                        <div class="resumo-info">
-                            <h3>Total de Pedidos</h3>
-                            <span class="valor" id="total-pedidos">0</span>
-                            <span class="variacao" id="variacao-pedidos">+0%</span>
+                    <div class="resumo-card fade-in">
+                        <div class="resumo-content">
+                            <div class="resumo-info">
+                                <h3>Total de Vendas</h3>
+                                <span class="valor" id="total-vendas">R$ 0,00</span>
+                                <span class="variacao positiva" id="variacao-vendas">+0%</span>
+                            </div>
+                            <div class="resumo-icon">
+                                <i class="fas fa-money-bill-wave"></i>
+                            </div>
                         </div>
                     </div>
                     
-                    <div class="card resumo-card">
-                        <div class="resumo-icon">
-                            <i class="fas fa-chart-line"></i>
-                        </div>
-                        <div class="resumo-info">
-                            <h3>Ticket Médio</h3>
-                            <span class="valor" id="ticket-medio">R$ 0,00</span>
-                            <span class="variacao" id="variacao-ticket">+0%</span>
+                    <div class="resumo-card fade-in">
+                        <div class="resumo-content">
+                            <div class="resumo-info">
+                                <h3>Total de Pedidos</h3>
+                                <span class="valor" id="total-pedidos">0</span>
+                                <span class="variacao positiva" id="variacao-pedidos">+0%</span>
+                            </div>
+                            <div class="resumo-icon">
+                                <i class="fas fa-shopping-cart"></i>
+                            </div>
                         </div>
                     </div>
                     
-                    <div class="card resumo-card">
-                        <div class="resumo-icon">
-                            <i class="fas fa-boxes"></i>
+                    <div class="resumo-card fade-in">
+                        <div class="resumo-content">
+                            <div class="resumo-info">
+                                <h3>Ticket Médio</h3>
+                                <span class="valor" id="ticket-medio">R$ 0,00</span>
+                                <span class="variacao positiva" id="variacao-ticket">+0%</span>
+                            </div>
+                            <div class="resumo-icon">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
                         </div>
-                        <div class="resumo-info">
-                            <h3>Produtos Vendidos</h3>
-                            <span class="valor" id="produtos-vendidos">0</span>
-                            <span class="variacao" id="variacao-produtos">+0%</span>
+                    </div>
+                    
+                    <div class="resumo-card fade-in">
+                        <div class="resumo-content">
+                            <div class="resumo-info">
+                                <h3>Produtos Vendidos</h3>
+                                <span class="valor" id="produtos-vendidos">0</span>
+                                <span class="variacao positiva" id="variacao-produtos">+0%</span>
+                            </div>
+                            <div class="resumo-icon">
+                                <i class="fas fa-boxes"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="resumo-card fade-in">
+                        <div class="resumo-content">
+                            <div class="resumo-info">
+                                <h3>Clientes Atendidos</h3>
+                                <span class="valor" id="total-clientes">0</span>
+                                <span class="variacao positiva" id="variacao-clientes">+0%</span>
+                            </div>
+                            <div class="resumo-icon">
+                                <i class="fas fa-users"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="resumo-card fade-in">
+                        <div class="resumo-content">
+                            <div class="resumo-info">
+                                <h3>Vendas/Dia</h3>
+                                <span class="valor" id="vendas-por-dia">0</span>
+                                <span class="variacao positiva" id="variacao-vendas-dia">+0%</span>
+                            </div>
+                            <div class="resumo-icon">
+                                <i class="fas fa-calendar-day"></i>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Gráficos -->
-                <div class="graficos-grid">
-                    <div class="card grafico-card">
-                        <h3>Vendas por Forma de Pagamento</h3>
-                        <div class="grafico-container">
-                            <canvas id="grafico-pagamento"></canvas>
+                <!-- Dashboard de Gráficos -->
+                <div class="dashboard-grid">
+                    <div class="graficos-principais">
+                        <div class="grafico-card fade-in">
+                            <h3><i class="fas fa-chart-line"></i> Vendas por Dia</h3>
+                            <div class="grafico-container">
+                                <canvas id="grafico-diario"></canvas>
+                            </div>
+                        </div>
+                        
+                        <div class="grafico-card fade-in">
+                            <h3><i class="fas fa-chart-pie"></i> Vendas por Forma de Pagamento</h3>
+                            <div class="grafico-container">
+                                <canvas id="grafico-pagamento"></canvas>
+                            </div>
+                        </div>
+                        
+                        <div class="grafico-card fade-in">
+                            <h3><i class="fas fa-chart-bar"></i> Produtos Mais Vendidos</h3>
+                            <div class="grafico-container">
+                                <canvas id="grafico-produtos"></canvas>
+                            </div>
+                        </div>
+                        
+                        <div class="grafico-card fade-in">
+                            <h3><i class="fas fa-chart-area"></i> Vendas por Categoria</h3>
+                            <div class="grafico-container">
+                                <canvas id="grafico-categorias"></canvas>
+                            </div>
                         </div>
                     </div>
                     
-                    <div class="card grafico-card">
-                        <h3>Vendas por Categoria</h3>
-                        <div class="grafico-container">
-                            <canvas id="grafico-categorias"></canvas>
+                    <div class="graficos-secundarios">
+                        <div class="grafico-card fade-in">
+                            <h3><i class="fas fa-clock"></i> Vendas por Hora</h3>
+                            <div class="grafico-container pequeno">
+                                <canvas id="grafico-horario"></canvas>
+                            </div>
                         </div>
-                    </div>
-                    
-                    <div class="card grafico-card">
-                        <h3>Vendas por Dia</h3>
-                        <div class="grafico-container">
-                            <canvas id="grafico-diario"></canvas>
+                        
+                        <div class="grafico-card fade-in">
+                            <h3><i class="fas fa-user-tie"></i> Performance por Vendedor</h3>
+                            <div class="grafico-container pequeno">
+                                <canvas id="grafico-vendedores"></canvas>
+                            </div>
                         </div>
-                    </div>
-                    
-                    <div class="card grafico-card">
-                        <h3>Produtos Mais Vendidos</h3>
-                        <div class="grafico-container">
-                            <canvas id="grafico-produtos"></canvas>
+                        
+                        <div class="grafico-card fade-in">
+                            <h3><i class="fas fa-trending-up"></i> Meta vs Realizado</h3>
+                            <div class="grafico-container pequeno">
+                                <canvas id="grafico-metas"></canvas>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Tabelas Detalhadas -->
-                <div class="card">
-                    <h3>Vendas Detalhadas</h3>
-                    <div class="table-container">
-                        <table id="tabela-vendas">
-                            <thead>
-                                <tr>
-                                    <th>Data</th>
-                                    <th>Cliente</th>
-                                    <th>Itens</th>
-                                    <th>Valor</th>
-                                    <th>Forma Pagamento</th>
-                                    <th>Vendedor</th>
-                                </tr>
-                            </thead>
-                            <tbody id="vendas-body">
-                                <tr>
-                                    <td colspan="6" style="text-align: center;">Carregando dados...</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                <div class="tabelas-grid">
+                    <div class="card fade-in">
+                        <div class="card-header">
+                            <h3><i class="fas fa-list"></i> Últimas Vendas</h3>
+                            <button class="btn btn-sm btn-primary" onclick="carregarMaisVendas()">
+                                <i class="fas fa-plus"></i> Carregar Mais
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-container">
+                                <table class="table-moderna">
+                                    <thead>
+                                        <tr>
+                                            <th>Data/Hora</th>
+                                            <th>Cliente</th>
+                                            <th>Itens</th>
+                                            <th>Valor</th>
+                                            <th>Pagamento</th>
+                                            <th>Vendedor</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="vendas-body">
+                                        <tr>
+                                            <td colspan="6" style="text-align: center;">Carregando dados...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card fade-in">
+                        <div class="card-header">
+                            <h3><i class="fas fa-trophy"></i> Ranking de Vendedores</h3>
+                            <span class="status-badge info" id="periodo-ranking">Este Mês</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-container">
+                                <table class="table-moderna">
+                                    <thead>
+                                        <tr>
+                                            <th>Posição</th>
+                                            <th>Vendedor</th>
+                                            <th>Vendas</th>
+                                            <th>Valor</th>
+                                            <th>Ticket Médio</th>
+                                            <th>Performance</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="vendedores-body">
+                                        <tr>
+                                            <td colspan="6" style="text-align: center;">Carregando dados...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Relatório de Estoque -->
-                <div class="card">
-                    <h3>Relatório de Estoque</h3>
-                    <div class="table-container">
-                        <table id="tabela-estoque">
-                            <thead>
-                                <tr>
-                                    <th>Produto</th>
-                                    <th>Categoria</th>
-                                    <th>Estoque Atual</th>
-                                    <th>Estoque Mínimo</th>
-                                    <th>Status</th>
-                                    <th>Última Venda</th>
-                                </tr>
-                            </thead>
-                            <tbody id="estoque-body">
-                                <tr>
-                                    <td colspan="6" style="text-align: center;">Carregando dados...</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                <!-- Análise de Clientes -->
+                <div class="card fade-in">
+                    <div class="card-header">
+                        <h3><i class="fas fa-users"></i> Análise de Clientes</h3>
                     </div>
-                </div>
-
-                <!-- Relatório de Performance -->
-                <div class="card">
-                    <h3>Performance por Vendedor</h3>
-                    <div class="table-container">
-                        <table id="tabela-vendedores">
-                            <thead>
-                                <tr>
-                                    <th>Vendedor</th>
-                                    <th>Total de Vendas</th>
-                                    <th>Valor Total</th>
-                                    <th>Ticket Médio</th>
-                                    <th>Vendas/Dia</th>
-                                </tr>
-                            </thead>
-                            <tbody id="vendedores-body">
-                                <tr>
-                                    <td colspan="5" style="text-align: center;">Carregando dados...</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                    <div class="card-body">
+                        <div class="tabelas-grid">
+                            <div>
+                                <h4>Clientes Frequentes</h4>
+                                <div class="table-container">
+                                    <table class="table-moderna">
+                                        <thead>
+                                            <tr>
+                                                <th>Cliente</th>
+                                                <th>Compras</th>
+                                                <th>Valor Total</th>
+                                                <th>Última Compra</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="clientes-frequentes-body">
+                                            <tr>
+                                                <td colspan="4" style="text-align: center;">Carregando dados...</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div>
+                                <h4>Ticket por Cliente</h4>
+                                <div class="table-container">
+                                    <table class="table-moderna">
+                                        <thead>
+                                            <tr>
+                                                <th>Cliente</th>
+                                                <th>Ticket Médio</th>
+                                                <th>Maior Compra</th>
+                                                <th>Frequência</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="ticket-clientes-body">
+                                            <tr>
+                                                <td colspan="4" style="text-align: center;">Carregando dados...</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -244,6 +422,19 @@
             </div>
         </div>
     </main>
+
+    <!-- Modal de Detalhes -->
+    <div id="modal-detalhes" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-titulo">Detalhes</h3>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body" id="modal-conteudo">
+                <!-- Conteúdo dinâmico -->
+            </div>
+        </div>
+    </div>
 
     <script>
         // Configuração do Supabase
@@ -265,29 +456,9 @@
         
         if (menuToggle && mainNav) {
             menuToggle.addEventListener('click', function() {
-                mainNav.classList.toggle('show');
+                mainNav.classList.toggle('active');
             });
         }
-        
-        // Fechar menu ao clicar fora
-        document.addEventListener('click', function(event) {
-            if (!event.target.closest('.header-content') && mainNav.classList.contains('show')) {
-                mainNav.classList.remove('show');
-            }
-        });
-
-        // Destacar página atual no menu
-        const currentPage = window.location.pathname.split('/').pop() || 'index.html';
-        const navLinks = document.querySelectorAll('.nav-link');
-        
-        navLinks.forEach(link => {
-            const href = link.getAttribute('href');
-            if (href === currentPage) {
-                link.classList.add('active');
-            } else {
-                link.classList.remove('active');
-            }
-        });
     });
     </script>
 </body>
