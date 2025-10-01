@@ -1,4 +1,4 @@
-// js/login.js - Lógica da página de login (SEM CREDENCIAIS DE TESTE)
+// js/login.js - Lógica da página de login ATUALIZADA
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById("login-form");
     const msg = document.getElementById("login-message");
@@ -7,21 +7,19 @@ document.addEventListener('DOMContentLoaded', function() {
     // Verificar se já está logado
     if (window.sistemaAuth && window.sistemaAuth.verificarAutenticacao()) {
         console.log('✅ Usuário já logado, redirecionando...');
-        window.location.href = 'index.html';
+        
+        // Verificar sincronização antes de redirecionar
+        window.sistemaAuth.sincronizarUsuario().then(sincronizado => {
+            if (sincronizado) {
+                window.location.href = 'index.html';
+            } else {
+                console.warn('⚠️ Problema na sincronização, mantendo na página de login');
+                mostrarMensagem('Problema com a conta. Faça login novamente.', 'error');
+                window.sistemaAuth.fazerLogout();
+            }
+        });
         return;
     }
-
-    // Executar diagnóstico ao carregar a página
-    console.log('🔧 Iniciando diagnóstico do sistema...');
-    diagnosticoCompleto().then(resultado => {
-        if (resultado.success) {
-            console.log('✅ Diagnóstico concluído com sucesso');
-            // Não mostrar mensagem de sistema pronto (mais profissional)
-        } else {
-            console.error('❌ Diagnóstico falhou:', resultado.error);
-            // Não mostrar erro para o usuário final (mais profissional)
-        }
-    });
 
     form.addEventListener("submit", async (e) => {
         e.preventDefault();
@@ -50,19 +48,26 @@ document.addEventListener('DOMContentLoaded', function() {
             const resultado = await window.sistemaAuth.fazerLogin(username, password);
             
             if (resultado.success) {
-                mostrarMensagem("Login realizado com sucesso! Redirecionando...", "success");
-                console.log('✅ Login bem-sucedido para:', username);
+                // Verificar sincronização após login
+                const sincronizado = await window.sistemaAuth.sincronizarUsuario();
                 
-                setTimeout(() => {
-                    window.location.href = "index.html";
-                }, 1500);
+                if (sincronizado) {
+                    mostrarMensagem("Login realizado com sucesso! Redirecionando...", "success");
+                    console.log('✅ Login e sincronização bem-sucedidos');
+                    
+                    setTimeout(() => {
+                        window.location.href = "index.html";
+                    }, 1500);
+                } else {
+                    throw new Error('Problema ao sincronizar conta. Tente novamente.');
+                }
             } else {
                 throw new Error(resultado.error);
             }
             
         } catch (err) {
             console.error("❌ Erro no login:", err);
-            mostrarMensagem("Usuário ou senha incorretos", "error");
+            mostrarMensagem(err.message || "Usuário ou senha incorretos", "error");
         } finally {
             btnLogin.disabled = false;
             btnLogin.textContent = "Entrar";
@@ -79,56 +84,4 @@ document.addEventListener('DOMContentLoaded', function() {
             msg.style.display = "none";
         }, tempo);
     }
-
-    // REMOVIDO: Preenchimento automático para desenvolvimento
 });
-
-// Função de diagnóstico (mantida para debug interno)
-async function diagnosticoCompleto() {
-    console.log('=== 🩺 DIAGNÓSTICO DO SISTEMA ===');
-    
-    try {
-        // 1. Testar conexão básica
-        console.log('1. Testando conexão com Supabase...');
-        const { data, error } = await supabase.from('sistema_usuarios').select('*').limit(1);
-        
-        if (error) {
-            console.error('❌ Falha na conexão:', error);
-            return { success: false, error: error.message };
-        }
-        console.log('✅ Conexão OK');
-
-        // 2. Verificar tabela e usuários
-        console.log('2. Verificando usuários...');
-        const { data: usuarios, error: errUsuarios } = await supabase
-            .from('sistema_usuarios')
-            .select('id, nome, username, tipo, ativo');
-            
-        if (errUsuarios) {
-            console.error('❌ Erro ao buscar usuários:', errUsuarios);
-            return { success: false, error: errUsuarios.message };
-        }
-        
-        console.log(`✅ ${usuarios.length} usuário(s) encontrado(s)`);
-        
-        return { success: true, usuarios: usuarios };
-        
-    } catch (error) {
-        console.error('❌ Erro no diagnóstico:', error);
-        return { success: false, error: error.message };
-    }
-}
-
-// Função de hash independente
-async function hashSenha(senha) {
-    try {
-        const encoder = new TextEncoder();
-        const data = encoder.encode(senha);
-        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-        const hashArray = Array.from(new Uint8Array(hashBuffer));
-        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-    } catch (error) {
-        console.error('❌ Erro no hash:', error);
-        return btoa(senha);
-    }
-}

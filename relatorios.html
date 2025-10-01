@@ -9,7 +9,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/date-fns@2.29.3/index.min.js"></script>
 </head>
 <body>
     <header class="header">
@@ -53,7 +52,7 @@
         <div class="container">
             <div id="alert-container"></div>
             
-            <div id="loading" class="card">
+            <div id="loading" class="card loading-card">
                 <div class="spinner-moderno"></div>
                 <p style="text-align: center; margin-top: 1rem;">Carregando dashboard...</p>
             </div>
@@ -66,12 +65,24 @@
                     
                     <!-- Filtros Rápidos -->
                     <div class="filtros-rapidos">
-                        <button class="filtro-rapido active" data-periodo="hoje">Hoje</button>
-                        <button class="filtro-rapido" data-periodo="ontem">Ontem</button>
-                        <button class="filtro-rapido" data-periodo="semana">Esta Semana</button>
-                        <button class="filtro-rapido" data-periodo="mes">Este Mês</button>
-                        <button class="filtro-rapido" data-periodo="trimestre">Este Trimestre</button>
-                        <button class="filtro-rapido" data-periodo="ano">Este Ano</button>
+                        <button class="filtro-rapido active" data-periodo="hoje">
+                            <i class="fas fa-calendar-day"></i> Hoje
+                        </button>
+                        <button class="filtro-rapido" data-periodo="ontem">
+                            <i class="fas fa-calendar-minus"></i> Ontem
+                        </button>
+                        <button class="filtro-rapido" data-periodo="semana">
+                            <i class="fas fa-calendar-week"></i> Esta Semana
+                        </button>
+                        <button class="filtro-rapido" data-periodo="mes">
+                            <i class="fas fa-calendar-alt"></i> Este Mês
+                        </button>
+                        <button class="filtro-rapido" data-periodo="trimestre">
+                            <i class="fas fa-calendar"></i> Este Trimestre
+                        </button>
+                        <button class="filtro-rapido" data-periodo="ano">
+                            <i class="fas fa-calendar-year"></i> Este Ano
+                        </button>
                     </div>
                 </div>
 
@@ -81,7 +92,9 @@
                         <h3><i class="fas fa-filter"></i> Filtros Avançados</h3>
                         <div class="filtros-grid">
                             <div class="filtro-item">
-                                <label for="periodo">Período:</label>
+                                <label for="periodo">
+                                    <i class="fas fa-clock"></i> Período:
+                                </label>
                                 <select id="periodo">
                                     <option value="hoje">Hoje</option>
                                     <option value="ontem">Ontem</option>
@@ -93,38 +106,32 @@
                                 </select>
                             </div>
                             <div class="filtro-item" id="filtro-datas" style="display: none;">
-                                <label for="data-inicio">De:</label>
+                                <label for="data-inicio">
+                                    <i class="fas fa-calendar-plus"></i> De:
+                                </label>
                                 <input type="date" id="data-inicio">
-                                <label for="data-fim">Até:</label>
+                                <label for="data-fim">
+                                    <i class="fas fa-calendar-minus"></i> Até:
+                                </label>
                                 <input type="date" id="data-fim">
                             </div>
                             <div class="filtro-item">
-                                <label for="filtro-vendedor">Vendedor:</label>
+                                <label for="filtro-vendedor">
+                                    <i class="fas fa-user-tie"></i> Vendedor:
+                                </label>
                                 <select id="filtro-vendedor">
                                     <option value="todos">Todos os Vendedores</option>
                                 </select>
                             </div>
                             <div class="filtro-item">
-                                <label for="filtro-pagamento">Forma de Pagamento:</label>
+                                <label for="filtro-pagamento">
+                                    <i class="fas fa-credit-card"></i> Forma de Pagamento:
+                                </label>
                                 <select id="filtro-pagamento">
                                     <option value="todos">Todas as Formas</option>
                                     <option value="dinheiro">Dinheiro</option>
                                     <option value="cartao">Cartão</option>
                                     <option value="pix">PIX</option>
-                                </select>
-                            </div>
-                            <div class="filtro-item">
-                                <label for="filtro-categoria">Categoria:</label>
-                                <select id="filtro-categoria">
-                                    <option value="todos">Todas as Categorias</option>
-                                </select>
-                            </div>
-                            <div class="filtro-item">
-                                <label for="filtro-status">Status:</label>
-                                <select id="filtro-status">
-                                    <option value="todos">Todos os Status</option>
-                                    <option value="concluido">Concluídas</option>
-                                    <option value="cancelado">Canceladas</option>
                                 </select>
                             </div>
                         </div>
@@ -148,20 +155,40 @@
                 <!-- Métricas em Tempo Real -->
                 <div class="metricas-tempo-real">
                     <div class="metrica-card">
-                        <div class="valor" id="metricas-vendas-hoje">R$ 0,00</div>
-                        <div class="label">Vendas Hoje</div>
+                        <div class="metrica-icon vendas">
+                            <i class="fas fa-money-bill-wave"></i>
+                        </div>
+                        <div class="metrica-info">
+                            <div class="valor" id="metricas-vendas-hoje">R$ 0,00</div>
+                            <div class="label">Vendas Hoje</div>
+                        </div>
                     </div>
                     <div class="metrica-card">
-                        <div class="valor" id="metricas-pedidos-hoje">0</div>
-                        <div class="label">Pedidos Hoje</div>
+                        <div class="metrica-icon pedidos">
+                            <i class="fas fa-shopping-cart"></i>
+                        </div>
+                        <div class="metrica-info">
+                            <div class="valor" id="metricas-pedidos-hoje">0</div>
+                            <div class="label">Pedidos Hoje</div>
+                        </div>
                     </div>
                     <div class="metrica-card">
-                        <div class="valor" id="metricas-clientes-hoje">0</div>
-                        <div class="label">Clientes Atendidos</div>
+                        <div class="metrica-icon clientes">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="metrica-info">
+                            <div class="valor" id="metricas-clientes-hoje">0</div>
+                            <div class="label">Clientes Atendidos</div>
+                        </div>
                     </div>
                     <div class="metrica-card">
-                        <div class="valor" id="metricas-ticket-medio">R$ 0,00</div>
-                        <div class="label">Ticket Médio</div>
+                        <div class="metrica-icon ticket">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <div class="metrica-info">
+                            <div class="valor" id="metricas-ticket-medio">R$ 0,00</div>
+                            <div class="label">Ticket Médio</div>
+                        </div>
                     </div>
                 </div>
 
@@ -174,7 +201,7 @@
                                 <span class="valor" id="total-vendas">R$ 0,00</span>
                                 <span class="variacao positiva" id="variacao-vendas">+0%</span>
                             </div>
-                            <div class="resumo-icon">
+                            <div class="resumo-icon vendas">
                                 <i class="fas fa-money-bill-wave"></i>
                             </div>
                         </div>
@@ -187,7 +214,7 @@
                                 <span class="valor" id="total-pedidos">0</span>
                                 <span class="variacao positiva" id="variacao-pedidos">+0%</span>
                             </div>
-                            <div class="resumo-icon">
+                            <div class="resumo-icon pedidos">
                                 <i class="fas fa-shopping-cart"></i>
                             </div>
                         </div>
@@ -200,7 +227,7 @@
                                 <span class="valor" id="ticket-medio">R$ 0,00</span>
                                 <span class="variacao positiva" id="variacao-ticket">+0%</span>
                             </div>
-                            <div class="resumo-icon">
+                            <div class="resumo-icon ticket">
                                 <i class="fas fa-chart-line"></i>
                             </div>
                         </div>
@@ -213,7 +240,7 @@
                                 <span class="valor" id="produtos-vendidos">0</span>
                                 <span class="variacao positiva" id="variacao-produtos">+0%</span>
                             </div>
-                            <div class="resumo-icon">
+                            <div class="resumo-icon produtos">
                                 <i class="fas fa-boxes"></i>
                             </div>
                         </div>
@@ -226,7 +253,7 @@
                                 <span class="valor" id="total-clientes">0</span>
                                 <span class="variacao positiva" id="variacao-clientes">+0%</span>
                             </div>
-                            <div class="resumo-icon">
+                            <div class="resumo-icon clientes">
                                 <i class="fas fa-users"></i>
                             </div>
                         </div>
@@ -239,7 +266,7 @@
                                 <span class="valor" id="vendas-por-dia">0</span>
                                 <span class="variacao positiva" id="variacao-vendas-dia">+0%</span>
                             </div>
-                            <div class="resumo-icon">
+                            <div class="resumo-icon vendas-dia">
                                 <i class="fas fa-calendar-day"></i>
                             </div>
                         </div>
@@ -250,39 +277,37 @@
                 <div class="dashboard-grid">
                     <div class="graficos-principais">
                         <div class="grafico-card fade-in">
-                            <h3><i class="fas fa-chart-line"></i> Vendas por Dia</h3>
+                            <div class="grafico-header">
+                                <h3><i class="fas fa-chart-line"></i> Vendas por Dia</h3>
+                                <div class="grafico-actions">
+                                    <button class="btn-chart-action" data-chart="diario" data-type="line">
+                                        <i class="fas fa-chart-line"></i>
+                                    </button>
+                                    <button class="btn-chart-action active" data-chart="diario" data-type="bar">
+                                        <i class="fas fa-chart-bar"></i>
+                                    </button>
+                                </div>
+                            </div>
                             <div class="grafico-container">
                                 <canvas id="grafico-diario"></canvas>
                             </div>
                         </div>
                         
                         <div class="grafico-card fade-in">
-                            <h3><i class="fas fa-chart-pie"></i> Vendas por Forma de Pagamento</h3>
+                            <div class="grafico-header">
+                                <h3><i class="fas fa-chart-pie"></i> Vendas por Forma de Pagamento</h3>
+                            </div>
                             <div class="grafico-container">
                                 <canvas id="grafico-pagamento"></canvas>
-                            </div>
-                        </div>
-                        
-                        <div class="grafico-card fade-in">
-                            <h3><i class="fas fa-chart-bar"></i> Produtos Mais Vendidos</h3>
-                            <div class="grafico-container">
-                                <canvas id="grafico-produtos"></canvas>
-                            </div>
-                        </div>
-                        
-                        <div class="grafico-card fade-in">
-                            <h3><i class="fas fa-chart-area"></i> Vendas por Categoria</h3>
-                            <div class="grafico-container">
-                                <canvas id="grafico-categorias"></canvas>
                             </div>
                         </div>
                     </div>
                     
                     <div class="graficos-secundarios">
                         <div class="grafico-card fade-in">
-                            <h3><i class="fas fa-clock"></i> Vendas por Hora</h3>
+                            <h3><i class="fas fa-chart-bar"></i> Produtos Mais Vendidos</h3>
                             <div class="grafico-container pequeno">
-                                <canvas id="grafico-horario"></canvas>
+                                <canvas id="grafico-produtos"></canvas>
                             </div>
                         </div>
                         
@@ -290,13 +315,6 @@
                             <h3><i class="fas fa-user-tie"></i> Performance por Vendedor</h3>
                             <div class="grafico-container pequeno">
                                 <canvas id="grafico-vendedores"></canvas>
-                            </div>
-                        </div>
-                        
-                        <div class="grafico-card fade-in">
-                            <h3><i class="fas fa-trending-up"></i> Meta vs Realizado</h3>
-                            <div class="grafico-container pequeno">
-                                <canvas id="grafico-metas"></canvas>
                             </div>
                         </div>
                     </div>
@@ -307,9 +325,12 @@
                     <div class="card fade-in">
                         <div class="card-header">
                             <h3><i class="fas fa-list"></i> Últimas Vendas</h3>
-                            <button class="btn btn-sm btn-primary" onclick="carregarMaisVendas()">
-                                <i class="fas fa-plus"></i> Carregar Mais
-                            </button>
+                            <div class="card-actions">
+                                <span class="badge-info" id="total-vendas-periodo">0 vendas</span>
+                                <button class="btn btn-sm btn-primary" onclick="carregarMaisVendas()">
+                                    <i class="fas fa-plus"></i> Carregar Mais
+                                </button>
+                            </div>
                         </div>
                         <div class="card-body">
                             <div class="table-container">
@@ -326,7 +347,10 @@
                                     </thead>
                                     <tbody id="vendas-body">
                                         <tr>
-                                            <td colspan="6" style="text-align: center;">Carregando dados...</td>
+                                            <td colspan="6" style="text-align: center;">
+                                                <div class="loading-spinner small"></div>
+                                                Carregando dados...
+                                            </td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -354,7 +378,10 @@
                                     </thead>
                                     <tbody id="vendedores-body">
                                         <tr>
-                                            <td colspan="6" style="text-align: center;">Carregando dados...</td>
+                                            <td colspan="6" style="text-align: center;">
+                                                <div class="loading-spinner small"></div>
+                                                Carregando dados...
+                                            </td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -362,63 +389,17 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- Análise de Clientes -->
-                <div class="card fade-in">
-                    <div class="card-header">
-                        <h3><i class="fas fa-users"></i> Análise de Clientes</h3>
-                    </div>
-                    <div class="card-body">
-                        <div class="tabelas-grid">
-                            <div>
-                                <h4>Clientes Frequentes</h4>
-                                <div class="table-container">
-                                    <table class="table-moderna">
-                                        <thead>
-                                            <tr>
-                                                <th>Cliente</th>
-                                                <th>Compras</th>
-                                                <th>Valor Total</th>
-                                                <th>Última Compra</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="clientes-frequentes-body">
-                                            <tr>
-                                                <td colspan="4" style="text-align: center;">Carregando dados...</td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                            <div>
-                                <h4>Ticket por Cliente</h4>
-                                <div class="table-container">
-                                    <table class="table-moderna">
-                                        <thead>
-                                            <tr>
-                                                <th>Cliente</th>
-                                                <th>Ticket Médio</th>
-                                                <th>Maior Compra</th>
-                                                <th>Frequência</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="ticket-clientes-body">
-                                            <tr>
-                                                <td colspan="4" style="text-align: center;">Carregando dados...</td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
             </div>
 
             <div id="error-message" class="card" style="display: none;">
-                <h2>Erro de Conexão</h2>
-                <p>Não foi possível conectar ao banco de dados.</p>
-                <button onclick="location.reload()" class="btn btn-primary">Tentar Novamente</button>
+                <div class="error-content">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <h2>Erro de Conexão</h2>
+                    <p>Não foi possível conectar ao banco de dados.</p>
+                    <button onclick="location.reload()" class="btn btn-primary">
+                        <i class="fas fa-redo"></i> Tentar Novamente
+                    </button>
+                </div>
             </div>
         </div>
     </main>
@@ -458,6 +439,11 @@
             menuToggle.addEventListener('click', function() {
                 mainNav.classList.toggle('active');
             });
+        }
+
+        // Verificar autenticação
+        if (!window.sistemaAuth || !window.sistemaAuth.verificarAutenticacao()) {
+            window.location.href = 'login.html';
         }
     });
     </script>

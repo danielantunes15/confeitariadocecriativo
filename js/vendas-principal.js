@@ -1,4 +1,4 @@
-// js/vendas-principal.js - Sistema completo de vendas com Supabase
+// js/vendas-principal.js - Sistema completo de vendas CORRIGIDO
 document.addEventListener('DOMContentLoaded', async function() {
     // Verificar autenticação
     const usuario = window.sistemaAuth?.verificarAutenticacao();
@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     console.log('👤 Usuário logado:', usuario.nome);
+    console.log('🆔 ID do usuário:', usuario.id);
 
     // Elementos do DOM
     const categoriasContainer = document.getElementById('categorias-container');
@@ -44,6 +45,14 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         if (!conexaoOk) {
             throw new Error('Não foi possível conectar ao banco de dados');
+        }
+
+        // Verificar se o usuário está sincronizado
+        console.log('🔍 Verificando sincronização do usuário...');
+        const usuarioValido = await window.sistemaAuth.verificarUsuarioNoBanco();
+        if (!usuarioValido) {
+            console.log('🔄 Sincronizando usuário...');
+            await window.sistemaAuth.sincronizarUsuario();
         }
 
         // Inicializar a aplicação
@@ -115,7 +124,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         categoriaTodos.setAttribute('data-categoria', 'todos');
         categoriaTodos.innerHTML = `
             <i class="fas fa-th-large"></i>
-            Todos
+            <span>Todos</span>
         `;
         categoriaTodos.addEventListener('click', () => {
             selecionarCategoria('todos');
@@ -130,7 +139,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             categoriaBtn.setAttribute('data-categoria', categoria.id);
             categoriaBtn.innerHTML = `
                 <i class="fas ${categoria.icone || 'fa-tag'}"></i>
-                ${categoria.nome}
+                <span>${categoria.nome}</span>
             `;
             categoriaBtn.addEventListener('click', () => {
                 selecionarCategoria(categoria.id);
@@ -260,6 +269,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 </div>
             `;
             totalCarrinho.textContent = '0,00';
+            finalizarPedidoBtn.disabled = true;
         } else {
             carrinhoItens.innerHTML = '';
             
@@ -279,9 +289,16 @@ document.addEventListener('DOMContentLoaded', async function() {
                         <div class="carrinho-item-preco">R$ ${item.produto.preco_venda.toFixed(2)}</div>
                     </div>
                     <div class="carrinho-item-controles">
-                        <button class="btn-remover" data-index="${index}">-</button>
+                        <button class="btn-remover" data-index="${index}">
+                            <i class="fas fa-minus"></i>
+                        </button>
                         <span class="carrinho-item-quantidade">${item.quantidade}</span>
-                        <button class="btn-adicionar-carrinho" data-index="${index}">+</button>
+                        <button class="btn-adicionar-carrinho" data-index="${index}">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+                    <div class="carrinho-item-subtotal">
+                        R$ ${itemSubtotal.toFixed(2)}
                     </div>
                 `;
                 
@@ -290,6 +307,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             
             // Atualizar total
             totalCarrinho.textContent = total.toFixed(2);
+            finalizarPedidoBtn.disabled = false;
             
             // Adicionar event listeners aos botões do carrinho
             document.querySelectorAll('.btn-remover').forEach(btn => {
@@ -319,7 +337,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
         
         atualizarCarrinho();
-        mostrarMensagem(`${produtoNome} removido do carrinho.`, 'success');
+        mostrarMensagem(`${produtoNome} removido do carrinho.`, 'info');
     }
 
     // Função para aumentar quantidade de um item
@@ -347,9 +365,14 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
             });
         }
+
+        // Logout
+        document.getElementById('logout-btn')?.addEventListener('click', () => {
+            window.sistemaAuth.fazerLogout();
+        });
     }
 
-    // Função para finalizar pedido
+    // FUNÇÃO FINALIZAR PEDIDO - COMPLETAMENTE CORRIGIDA
     async function finalizarPedido() {
         if (carrinho.length === 0) {
             mostrarMensagem('Adicione produtos ao carrinho antes de finalizar o pedido.', 'error');
@@ -363,56 +386,94 @@ document.addEventListener('DOMContentLoaded', async function() {
             return;
         }
         
-        const nomeCliente = nomeClienteInput.value || 'Cliente não identificado';
+        const nomeCliente = nomeClienteInput.value.trim() || 'Cliente não identificado';
         
+        // Calcular total
+        const total = carrinho.reduce((sum, item) => {
+            return sum + (item.produto.preco_venda * item.quantidade);
+        }, 0);
+
         // Confirmar pedido
-        if (!confirm(`Deseja finalizar o pedido com ${carrinho.length} item(s)?\n\nCliente: ${nomeCliente}\nForma de pagamento: ${formaPagamento.value}\n\nTotal: R$ ${totalCarrinho.textContent}`)) {
+        if (!confirm(`Deseja finalizar o pedido com ${carrinho.length} item(s)?\n\nCliente: ${nomeCliente}\nForma de pagamento: ${formaPagamento.value}\n\nTotal: R$ ${total.toFixed(2)}`)) {
             return;
         }
         
         try {
-            // Calcular total
-            const total = carrinho.reduce((sum, item) => {
-                return sum + (item.produto.preco_venda * item.quantidade);
-            }, 0);
+            mostrarMensagem('Processando pedido...', 'info');
+            finalizarPedidoBtn.disabled = true;
+            finalizarPedidoBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processando...';
+
+            // 1. VERIFICAR SE O USUÁRIO ESTÁ SINCRONIZADO COM O BANCO
+            console.log('🔍 Verificando sincronização do usuário...');
+            const usuarioValido = await window.sistemaAuth.verificarUsuarioNoBanco();
             
-            // Preparar dados da venda
+            if (!usuarioValido) {
+                console.log('🔄 Tentando sincronizar usuário...');
+                const sincronizado = await window.sistemaAuth.sincronizarUsuario();
+                
+                if (!sincronizado) {
+                    throw new Error('Problema com a conta de usuário. Faça login novamente.');
+                }
+            }
+
+            // 2. VERIFICAR ESTOQUE
+            console.log('🔍 Verificando estoque...');
+            for (const item of carrinho) {
+                await window.vendasSupabase.verificarEstoque(item.produto.id, item.quantidade);
+            }
+
+            // 3. PREPARAR DADOS DA VENDA COM USUÁRIO CORRETO
+            const usuarioAtual = window.sistemaAuth.usuarioLogado;
             const vendaData = {
                 data_venda: new Date().toISOString().split('T')[0],
                 cliente: nomeCliente,
                 total: total,
                 forma_pagamento: formaPagamento.value,
                 observacoes: '',
-                usuario_id: window.sistemaAuth.usuarioLogado.id,
-                created_at: new Date().toISOString()
+                usuario_id: usuarioAtual.id // ✅ AGORA COM ID CORRETO
             };
-            
-            // Inserir venda
+
+            console.log('📝 Dados da venda preparados:', vendaData);
+            console.log('👤 ID do usuário sendo usado:', usuarioAtual.id);
+            console.log('👤 Nome do usuário:', usuarioAtual.nome);
+
+            // 4. CRIAR VENDA
+            console.log('🛒 Criando venda no banco...');
             const venda = await window.vendasSupabase.criarVenda(vendaData);
             
-            // Preparar itens da venda
+            if (!venda || !venda.id) {
+                throw new Error('Falha ao criar venda - ID não retornado');
+            }
+
+            console.log('✅ Venda criada com ID:', venda.id);
+
+            // 5. PREPARAR ITENS DA VENDA
             const itensVenda = carrinho.map(item => ({
                 venda_id: venda.id,
                 produto_id: item.produto.id,
                 quantidade: item.quantidade,
-                preco_unitario: item.produto.preco_venda,
-                created_at: new Date().toISOString()
+                preco_unitario: item.produto.preco_venda
             }));
-            
-            // Inserir itens da venda
+
+            console.log('📋 Itens da venda preparados:', itensVenda);
+
+            // 6. CRIAR ITENS DA VENDA
+            console.log('📦 Inserindo itens da venda...');
             await window.vendasSupabase.criarItensVenda(itensVenda);
-            
-            // Atualizar estoque para cada produto
+
+            // 7. ATUALIZAR ESTOQUE
+            console.log('📊 Atualizando estoque...');
             for (const item of carrinho) {
                 const novoEstoque = item.produto.estoque_atual - item.quantidade;
                 await window.vendasSupabase.atualizarEstoque(item.produto.id, novoEstoque);
             }
-            
-            // Mensagem de sucesso
+
+            // 8. MENSAGEM DE SUCESSO
             let mensagem = `✅ Pedido finalizado com sucesso!\n\n`;
             mensagem += `📋 Número do Pedido: ${venda.id}\n`;
             mensagem += `👤 Cliente: ${nomeCliente}\n`;
-            mensagem += `💳 Forma de pagamento: ${formaPagamento.value}\n\n`;
+            mensagem += `💳 Forma de pagamento: ${formaPagamento.value}\n`;
+            mensagem += `👨‍💼 Vendedor: ${usuarioAtual.nome}\n\n`;
             mensagem += `🛍️ Itens do pedido:\n`;
             
             carrinho.forEach(item => {
@@ -420,11 +481,13 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
             
             mensagem += `\n💰 Total: R$ ${total.toFixed(2)}`;
-            
+
+            // Mostrar alerta de sucesso
             alert(mensagem);
-            mostrarMensagem('Pedido finalizado com sucesso!', 'success');
+            mostrarMensagem('✅ Pedido finalizado com sucesso!', 'success');
             
-            // Limpar carrinho e recarregar produtos
+            // 9. LIMPAR CARRINHO E RECARREGAR
+            console.log('🔄 Limpando carrinho...');
             carrinho = [];
             atualizarCarrinho();
             nomeClienteInput.value = '';
@@ -432,12 +495,48 @@ document.addEventListener('DOMContentLoaded', async function() {
                 radio.checked = false;
             });
             
-            // Recarregar produtos para atualizar estoque
+            // 10. RECARREGAR PRODUTOS
+            console.log('🔄 Recarregando produtos...');
             await carregarProdutos();
             
         } catch (error) {
             console.error('❌ Erro ao finalizar pedido:', error);
-            mostrarMensagem('Erro ao finalizar pedido: ' + error.message, 'error');
+            
+            let mensagemErro = 'Erro ao finalizar pedido: ';
+            
+            if (error.message.includes('usuario') || error.message.includes('conta') || error.message.includes('login')) {
+                mensagemErro = error.message;
+            } else if (error.message.includes('foreign key') || error.message.includes('usuario_id') || error.message.includes('23503')) {
+                mensagemErro = 'Problema com a conta de usuário. Faça login novamente.';
+                // Forçar logout em caso de problema de usuário
+                setTimeout(() => {
+                    mostrarMensagem('Redirecionando para login...', 'warning');
+                    setTimeout(() => {
+                        window.sistemaAuth.fazerLogout();
+                    }, 2000);
+                }, 1000);
+            } else if (error.message.includes('estoque')) {
+                mensagemErro = error.message;
+            } else if (error.message.includes('Conflict') || error.message.includes('409') || error.message.includes('23505')) {
+                mensagemErro = 'Erro de conflito no banco de dados. Esta venda já pode ter sido processada.';
+            } else if (error.message.includes('network') || error.message.includes('connection')) {
+                mensagemErro = 'Erro de conexão. Verifique sua internet e tente novamente.';
+            } else {
+                mensagemErro += error.message;
+            }
+            
+            mostrarMensagem(mensagemErro, 'error');
+            
+            // Tentar recarregar produtos em caso de erro
+            try {
+                await carregarProdutos();
+            } catch (reloadError) {
+                console.error('❌ Erro ao recarregar produtos:', reloadError);
+            }
+        } finally {
+            // Reativar o botão
+            finalizarPedidoBtn.disabled = false;
+            finalizarPedidoBtn.innerHTML = 'Finalizar Pedido';
         }
     }
 
@@ -471,11 +570,11 @@ document.addEventListener('DOMContentLoaded', async function() {
         alertDiv.style.border = `1px solid ${cor.border}`;
         
         alertDiv.innerHTML = `
-            <div class="alert-content" style="flex: 1;">
-                <i class="fas ${tipo === 'success' ? 'fa-check' : tipo === 'error' ? 'fa-exclamation-triangle' : tipo === 'warning' ? 'fa-exclamation' : 'fa-info'}" style="margin-right: 0.5rem;"></i>
+            <div class="alert-content" style="flex: 1; display: flex; align-items: center; gap: 0.5rem;">
+                <i class="fas ${tipo === 'success' ? 'fa-check' : tipo === 'error' ? 'fa-exclamation-triangle' : tipo === 'warning' ? 'fa-exclamation' : 'fa-info'}"></i>
                 <span>${mensagem}</span>
             </div>
-            <button class="alert-close" style="background: none; border: none; font-size: 1.2rem; cursor: pointer; color: inherit;">&times;</button>
+            <button class="alert-close" style="background: none; border: none; font-size: 1.2rem; cursor: pointer; color: inherit; padding: 0; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;">&times;</button>
         `;
         
         alertContainer.appendChild(alertDiv);
@@ -527,60 +626,35 @@ document.addEventListener('DOMContentLoaded', async function() {
                 icone: 'fa-candy-cane',
                 ativo: true,
                 categoria: { nome: 'Doces' }
-            },
-            {
-                id: '3',
-                nome: 'Coxinha',
-                categoria_id: 3,
-                preco_venda: 4.00,
-                estoque_atual: 30,
-                estoque_minimo: 10,
-                icone: 'fa-drumstick-bite',
-                ativo: true,
-                categoria: { nome: 'Salgados' }
-            },
-            {
-                id: '4',
-                nome: 'Torta de Morango',
-                categoria_id: 1,
-                preco_venda: 35.00,
-                estoque_atual: 5,
-                estoque_minimo: 3,
-                icone: 'fa-pie',
-                ativo: true,
-                categoria: { nome: 'Bolos' }
             }
         ];
         
         exibirCategorias();
         exibirProdutos();
+        mostrarMensagem('Modo demonstração ativado - Dados de exemplo', 'warning');
     }
 
-    // Adicionar estilos CSS dinamicamente para os badges
-    const style = document.createElement('style');
-    style.textContent = `
-        .low-stock-badge {
-            position: absolute;
-            top: 0.5rem;
-            left: 0.5rem;
-            background-color: #ff9800;
-            color: white;
-            padding: 0.3rem 0.6rem;
-            border-radius: 4px;
-            font-size: 0.7rem;
-            font-weight: bold;
+    // Exportar funções para debug
+    window.debugCarrinho = function() {
+        console.log('🛒 Debug Carrinho:', {
+            itens: carrinho,
+            total: carrinho.reduce((sum, item) => sum + (item.produto.preco_venda * item.quantidade), 0),
+            quantidadeItens: carrinho.length
+        });
+    };
+
+    window.limparCarrinho = function() {
+        carrinho = [];
+        atualizarCarrinho();
+        mostrarMensagem('Carrinho limpo', 'info');
+    };
+
+    window.verificarUsuario = async function() {
+        const usuarioValido = await window.sistemaAuth.verificarUsuarioNoBanco();
+        if (usuarioValido) {
+            mostrarMensagem('✅ Usuário válido no banco', 'success');
+        } else {
+            mostrarMensagem('❌ Usuário não encontrado no banco', 'error');
         }
-        
-        @keyframes slideInRight {
-            from {
-                opacity: 0;
-                transform: translateX(100%);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
-        }
-    `;
-    document.head.appendChild(style);
+    };
 });

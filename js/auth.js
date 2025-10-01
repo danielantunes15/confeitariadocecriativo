@@ -34,7 +34,7 @@ class SistemaAuth {
                 throw new Error('Usuário e senha são obrigatórios');
             }
 
-            // Gerar hash da senha (SEM SALT - igual ao banco)
+            // Gerar hash da senha
             const senhaHash = await this.hashSenha(senha);
             console.log('📋 Hash gerado:', senhaHash);
 
@@ -69,9 +69,9 @@ class SistemaAuth {
                 throw new Error('Senha incorreta');
             }
 
-            // Login bem-sucedido
+            // Login bem-sucedido - SALVAR O ID CORRETO DO BANCO
             this.usuarioLogado = {
-                id: usuario.id,
+                id: usuario.id, // ✅ USAR O ID DO BANCO, NÃO DO SUPABASE AUTH
                 nome: usuario.nome,
                 username: usuario.username,
                 tipo: usuario.tipo,
@@ -79,7 +79,7 @@ class SistemaAuth {
             };
 
             localStorage.setItem('usuarioLogado', JSON.stringify(this.usuarioLogado));
-            console.log('✅ Login realizado com sucesso!');
+            console.log('✅ Login realizado com sucesso! ID do usuário:', this.usuarioLogado.id);
             
             return { 
                 success: true, 
@@ -107,7 +107,6 @@ class SistemaAuth {
     // Função de hash CORRIGIDA (SEM SALT)
     async hashSenha(senha) {
         try {
-            // USAR APENAS A SENHA - SEM SALT (para coincidir com o banco)
             const texto = senha;
             
             const encoder = new TextEncoder();
@@ -128,7 +127,7 @@ class SistemaAuth {
 
     // Verificar se é admin
     isAdmin() {
-        return this.usuarioLogado && this.usuarioLogado.tipo === 'admin';
+        return this.usuarioLogado && this.usuarioLogado.tipo === 'administrador';
     }
 
     // Verificar autenticação e redirecionar se necessário
@@ -149,41 +148,108 @@ class SistemaAuth {
         }
         return true;
     }
-}
 
-// Adicionar esta função auxiliar ao auth.js (se não existir)
-async function hashSenha(senha) {
-    try {
-        const encoder = new TextEncoder();
-        const data = encoder.encode(senha);
-        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-        const hashArray = Array.from(new Uint8Array(hashBuffer));
-        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-    } catch (error) {
-        console.error('Erro ao gerar hash:', error);
-        return btoa(senha);
+    // NOVO MÉTODO: Verificar se o usuário existe no banco
+    async verificarUsuarioNoBanco() {
+        if (!this.usuarioLogado || !this.usuarioLogado.id) {
+            return false;
+        }
+
+        try {
+            const { data: usuario, error } = await supabase
+                .from('sistema_usuarios')
+                .select('id')
+                .eq('id', this.usuarioLogado.id)
+                .single();
+
+            if (error || !usuario) {
+                console.error('❌ Usuário não encontrado no banco:', this.usuarioLogado.id);
+                return false;
+            }
+
+            console.log('✅ Usuário verificado no banco:', usuario.id);
+            return true;
+        } catch (error) {
+            console.error('❌ Erro ao verificar usuário no banco:', error);
+            return false;
+        }
+    }
+
+    // NOVO MÉTODO: Sincronizar usuário com o banco
+    async sincronizarUsuario() {
+        if (!this.usuarioLogado) {
+            return false;
+        }
+
+        try {
+            const { data: usuario, error } = await supabase
+                .from('sistema_usuarios')
+                .select('*')
+                .eq('username', this.usuarioLogado.username)
+                .single();
+
+            if (error || !usuario) {
+                console.error('❌ Usuário não encontrado para sincronização');
+                return false;
+            }
+
+            // Atualizar dados do usuário logado
+            this.usuarioLogado = {
+                id: usuario.id,
+                nome: usuario.nome,
+                username: usuario.username,
+                tipo: usuario.tipo,
+                ativo: usuario.ativo
+            };
+
+            localStorage.setItem('usuarioLogado', JSON.stringify(this.usuarioLogado));
+            console.log('✅ Usuário sincronizado com banco:', this.usuarioLogado.id);
+            return true;
+
+        } catch (error) {
+            console.error('❌ Erro ao sincronizar usuário:', error);
+            return false;
+        }
+    }
+
+    // NOVO MÉTODO: Obter usuário atualizado do banco
+    async obterUsuarioAtualizado() {
+        if (!this.usuarioLogado) {
+            return null;
+        }
+
+        try {
+            const { data: usuario, error } = await supabase
+                .from('sistema_usuarios')
+                .select('*')
+                .eq('id', this.usuarioLogado.id)
+                .single();
+
+            if (error || !usuario) {
+                console.error('❌ Erro ao obter usuário atualizado:', error);
+                return null;
+            }
+
+            return usuario;
+        } catch (error) {
+            console.error('❌ Erro ao obter usuário atualizado:', error);
+            return null;
+        }
     }
 }
 
-// js/auth.js - ADICIONAR NO FINAL DO ARQUIVO
-
-// Função global para logout que pode ser chamada de qualquer lugar
+// Função global para logout
 window.fazerLogoutGlobal = function() {
     if (window.sistemaAuth) {
         window.sistemaAuth.fazerLogout();
     } else {
-        // Fallback: limpar localStorage e redirecionar
         localStorage.removeItem('usuarioLogado');
-        localStorage.removeItem('usuarioNome');
-        localStorage.removeItem('usuarioTipo');
-        localStorage.removeItem('usuarioUsername');
         window.location.href = 'login.html';
     }
 };
 
 // Configurar event listener global para botões de logout
 document.addEventListener('DOMContentLoaded', function() {
-    // Configurar logout para todos os botões com id 'logout-btn'
     const logoutBtn = document.getElementById('logout-btn');
     if (logoutBtn) {
         logoutBtn.addEventListener('click', function(e) {
@@ -192,13 +258,34 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Também configurar para elementos com classe 'btn-logout'
     document.querySelectorAll('.btn-logout').forEach(btn => {
         btn.addEventListener('click', function(e) {
             e.preventDefault();
             window.fazerLogoutGlobal();
         });
     });
+
+    // Verificar sincronização do usuário ao carregar a página
+    if (window.sistemaAuth && window.sistemaAuth.usuarioLogado) {
+        setTimeout(async () => {
+            console.log('🔄 Verificando sincronização do usuário...');
+            const sincronizado = await window.sistemaAuth.sincronizarUsuario();
+            if (!sincronizado) {
+                console.warn('⚠️ Usuário não sincronizado com o banco. Algumas funcionalidades podem não funcionar.');
+                
+                // Tentar obter usuário atualizado
+                const usuarioAtualizado = await window.sistemaAuth.obterUsuarioAtualizado();
+                if (!usuarioAtualizado) {
+                    console.error('❌ Problema grave com usuário. Redirecionando para login...');
+                    setTimeout(() => {
+                        window.sistemaAuth.fazerLogout();
+                    }, 2000);
+                }
+            } else {
+                console.log('✅ Usuário sincronizado com sucesso!');
+            }
+        }, 1000);
+    }
 });
 
 // Instância global
