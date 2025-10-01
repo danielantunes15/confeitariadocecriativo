@@ -1,4 +1,4 @@
-// js/relatorios.js - VERSÃO COMPLETA COM CONTROLE DE ACESSO E NOVAS FUNCIONALIDADES
+// js/relatorios.js - VERSÃO CORRIGIDA COM PERFORMANCE POR VENDEDOR
 document.addEventListener('DOMContentLoaded', async function() {
     // Verificar autenticação E se é administrador
     const usuario = window.sistemaAuth?.verificarAutenticacao();
@@ -429,7 +429,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
 
-    // Carregar dados de vendedores - VERSÃO SIMPLIFICADA
+    // Carregar dados de vendedores - VERSÃO CORRIGIDA
     async function carregarDadosVendedores(dataInicio, dataFim) {
         try {
             console.log('👥 Carregando dados de vendedores...');
@@ -437,18 +437,174 @@ document.addEventListener('DOMContentLoaded', async function() {
             // Buscar vendedores ativos
             const { data: vendedores, error } = await supabase
                 .from('sistema_usuarios')
-                .select('id, nome')
+                .select('id, nome, username')
                 .eq('ativo', true);
 
             if (error) throw error;
 
             console.log(`✅ ${vendedores?.length || 0} vendedores encontrados`);
-            dadosRelatorios.vendedores = vendedores || [];
+
+            // Calcular performance de cada vendedor
+            const vendedoresComPerformance = await Promise.all(
+                vendedores.map(async (vendedor) => {
+                    return await calcularPerformanceVendedor(vendedor, dataInicio, dataFim);
+                })
+            );
+
+            dadosRelatorios.vendedores = vendedoresComPerformance;
+            console.log(`📊 Performance calculada para ${vendedoresComPerformance.length} vendedores`);
 
         } catch (error) {
             console.error('Erro ao carregar dados de vendedores:', error);
             dadosRelatorios.vendedores = [];
         }
+    }
+
+    // Função para calcular performance do vendedor - VERSÃO CORRIGIDA
+    async function calcularPerformanceVendedor(vendedor, dataInicio, dataFim) {
+        try {
+            const dataInicioISO = new Date(dataInicio + 'T00:00:00').toISOString();
+            const dataFimISO = new Date(dataFim + 'T23:59:59').toISOString();
+            
+            console.log(`🔍 Buscando vendas para vendedor: ${vendedor.nome}`);
+            
+            // PRIMEIRO: Verificar quais colunas existem na tabela vendas
+            const { data: colunasVendas, error: errorColunas } = await supabase
+                .from('vendas')
+                .select('*')
+                .limit(1);
+
+            if (errorColunas) {
+                console.warn('Erro ao verificar colunas da tabela vendas:', errorColunas);
+            } else if (colunasVendas && colunasVendas.length > 0) {
+                console.log('📋 Colunas disponíveis na tabela vendas:', Object.keys(colunasVendas[0]));
+            }
+
+            // TENTAR DIFERENTES CAMPOS POSSÍVEIS PARA VENDEDOR
+            let vendasVendedor = [];
+            
+            // Tentativa 1: Campo 'vendedor_id'
+            try {
+                const { data, error } = await supabase
+                    .from('vendas')
+                    .select('*')
+                    .eq('vendedor_id', vendedor.id)
+                    .gte('created_at', dataInicioISO)
+                    .lte('created_at', dataFimISO);
+
+                if (!error && data) {
+                    vendasVendedor = data;
+                    console.log(`✅ ${vendedor.nome}: ${vendasVendedor.length} vendas encontradas por vendedor_id`);
+                }
+            } catch (e) {
+                console.log(`❌ Campo vendedor_id não funciona para ${vendedor.nome}`);
+            }
+
+            // Tentativa 2: Campo 'usuario_id' (se vendedor_id não funcionou)
+            if (vendasVendedor.length === 0) {
+                try {
+                    const { data, error } = await supabase
+                        .from('vendas')
+                        .select('*')
+                        .eq('usuario_id', vendedor.id)
+                        .gte('created_at', dataInicioISO)
+                        .lte('created_at', dataFimISO);
+
+                    if (!error && data) {
+                        vendasVendedor = data;
+                        console.log(`✅ ${vendedor.nome}: ${vendasVendedor.length} vendas encontradas por usuario_id`);
+                    }
+                } catch (e) {
+                    console.log(`❌ Campo usuario_id não funciona para ${vendedor.nome}`);
+                }
+            }
+
+            // Tentativa 3: Campo 'vendedor' (nome do vendedor)
+            if (vendasVendedor.length === 0) {
+                try {
+                    const { data, error } = await supabase
+                        .from('vendas')
+                        .select('*')
+                        .eq('vendedor', vendedor.nome)
+                        .gte('created_at', dataInicioISO)
+                        .lte('created_at', dataFimISO);
+
+                    if (!error && data) {
+                        vendasVendedor = data;
+                        console.log(`✅ ${vendedor.nome}: ${vendasVendedor.length} vendas encontradas por nome`);
+                    }
+                } catch (e) {
+                    console.log(`❌ Campo vendedor (nome) não funciona para ${vendedor.nome}`);
+                }
+            }
+
+            // Tentativa 4: Buscar todas as vendas e filtrar localmente (fallback)
+            if (vendasVendedor.length === 0) {
+                console.log(`🔄 ${vendedor.nome}: Tentando busca local...`);
+                const todasVendas = dadosRelatorios.vendas || [];
+                
+                // Filtrar vendas que podem ser deste vendedor
+                // Esta é uma abordagem mais genérica que pode precisar de ajustes
+                vendasVendedor = todasVendas.filter(venda => {
+                    // Verificar diferentes campos possíveis
+                    return venda.vendedor_id === vendedor.id ||
+                           venda.usuario_id === vendedor.id ||
+                           venda.vendedor === vendedor.nome ||
+                           venda.vendedor_nome === vendedor.nome;
+                });
+                
+                console.log(`📊 ${vendedor.nome}: ${vendasVendedor.length} vendas encontradas localmente`);
+            }
+
+            // Calcular métricas
+            const totalVendas = vendasVendedor.length;
+            const valorTotal = vendasVendedor.reduce((sum, v) => sum + (v.total || 0), 0);
+            const ticketMedio = totalVendas > 0 ? valorTotal / totalVendas : 0;
+
+            // Calcular vendas por dia
+            const diasNoPeriodo = Math.max(1, calcularDiasUteis(dataInicio, dataFim));
+            const vendasPorDia = totalVendas / diasNoPeriodo;
+
+            console.log(`📈 ${vendedor.nome}: ${totalVendas} vendas, R$ ${valorTotal.toFixed(2)}, Ticket: R$ ${ticketMedio.toFixed(2)}`);
+
+            return {
+                ...vendedor,
+                totalVendas,
+                valorTotal,
+                ticketMedio,
+                vendasPorDia,
+                vendas: vendasVendedor
+            };
+
+        } catch (error) {
+            console.error(`Erro ao calcular performance do vendedor ${vendedor.nome}:`, error);
+            // Retornar dados vazios em caso de erro
+            return {
+                ...vendedor,
+                totalVendas: 0,
+                valorTotal: 0,
+                ticketMedio: 0,
+                vendasPorDia: 0,
+                vendas: []
+            };
+        }
+    }
+
+    // Função auxiliar para calcular dias úteis no período
+    function calcularDiasUteis(dataInicio, dataFim) {
+        const inicio = new Date(dataInicio);
+        const fim = new Date(dataFim);
+        let diasUteis = 0;
+        
+        for (let data = new Date(inicio); data <= fim; data.setDate(data.getDate() + 1)) {
+            const diaSemana = data.getDay();
+            // Considera apenas dias de semana (segunda a sexta)
+            if (diaSemana !== 0 && diaSemana !== 6) {
+                diasUteis++;
+            }
+        }
+        
+        return Math.max(1, diasUteis);
     }
 
     // Atualizar resumo
@@ -712,7 +868,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 data: {
                     labels: labels,
                     datasets: [{
-                        label: 'Vendas (R$)',
+                        label: 'Vendas (R$)', 
                         data: data,
                         borderColor: '#007bff',
                         backgroundColor: 'rgba(0, 123, 255, 0.1)',
@@ -838,12 +994,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                         },
                         tooltip: {
                             callbacks: {
-                                title: function(tooltipItems) {
-                                    const fullName = topProdutos[tooltipItems[0].dataIndex][0];
-                                    return fullName;
-                                },
-                                label: function(context) {
-                                    return `Vendidos: ${context.parsed.y} unidades`;
+                                title: function(context) {
+                                    const index = context[0].dataIndex;
+                                    return topProdutos[index][0]; // Nome completo
                                 }
                             }
                         }
@@ -853,9 +1006,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         } else {
             ctx.innerHTML = `
                 <div style="text-align: center; color: #666; padding: 40px;">
-                    <i class="fas fa-chart-bar" style="font-size: 48px; margin-bottom: 10px; opacity: 0.5;"></i>
+                    <i class="fas fa-boxes" style="font-size: 48px; margin-bottom: 10px; opacity: 0.5;"></i>
                     <p>Nenhum dado de produtos disponível</p>
-                    <small>Não há informações de produtos vendidos no período</small>
+                    <small>Não há produtos vendidos no período</small>
                 </div>
             `;
         }
@@ -942,25 +1095,40 @@ document.addEventListener('DOMContentLoaded', async function() {
         }).join('');
     }
 
-    // Tabela de performance de vendedores
+    // Tabela de performance de vendedores - VERSÃO CORRIGIDA
     function atualizarTabelaVendedores() {
         const tbody = document.getElementById('vendedores-body');
         const vendedores = dadosRelatorios.vendedores || [];
         
-        if (vendedores.length === 0) {
+        // Ordenar por valor total (maior primeiro)
+        const vendedoresOrdenados = [...vendedores].sort((a, b) => b.valorTotal - a.valorTotal);
+        
+        if (vendedoresOrdenados.length === 0) {
             tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 20px;">Nenhum vendedor encontrado</td></tr>';
             return;
         }
         
-        tbody.innerHTML = vendedores.map(vendedor => `
-            <tr>
-                <td>${vendedor.nome}</td>
-                <td>-</td>
-                <td>-</td>
-                <td>-</td>
-                <td>-</td>
-            </tr>
-        `).join('');
+        tbody.innerHTML = vendedoresOrdenados.map((vendedor, index) => {
+            const posicao = index + 1;
+            const classePosicao = posicao === 1 ? 'ranking-ouro' : 
+                                posicao === 2 ? 'ranking-prata' : 
+                                posicao === 3 ? 'ranking-bronze' : '';
+            
+            return `
+                <tr>
+                    <td>
+                        <div class="ranking-vendedor ${classePosicao}">
+                            <span class="posicao">${posicao}º</span>
+                            <span class="nome">${vendedor.nome}</span>
+                        </div>
+                    </td>
+                    <td>${vendedor.totalVendas}</td>
+                    <td>R$ ${vendedor.valorTotal.toFixed(2)}</td>
+                    <td>R$ ${vendedor.ticketMedio.toFixed(2)}</td>
+                    <td>${vendedor.vendasPorDia.toFixed(1)}</td>
+                </tr>
+            `;
+        }).join('');
     }
 
     // Exportar relatório
@@ -981,6 +1149,14 @@ document.addEventListener('DOMContentLoaded', async function() {
         conteudo += `Total de Pedidos: ${document.getElementById('total-pedidos').textContent}\n`;
         conteudo += `Ticket Médio: ${document.getElementById('ticket-medio').textContent}\n`;
         conteudo += `Produtos Vendidos: ${document.getElementById('produtos-vendidos').textContent}\n\n`;
+        
+        // Adicionar performance de vendedores
+        conteudo += `PERFORMANCE POR VENDEDOR:\n`;
+        const vendedores = dadosRelatorios.vendedores || [];
+        vendedores.forEach((vendedor, index) => {
+            conteudo += `${index + 1}º - ${vendedor.nome}: ${vendedor.totalVendas} vendas, R$ ${vendedor.valorTotal.toFixed(2)}, Ticket: R$ ${vendedor.ticketMedio.toFixed(2)}\n`;
+        });
+        conteudo += `\n`;
         
         // Adicionar vendas detalhadas
         conteudo += `VENDAS DETALHADAS:\n`;

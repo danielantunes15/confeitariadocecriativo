@@ -1,4 +1,4 @@
-// js/vendas-principal.js
+// js/vendas-principal.js - Sistema completo de vendas com Supabase
 document.addEventListener('DOMContentLoaded', async function() {
     // Verificar autenticação
     const usuario = window.sistemaAuth?.verificarAutenticacao();
@@ -7,78 +7,57 @@ document.addEventListener('DOMContentLoaded', async function() {
         return;
     }
 
+    console.log('👤 Usuário logado:', usuario.nome);
+
     // Elementos do DOM
-    const loadingElement = document.getElementById('loading');
-    const contentElement = document.getElementById('content');
-    const errorElement = document.getElementById('error-message');
     const categoriasContainer = document.getElementById('categorias-container');
     const produtosContainer = document.getElementById('produtos-container');
-    const carrinhoVazio = document.getElementById('carrinho-vazio');
     const carrinhoItens = document.getElementById('carrinho-itens');
-    const carrinhoLista = document.getElementById('carrinho-lista');
-    const subtotalCarrinho = document.getElementById('subtotal-carrinho');
-    const finalizarVendaBtn = document.getElementById('finalizar-venda');
-    const cancelarItemBtn = document.getElementById('cancelar-item');
-    const cancelarVendaBtn = document.getElementById('cancelar-venda');
-    const contadorProdutos = document.getElementById('contador-produtos');
-    const contadorCarrinho = document.getElementById('contador-carrinho');
-    const searchInput = document.getElementById('search-produtos');
+    const totalCarrinho = document.getElementById('total-carrinho');
+    const finalizarPedidoBtn = document.getElementById('finalizar-pedido');
+    const nomeClienteInput = document.getElementById('nome-cliente');
 
     // Variáveis globais
     let categorias = [];
     let produtos = [];
-    let produtosFiltrados = [];
     let carrinho = [];
-    let categoriaSelecionada = null;
+    let categoriaSelecionada = 'todos';
+
+    // Criar container de alertas
+    let alertContainer = document.getElementById('alert-container');
+    if (!alertContainer) {
+        alertContainer = document.createElement('div');
+        alertContainer.id = 'alert-container';
+        alertContainer.style.position = 'fixed';
+        alertContainer.style.top = '20px';
+        alertContainer.style.right = '20px';
+        alertContainer.style.zIndex = '1050';
+        alertContainer.style.maxWidth = '400px';
+        alertContainer.style.width = '100%';
+        document.body.appendChild(alertContainer);
+    }
 
     try {
-        // Mostrar loading
-        if (loadingElement) loadingElement.style.display = 'flex';
-        if (contentElement) contentElement.style.display = 'none';
-        if (errorElement) errorElement.style.display = 'none';
-
-        // Testar conexão com Supabase
-        await testarConexaoSupabase();
+        // Testar conexão primeiro
+        console.log('🔧 Inicializando sistema de vendas...');
+        const conexaoOk = await window.vendasSupabase.testarConexao();
         
-        // Esconder loading e mostrar conteúdo
-        if (loadingElement) loadingElement.style.display = 'none';
-        if (contentElement) contentElement.style.display = 'block';
+        if (!conexaoOk) {
+            throw new Error('Não foi possível conectar ao banco de dados');
+        }
 
         // Inicializar a aplicação
         await inicializarVendas();
 
     } catch (error) {
-        console.error('Erro na inicialização:', error);
-        if (loadingElement) loadingElement.style.display = 'none';
-        if (errorElement) {
-            errorElement.style.display = 'flex';
-            errorElement.innerHTML = `
-                <div class="error-content">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    <h2>Erro de Conexão</h2>
-                    <p>Não foi possível conectar ao banco de dados.</p>
-                    <p>Detalhes do erro: ${error.message}</p>
-                    <button onclick="location.reload()" class="btn btn-primary">Tentar Novamente</button>
-                </div>
-            `;
-        }
-    }
-
-    // Função para testar conexão
-    async function testarConexaoSupabase() {
-        try {
-            const { data, error } = await supabase
-                .from('produtos')
-                .select('count')
-                .limit(1);
-                
-            if (error) throw error;
-            
-            console.log('✅ Conexão com Supabase estabelecida (vendas principal)');
-            return true;
-        } catch (error) {
-            throw new Error(`Erro Supabase: ${error.message}`);
-        }
+        console.error('❌ Erro na inicialização:', error);
+        mostrarMensagem('Erro ao carregar o sistema: ' + error.message, 'error');
+        
+        // Mostrar produtos de exemplo em caso de erro
+        setTimeout(() => {
+            carregarProdutosExemplo();
+            mostrarMensagem('Sistema carregado em modo demonstração', 'info');
+        }, 2000);
     }
 
     // Função para inicializar a aplicação de vendas
@@ -91,16 +70,11 @@ document.addEventListener('DOMContentLoaded', async function() {
             // Configurar event listeners
             configurarEventListeners();
             
-            // Exibir categorias
-            exibirCategorias();
-            
-            // Exibir todos os produtos inicialmente
-            exibirProdutos(produtos);
-
-            console.log('✅ Módulo de vendas principal inicializado com sucesso!');
+            console.log('✅ Sistema de vendas inicializado com sucesso!');
+            mostrarMensagem('Sistema carregado com sucesso!', 'success');
 
         } catch (error) {
-            console.error('Erro na inicialização do módulo de vendas principal:', error);
+            console.error('❌ Erro na inicialização do sistema de vendas:', error);
             throw error;
         }
     }
@@ -108,19 +82,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Função para carregar categorias
     async function carregarCategorias() {
         try {
-            const { data, error } = await supabase
-                .from('categorias')
-                .select('*')
-                .eq('ativo', true)
-                .order('nome');
-                
-            if (error) throw error;
-            
-            categorias = data;
-            console.log(`✅ ${categorias.length} categorias carregadas`);
+            categorias = await window.vendasSupabase.buscarCategorias();
+            exibirCategorias();
             
         } catch (error) {
-            console.error('Erro ao carregar categorias:', error);
+            console.error('❌ Erro ao carregar categorias:', error);
             throw error;
         }
     }
@@ -128,39 +94,12 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Função para carregar produtos
     async function carregarProdutos() {
         try {
-            const { data, error } = await supabase
-                .from('produtos')
-                .select('*, categoria:categorias(nome)')
-                .eq('ativo', true)
-                .order('nome');
-                
-            if (error) throw error;
-            
-            produtos = data;
-            produtosFiltrados = [...produtos];
-            atualizarContadorProdutos();
-            console.log(`✅ ${produtos.length} produtos carregados`);
+            produtos = await window.vendasSupabase.buscarProdutos();
+            exibirProdutos();
             
         } catch (error) {
-            console.error('Erro ao carregar produtos:', error);
+            console.error('❌ Erro ao carregar produtos:', error);
             throw error;
-        }
-    }
-
-    // Função para atualizar contador de produtos
-    function atualizarContadorProdutos() {
-        if (contadorProdutos) {
-            const count = produtosFiltrados.length;
-            contadorProdutos.textContent = `${count} produto${count !== 1 ? 's' : ''}`;
-        }
-    }
-
-    // Função para atualizar contador do carrinho
-    function atualizarContadorCarrinho() {
-        if (contadorCarrinho) {
-            const totalItens = carrinho.reduce((total, item) => total + item.quantidade, 0);
-            contadorCarrinho.textContent = totalItens;
-            contadorCarrinho.style.display = totalItens > 0 ? 'block' : 'none';
         }
     }
 
@@ -171,70 +110,71 @@ document.addEventListener('DOMContentLoaded', async function() {
         categoriasContainer.innerHTML = '';
         
         // Adicionar categoria "Todos"
-        const categoriaTodos = document.createElement('div');
-        categoriaTodos.className = `categoria-card ${!categoriaSelecionada ? 'active' : ''}`;
+        const categoriaTodos = document.createElement('button');
+        categoriaTodos.className = `categoria-btn ${categoriaSelecionada === 'todos' ? 'active' : ''}`;
+        categoriaTodos.setAttribute('data-categoria', 'todos');
         categoriaTodos.innerHTML = `
-            <div class="categoria-icon">
-                <i class="fas fa-th-large"></i>
-            </div>
-            <h3>Todos</h3>
-            <span class="categoria-count">${produtos.length}</span>
+            <i class="fas fa-th-large"></i>
+            Todos
         `;
         categoriaTodos.addEventListener('click', () => {
-            categoriaSelecionada = null;
-            produtosFiltrados = [...produtos];
-            exibirProdutos(produtosFiltrados);
-            
-            // Atualizar estado ativo das categorias
-            document.querySelectorAll('.categoria-card').forEach(card => {
-                card.classList.remove('active');
-            });
-            categoriaTodos.classList.add('active');
+            selecionarCategoria('todos');
         });
         
         categoriasContainer.appendChild(categoriaTodos);
         
         // Adicionar categorias do banco
         categorias.forEach(categoria => {
-            const produtosNaCategoria = produtos.filter(p => p.categoria_id === categoria.id).length;
-            const categoriaCard = document.createElement('div');
-            categoriaCard.className = `categoria-card ${categoriaSelecionada === categoria.id ? 'active' : ''}`;
-            categoriaCard.innerHTML = `
-                <div class="categoria-icon">
-                    <i class="fas ${categoria.icone || 'fa-tag'}"></i>
-                </div>
-                <h3>${categoria.nome}</h3>
-                <span class="categoria-count">${produtosNaCategoria}</span>
+            const categoriaBtn = document.createElement('button');
+            categoriaBtn.className = `categoria-btn ${categoriaSelecionada === categoria.id ? 'active' : ''}`;
+            categoriaBtn.setAttribute('data-categoria', categoria.id);
+            categoriaBtn.innerHTML = `
+                <i class="fas ${categoria.icone || 'fa-tag'}"></i>
+                ${categoria.nome}
             `;
-            categoriaCard.addEventListener('click', () => {
-                categoriaSelecionada = categoria.id;
-                produtosFiltrados = produtos.filter(p => p.categoria_id === categoria.id);
-                exibirProdutos(produtosFiltrados);
-                
-                // Atualizar estado ativo das categorias
-                document.querySelectorAll('.categoria-card').forEach(card => {
-                    card.classList.remove('active');
-                });
-                categoriaCard.classList.add('active');
+            categoriaBtn.addEventListener('click', () => {
+                selecionarCategoria(categoria.id);
             });
             
-            categoriasContainer.appendChild(categoriaCard);
+            categoriasContainer.appendChild(categoriaBtn);
         });
     }
 
+    // Função para selecionar categoria
+    function selecionarCategoria(categoriaId) {
+        categoriaSelecionada = categoriaId;
+        
+        // Atualizar botões ativos
+        document.querySelectorAll('.categoria-btn').forEach(botao => {
+            if (botao.getAttribute('data-categoria') === categoriaId) {
+                botao.classList.add('active');
+            } else {
+                botao.classList.remove('active');
+            }
+        });
+        
+        // Exibir produtos da categoria selecionada
+        exibirProdutos();
+    }
+
     // Função para exibir produtos
-    function exibirProdutos(produtosParaExibir) {
+    function exibirProdutos() {
         if (!produtosContainer) return;
         
         produtosContainer.innerHTML = '';
-        atualizarContadorProdutos();
+        
+        let produtosParaExibir = produtos;
+        
+        if (categoriaSelecionada !== 'todos') {
+            produtosParaExibir = produtos.filter(p => p.categoria_id === categoriaSelecionada);
+        }
         
         if (!produtosParaExibir || produtosParaExibir.length === 0) {
             produtosContainer.innerHTML = `
-                <div class="produtos-vazios">
-                    <i class="fas fa-search"></i>
+                <div style="grid-column: 1 / -1; text-align: center; padding: 3rem; color: #666;">
+                    <i class="fas fa-search" style="font-size: 3rem; margin-bottom: 1rem;"></i>
                     <h3>Nenhum produto encontrado</h3>
-                    <p>Tente selecionar outra categoria ou ajustar sua busca</p>
+                    <p>Tente selecionar outra categoria</p>
                 </div>
             `;
             return;
@@ -244,29 +184,34 @@ document.addEventListener('DOMContentLoaded', async function() {
             const produtoCard = document.createElement('div');
             produtoCard.className = `produto-card ${produto.estoque_atual <= 0 ? 'out-of-stock' : ''}`;
             produtoCard.innerHTML = `
-                <div class="produto-image">
+                <div class="produto-imagem">
                     <i class="fas ${produto.icone || 'fa-cube'}"></i>
                     ${produto.estoque_atual <= 0 ? '<div class="out-of-stock-badge">ESGOTADO</div>' : ''}
+                    ${produto.estoque_atual > 0 && produto.estoque_atual <= produto.estoque_minimo ? 
+                      '<div class="low-stock-badge">ESTOQUE BAIXO</div>' : ''}
                 </div>
                 <div class="produto-info">
-                    <h3 class="produto-nome">${produto.nome}</h3>
-                    <p class="produto-categoria">${produto.categoria?.nome || 'Sem categoria'}</p>
-                    <div class="produto-details">
-                        <div class="produto-preco">R$ ${produto.preco_venda.toFixed(2)}</div>
-                        <div class="produto-estoque">Estoque: ${produto.estoque_atual}</div>
-                    </div>
+                    <div class="produto-nome">${produto.nome}</div>
+                    <div class="produto-categoria">${produto.categoria?.nome || 'Sem categoria'}</div>
+                    <div class="produto-preco">R$ ${produto.preco_venda?.toFixed(2) || '0.00'}</div>
+                    <div class="produto-estoque">Estoque: ${produto.estoque_atual}</div>
+                    <button class="btn-adicionar" data-id="${produto.id}" ${produto.estoque_atual <= 0 ? 'disabled' : ''}>
+                        ${produto.estoque_atual <= 0 ? 'Sem Estoque' : 'Adicionar ao Carrinho'}
+                    </button>
                 </div>
-                ${produto.estoque_atual > 0 ? '<div class="produto-action"><i class="fas fa-plus"></i></div>' : ''}
             `;
             
             if (produto.estoque_atual > 0) {
-                produtoCard.addEventListener('click', () => {
+                produtoCard.addEventListener('click', (e) => {
+                    if (!e.target.classList.contains('btn-adicionar')) {
+                        adicionarAoCarrinho(produto);
+                    }
+                });
+                
+                const btnAdicionar = produtoCard.querySelector('.btn-adicionar');
+                btnAdicionar.addEventListener('click', (e) => {
+                    e.stopPropagation();
                     adicionarAoCarrinho(produto);
-                    // Efeito visual de confirmação
-                    produtoCard.classList.add('added');
-                    setTimeout(() => {
-                        produtoCard.classList.remove('added');
-                    }, 500);
                 });
             }
             
@@ -307,103 +252,74 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // Função para atualizar exibição do carrinho
     function atualizarCarrinho() {
-        atualizarContadorCarrinho();
-        
         if (carrinho.length === 0) {
-            carrinhoVazio.style.display = 'flex';
-            carrinhoItens.style.display = 'none';
+            carrinhoItens.innerHTML = `
+                <div style="text-align: center; padding: 2rem; color: #666;">
+                    <i class="fas fa-shopping-cart" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                    <p>Seu carrinho está vazio</p>
+                </div>
+            `;
+            totalCarrinho.textContent = '0,00';
         } else {
-            carrinhoVazio.style.display = 'none';
-            carrinhoItens.style.display = 'block';
+            carrinhoItens.innerHTML = '';
             
-            // Limpar lista atual
-            carrinhoLista.innerHTML = '';
-            
-            // Calcular subtotal
-            let subtotal = 0;
+            // Calcular total
+            let total = 0;
             
             // Adicionar itens ao carrinho
             carrinho.forEach((item, index) => {
                 const itemSubtotal = item.produto.preco_venda * item.quantidade;
-                subtotal += itemSubtotal;
+                total += itemSubtotal;
                 
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>
-                        <div class="carrinho-item-produto">
-                            <div class="produto-icon">
-                                <i class="fas ${item.produto.icone || 'fa-cube'}"></i>
-                            </div>
-                            <div class="produto-desc">
-                                <div class="produto-nome">${item.produto.nome}</div>
-                                <div class="produto-categoria">${item.produto.categoria?.nome || 'Sem categoria'}</div>
-                            </div>
-                        </div>
-                    </td>
-                    <td>
-                        <div class="carrinho-item-quantidade">
-                            <button class="btn-quantidade diminuir-quantidade" data-index="${index}">
-                                <i class="fas fa-minus"></i>
-                            </button>
-                            <input type="number" value="${item.quantidade}" min="1" max="${item.produto.estoque_atual}" data-index="${index}">
-                            <button class="btn-quantidade aumentar-quantidade" data-index="${index}">
-                                <i class="fas fa-plus"></i>
-                            </button>
-                        </div>
-                    </td>
-                    <td class="preco-unitario">R$ ${item.produto.preco_venda.toFixed(2)}</td>
-                    <td class="subtotal">R$ ${itemSubtotal.toFixed(2)}</td>
-                    <td>
-                        <button class="btn btn-danger btn-remover remover-item" data-index="${index}" title="Remover item">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </td>
+                const itemElement = document.createElement('div');
+                itemElement.className = 'carrinho-item';
+                itemElement.innerHTML = `
+                    <div class="carrinho-item-info">
+                        <div class="carrinho-item-nome">${item.produto.nome}</div>
+                        <div class="carrinho-item-preco">R$ ${item.produto.preco_venda.toFixed(2)}</div>
+                    </div>
+                    <div class="carrinho-item-controles">
+                        <button class="btn-remover" data-index="${index}">-</button>
+                        <span class="carrinho-item-quantidade">${item.quantidade}</span>
+                        <button class="btn-adicionar-carrinho" data-index="${index}">+</button>
+                    </div>
                 `;
                 
-                carrinhoLista.appendChild(tr);
+                carrinhoItens.appendChild(itemElement);
             });
             
-            // Atualizar subtotal
-            subtotalCarrinho.textContent = `R$ ${subtotal.toFixed(2)}`;
+            // Atualizar total
+            totalCarrinho.textContent = total.toFixed(2);
             
-            // Adicionar event listeners aos botões
-            document.querySelectorAll('.diminuir-quantidade').forEach(btn => {
+            // Adicionar event listeners aos botões do carrinho
+            document.querySelectorAll('.btn-remover').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const index = parseInt(this.getAttribute('data-index'));
-                    diminuirQuantidade(index);
+                    removerDoCarrinho(index);
                 });
             });
             
-            document.querySelectorAll('.aumentar-quantidade').forEach(btn => {
+            document.querySelectorAll('.btn-adicionar-carrinho').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const index = parseInt(this.getAttribute('data-index'));
                     aumentarQuantidade(index);
                 });
             });
-            
-            document.querySelectorAll('.remover-item').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const index = parseInt(this.getAttribute('data-index'));
-                    removerItem(index);
-                });
-            });
-            
-            document.querySelectorAll('.carrinho-item-quantidade input').forEach(input => {
-                input.addEventListener('change', function() {
-                    const index = parseInt(this.getAttribute('data-index'));
-                    const novaQuantidade = parseInt(this.value) || 1;
-                    alterarQuantidade(index, novaQuantidade);
-                });
-            });
         }
     }
 
-    // Função para diminuir quantidade de um item
-    function diminuirQuantidade(index) {
+    // Função para remover item do carrinho
+    function removerDoCarrinho(index) {
+        const produtoNome = carrinho[index].produto.nome;
+        
         if (carrinho[index].quantidade > 1) {
             carrinho[index].quantidade -= 1;
-            atualizarCarrinho();
+        } else {
+            carrinho.splice(index, 1);
         }
+        
+        atualizarCarrinho();
+        mostrarMensagem(`${produtoNome} removido do carrinho.`, 'success');
     }
 
     // Função para aumentar quantidade de um item
@@ -416,124 +332,41 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
 
-    // Função para alterar quantidade de um item
-    function alterarQuantidade(index, novaQuantidade) {
-        if (novaQuantidade < 1) {
-            novaQuantidade = 1;
-        }
-        
-        if (novaQuantidade > carrinho[index].produto.estoque_atual) {
-            novaQuantidade = carrinho[index].produto.estoque_atual;
-            mostrarMensagem(`Quantidade ajustada para o máximo disponível: ${novaQuantidade}`, 'warning');
-        }
-        
-        carrinho[index].quantidade = novaQuantidade;
-        atualizarCarrinho();
-    }
-
-    // Função para remover item do carrinho
-    function removerItem(index) {
-        const produtoNome = carrinho[index].produto.nome;
-        carrinho.splice(index, 1);
-        atualizarCarrinho();
-        mostrarMensagem(`${produtoNome} removido do carrinho.`, 'success');
-    }
-
     // Função para configurar event listeners
     function configurarEventListeners() {
-        // Finalizar venda
-        if (finalizarVendaBtn) {
-            finalizarVendaBtn.addEventListener('click', finalizarVenda);
+        // Finalizar pedido
+        if (finalizarPedidoBtn) {
+            finalizarPedidoBtn.addEventListener('click', finalizarPedido);
         }
-        
-        // Cancelar item
-        if (cancelarItemBtn) {
-            cancelarItemBtn.addEventListener('click', abrirModalCancelarItem);
-        }
-        
-        // Cancelar venda
-        if (cancelarVendaBtn) {
-            cancelarVendaBtn.addEventListener('click', cancelarVenda);
-        }
-        
-        // Busca de produtos
-        if (searchInput) {
-            searchInput.addEventListener('input', filtrarProdutos);
-        }
-        // Logout
-        const logoutBtn = document.getElementById('logout-btn');
-        if (logoutBtn) {
-        logoutBtn.addEventListener('click', function(e) {
-        e.preventDefault();
-        if (confirm('Deseja realmente sair do sistema?')) {
-            if (window.sistemaAuth) {
-                window.sistemaAuth.fazerLogout();
-            } else {
-                // Fallback
-                localStorage.removeItem('usuarioLogado');
-                window.location.href = 'login.html';
-            }
-        }
-    });
-}
-        // Modal cancelar item
-        const modalCancelarItem = document.getElementById('modal-cancelar-item');
-        const closeModalBtn = modalCancelarItem?.querySelector('.close');
-        const cancelarModalItemBtn = document.getElementById('cancelar-modal-item');
-        const confirmarCancelarItemBtn = document.getElementById('confirmar-cancelar-item');
-        
-        if (closeModalBtn) {
-            closeModalBtn.addEventListener('click', () => {
-                modalCancelarItem.style.display = 'none';
+
+        // Enter no campo do cliente também finaliza pedido
+        if (nomeClienteInput) {
+            nomeClienteInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && carrinho.length > 0) {
+                    finalizarPedido();
+                }
             });
         }
-        
-        if (cancelarModalItemBtn) {
-            cancelarModalItemBtn.addEventListener('click', () => {
-                modalCancelarItem.style.display = 'none';
-            });
-        }
-        
-        if (confirmarCancelarItemBtn) {
-            confirmarCancelarItemBtn.addEventListener('click', confirmarCancelarItem);
-        }
-        
-        window.addEventListener('click', (e) => {
-            if (e.target === modalCancelarItem) {
-                modalCancelarItem.style.display = 'none';
-            }
-        });
     }
 
-    // Função para filtrar produtos
-    function filtrarProdutos() {
-        const termo = searchInput.value.toLowerCase().trim();
-        
-        if (!termo) {
-            produtosFiltrados = categoriaSelecionada 
-                ? produtos.filter(p => p.categoria_id === categoriaSelecionada)
-                : [...produtos];
-        } else {
-            produtosFiltrados = produtos.filter(produto => 
-                produto.nome.toLowerCase().includes(termo) ||
-                (produto.categoria?.nome || '').toLowerCase().includes(termo)
-            );
-        }
-        
-        exibirProdutos(produtosFiltrados);
-    }
-
-    // Função para finalizar venda
-    async function finalizarVenda() {
+    // Função para finalizar pedido
+    async function finalizarPedido() {
         if (carrinho.length === 0) {
-            mostrarMensagem('Adicione produtos ao carrinho antes de finalizar a venda.', 'error');
+            mostrarMensagem('Adicione produtos ao carrinho antes de finalizar o pedido.', 'error');
             return;
         }
         
-        const formaPagamento = document.querySelector('input[name="forma-pagamento"]:checked').value;
+        const formaPagamento = document.querySelector('input[name="pagamento"]:checked');
         
-        // Confirmar venda
-        if (!confirm(`Deseja finalizar a venda com ${carrinho.length} item(s)?\nForma de pagamento: ${formaPagamento}`)) {
+        if (!formaPagamento) {
+            mostrarMensagem('Por favor, selecione uma forma de pagamento.', 'error');
+            return;
+        }
+        
+        const nomeCliente = nomeClienteInput.value || 'Cliente não identificado';
+        
+        // Confirmar pedido
+        if (!confirm(`Deseja finalizar o pedido com ${carrinho.length} item(s)?\n\nCliente: ${nomeCliente}\nForma de pagamento: ${formaPagamento.value}\n\nTotal: R$ ${totalCarrinho.textContent}`)) {
             return;
         }
         
@@ -543,162 +376,106 @@ document.addEventListener('DOMContentLoaded', async function() {
                 return sum + (item.produto.preco_venda * item.quantidade);
             }, 0);
             
-            // Inserir venda
-            const { data: venda, error: vendaError } = await supabase
-                .from('vendas')
-                .insert({
-                    data_venda: new Date().toISOString().split('T')[0],
-                    cliente: 'Cliente não identificado',
-                    total: total,
-                    forma_pagamento: formaPagamento,
-                    observacoes: '',
-                    usuario_id: window.sistemaAuth.usuarioLogado.id
-                })
-                .select()
-                .single();
-                
-            if (vendaError) throw vendaError;
+            // Preparar dados da venda
+            const vendaData = {
+                data_venda: new Date().toISOString().split('T')[0],
+                cliente: nomeCliente,
+                total: total,
+                forma_pagamento: formaPagamento.value,
+                observacoes: '',
+                usuario_id: window.sistemaAuth.usuarioLogado.id,
+                created_at: new Date().toISOString()
+            };
             
-            // Inserir itens da venda
+            // Inserir venda
+            const venda = await window.vendasSupabase.criarVenda(vendaData);
+            
+            // Preparar itens da venda
             const itensVenda = carrinho.map(item => ({
                 venda_id: venda.id,
                 produto_id: item.produto.id,
                 quantidade: item.quantidade,
-                preco_unitario: item.produto.preco_venda
+                preco_unitario: item.produto.preco_venda,
+                created_at: new Date().toISOString()
             }));
             
-            const { error: itensError } = await supabase
-                .from('vendas_itens')
-                .insert(itensVenda);
-                
-            if (itensError) throw itensError;
+            // Inserir itens da venda
+            await window.vendasSupabase.criarItensVenda(itensVenda);
             
-            // Atualizar estoque
+            // Atualizar estoque para cada produto
             for (const item of carrinho) {
-                const { error: estoqueError } = await supabase
-                    .from('produtos')
-                    .update({ 
-                        estoque_atual: item.produto.estoque_atual - item.quantidade 
-                    })
-                    .eq('id', item.produto.id);
-                    
-                if (estoqueError) {
-                    console.warn('Erro ao atualizar estoque:', estoqueError);
-                }
+                const novoEstoque = item.produto.estoque_atual - item.quantidade;
+                await window.vendasSupabase.atualizarEstoque(item.produto.id, novoEstoque);
             }
             
-            mostrarMensagem('Venda finalizada com sucesso!', 'success');
+            // Mensagem de sucesso
+            let mensagem = `✅ Pedido finalizado com sucesso!\n\n`;
+            mensagem += `📋 Número do Pedido: ${venda.id}\n`;
+            mensagem += `👤 Cliente: ${nomeCliente}\n`;
+            mensagem += `💳 Forma de pagamento: ${formaPagamento.value}\n\n`;
+            mensagem += `🛍️ Itens do pedido:\n`;
+            
+            carrinho.forEach(item => {
+                mensagem += `• ${item.produto.nome} (x${item.quantidade}) - R$ ${(item.produto.preco_venda * item.quantidade).toFixed(2)}\n`;
+            });
+            
+            mensagem += `\n💰 Total: R$ ${total.toFixed(2)}`;
+            
+            alert(mensagem);
+            mostrarMensagem('Pedido finalizado com sucesso!', 'success');
             
             // Limpar carrinho e recarregar produtos
             carrinho = [];
             atualizarCarrinho();
-            await carregarProdutos();
-            exibirProdutos(produtosFiltrados);
-            
-        } catch (error) {
-            console.error('Erro ao finalizar venda:', error);
-            mostrarMensagem('Erro ao finalizar venda: ' + error.message, 'error');
-        }
-    }
-
-    // Função para abrir modal de cancelar item
-    function abrirModalCancelarItem() {
-        if (carrinho.length === 0) {
-            mostrarMensagem('O carrinho está vazio.', 'error');
-            return;
-        }
-        
-        const modalCancelarItem = document.getElementById('modal-cancelar-item');
-        const listaItensCancelar = document.getElementById('lista-itens-cancelar');
-        
-        if (!modalCancelarItem || !listaItensCancelar) return;
-        
-        // Limpar lista anterior
-        listaItensCancelar.innerHTML = '';
-        
-        // Adicionar itens à lista
-        carrinho.forEach((item, index) => {
-            const itemDiv = document.createElement('div');
-            itemDiv.className = 'item-cancelar';
-            itemDiv.dataset.index = index;
-            itemDiv.innerHTML = `
-                <div class="item-cancelar-info">
-                    <div class="item-icon">
-                        <i class="fas ${item.produto.icone || 'fa-cube'}"></i>
-                    </div>
-                    <div class="item-details">
-                        <div class="item-nome"><strong>${item.produto.nome}</strong></div>
-                        <div class="item-quantidade">Quantidade: ${item.quantidade}</div>
-                        <div class="item-subtotal">Subtotal: R$ ${(item.produto.preco_venda * item.quantidade).toFixed(2)}</div>
-                    </div>
-                </div>
-            `;
-            
-            itemDiv.addEventListener('click', function() {
-                // Desselecionar todos
-                document.querySelectorAll('.item-cancelar').forEach(el => {
-                    el.classList.remove('selected');
-                });
-                
-                // Selecionar este
-                this.classList.add('selected');
+            nomeClienteInput.value = '';
+            document.querySelectorAll('input[name="pagamento"]').forEach(radio => {
+                radio.checked = false;
             });
             
-            listaItensCancelar.appendChild(itemDiv);
-        });
-        
-        modalCancelarItem.style.display = 'block';
-    }
-
-    // Função para confirmar cancelamento de item
-    function confirmarCancelarItem() {
-        const itemSelecionado = document.querySelector('.item-cancelar.selected');
-        
-        if (!itemSelecionado) {
-            mostrarMensagem('Selecione um item para cancelar.', 'error');
-            return;
-        }
-        
-        const index = parseInt(itemSelecionado.dataset.index);
-        const produtoNome = carrinho[index].produto.nome;
-        
-        if (confirm(`Deseja cancelar o item "${produtoNome}"?`)) {
-            carrinho.splice(index, 1);
-            atualizarCarrinho();
-            mostrarMensagem(`Item "${produtoNome}" cancelado.`, 'success');
+            // Recarregar produtos para atualizar estoque
+            await carregarProdutos();
             
-            // Fechar modal
-            document.getElementById('modal-cancelar-item').style.display = 'none';
-        }
-    }
-
-    // Função para cancelar venda
-    function cancelarVenda() {
-        if (carrinho.length === 0) {
-            mostrarMensagem('O carrinho já está vazio.', 'info');
-            return;
-        }
-        
-        if (confirm('Deseja cancelar toda a venda e limpar o carrinho?')) {
-            carrinho = [];
-            atualizarCarrinho();
-            mostrarMensagem('Venda cancelada. Carrinho limpo.', 'success');
+        } catch (error) {
+            console.error('❌ Erro ao finalizar pedido:', error);
+            mostrarMensagem('Erro ao finalizar pedido: ' + error.message, 'error');
         }
     }
 
     // Função para mostrar mensagens
     function mostrarMensagem(mensagem, tipo = 'info') {
-        const alertContainer = document.getElementById('alert-container');
-        if (!alertContainer) return;
-        
         const alertDiv = document.createElement('div');
         alertDiv.className = `alert alert-${tipo}`;
+        alertDiv.style.cssText = `
+            padding: 1rem 1.5rem;
+            margin-bottom: 1rem;
+            border-radius: 8px;
+            animation: slideInRight 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+        `;
+        
+        // Cores baseadas no tipo
+        const cores = {
+            success: { bg: '#e8f5e9', color: '#2e7d32', border: '#c8e6c9' },
+            error: { bg: '#ffebee', color: '#c62828', border: '#ffcdd2' },
+            warning: { bg: '#fff3e0', color: '#ef6c00', border: '#ffe0b2' },
+            info: { bg: '#e3f2fd', color: '#1565c0', border: '#bbdefb' }
+        };
+        
+        const cor = cores[tipo] || cores.info;
+        alertDiv.style.backgroundColor = cor.bg;
+        alertDiv.style.color = cor.color;
+        alertDiv.style.border = `1px solid ${cor.border}`;
+        
         alertDiv.innerHTML = `
-            <div class="alert-content">
-                <i class="fas ${tipo === 'success' ? 'fa-check' : tipo === 'error' ? 'fa-exclamation-triangle' : tipo === 'warning' ? 'fa-exclamation' : 'fa-info'}"></i>
+            <div class="alert-content" style="flex: 1;">
+                <i class="fas ${tipo === 'success' ? 'fa-check' : tipo === 'error' ? 'fa-exclamation-triangle' : tipo === 'warning' ? 'fa-exclamation' : 'fa-info'}" style="margin-right: 0.5rem;"></i>
                 <span>${mensagem}</span>
             </div>
-            <button class="alert-close">&times;</button>
+            <button class="alert-close" style="background: none; border: none; font-size: 1.2rem; cursor: pointer; color: inherit;">&times;</button>
         `;
         
         alertContainer.appendChild(alertDiv);
@@ -715,4 +492,95 @@ document.addEventListener('DOMContentLoaded', async function() {
             alertDiv.remove();
         });
     }
+
+    // Função de fallback para carregar produtos exemplo
+    function carregarProdutosExemplo() {
+        console.log('📦 Carregando produtos de exemplo...');
+        
+        // Categorias exemplo
+        categorias = [
+            { id: 1, nome: 'Bolos', icone: 'fa-birthday-cake', ativo: true },
+            { id: 2, nome: 'Doces', icone: 'fa-candy-cane', ativo: true },
+            { id: 3, nome: 'Salgados', icone: 'fa-pizza-slice', ativo: true }
+        ];
+        
+        // Produtos exemplo
+        produtos = [
+            {
+                id: '1',
+                nome: 'Bolo de Chocolate',
+                categoria_id: 1,
+                preco_venda: 25.00,
+                estoque_atual: 10,
+                estoque_minimo: 5,
+                icone: 'fa-birthday-cake',
+                ativo: true,
+                categoria: { nome: 'Bolos' }
+            },
+            {
+                id: '2',
+                nome: 'Brigadeiro',
+                categoria_id: 2,
+                preco_venda: 2.50,
+                estoque_atual: 50,
+                estoque_minimo: 20,
+                icone: 'fa-candy-cane',
+                ativo: true,
+                categoria: { nome: 'Doces' }
+            },
+            {
+                id: '3',
+                nome: 'Coxinha',
+                categoria_id: 3,
+                preco_venda: 4.00,
+                estoque_atual: 30,
+                estoque_minimo: 10,
+                icone: 'fa-drumstick-bite',
+                ativo: true,
+                categoria: { nome: 'Salgados' }
+            },
+            {
+                id: '4',
+                nome: 'Torta de Morango',
+                categoria_id: 1,
+                preco_venda: 35.00,
+                estoque_atual: 5,
+                estoque_minimo: 3,
+                icone: 'fa-pie',
+                ativo: true,
+                categoria: { nome: 'Bolos' }
+            }
+        ];
+        
+        exibirCategorias();
+        exibirProdutos();
+    }
+
+    // Adicionar estilos CSS dinamicamente para os badges
+    const style = document.createElement('style');
+    style.textContent = `
+        .low-stock-badge {
+            position: absolute;
+            top: 0.5rem;
+            left: 0.5rem;
+            background-color: #ff9800;
+            color: white;
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: bold;
+        }
+        
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(100%);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+    `;
+    document.head.appendChild(style);
 });

@@ -1,16 +1,15 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Vendas - Confeitaria Doces Criativos</title>
+    <title>Vendas - Confeitaria Doces Criativos</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/vendas.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-    <!-- Header Mobile First -->
     <header class="header">
         <div class="container">
             <div class="header-content">
@@ -19,7 +18,7 @@
                     <i class="fas fa-bars"></i>
                 </button>
                 <nav class="nav" id="mainNav">
-                    <a href="index.html" class="nav-link active">
+                    <a href="index.html" class="nav-link">
                         <i class="fas fa-shopping-cart"></i>
                         <span>Vendas</span>
                     </a>
@@ -50,184 +49,84 @@
 
     <main class="main">
         <div class="container">
-            <!-- Alertas -->
             <div id="alert-container"></div>
-            
-            <!-- Loading -->
-            <div id="loading" class="loading-container">
-                <div class="spinner"></div>
-                <p>Carregando sistema de vendas...</p>
-            </div>
 
-            <!-- Conteúdo Principal -->
-            <div id="content" style="display: none;">
-                <!-- Layout em Grid Responsivo -->
-                <div class="vendas-grid">
-                    <!-- Coluna 1: Categorias -->
-                    <section class="section-categorias">
-                        <div class="card">
-                            <div class="card-header">
-                                <h2><i class="fas fa-tags"></i> Categorias</h2>
-                            </div>
-                            <div class="card-body">
-                                <div id="categorias-container" class="categorias-grid">
-                                    <!-- Categorias serão carregadas dinamicamente -->
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-
-                    <!-- Coluna 2: Produtos -->
-                    <section class="section-produtos">
-                        <div class="card">
-                            <div class="card-header">
-                                <div class="produtos-header">
-                                    <h2><i class="fas fa-boxes"></i> Produtos</h2>
-                                    <div class="produtos-info">
-                                        <span id="contador-produtos" class="badge">0</span>
-                                        <div class="search-box">
-                                            <input type="text" id="search-produtos" placeholder="Buscar produtos...">
-                                            <i class="fas fa-search"></i>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="card-body">
-                                <div id="produtos-container" class="produtos-grid">
-                                    <!-- Produtos serão carregados dinamicamente -->
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-
-                    <!-- Coluna 3: Carrinho e Pagamento -->
-                    <section class="section-lateral">
-                        <!-- Carrinho -->
-                        <div class="card carrinho-card">
-                            <div class="card-header">
-                                <h2><i class="fas fa-shopping-cart"></i> Carrinho</h2>
-                                <span id="contador-carrinho" class="badge">0</span>
-                            </div>
-                            <div class="card-body">
-                                <div id="carrinho-container">
-                                    <div id="carrinho-vazio" class="carrinho-vazio">
-                                        <i class="fas fa-shopping-cart"></i>
-                                        <h3>Carrinho vazio</h3>
-                                        <p>Selecione produtos para começar</p>
-                                    </div>
-                                    <div id="carrinho-itens" class="carrinho-itens" style="display: none;">
-                                        <div class="table-container">
-                                            <table class="carrinho-table">
-                                                <thead>
-                                                    <tr>
-                                                        <th>Produto</th>
-                                                        <th>Qtd</th>
-                                                        <th>Preço</th>
-                                                        <th>Ação</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody id="carrinho-lista">
-                                                    <!-- Itens do carrinho serão carregados dinamicamente -->
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                        
-                                        <div class="carrinho-total">
-                                            <div class="total-info">
-                                                <span>Subtotal:</span>
-                                                <span id="subtotal-carrinho">R$ 0,00</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Pagamento -->
-                        <div class="card pagamento-card">
-                            <div class="card-header">
-                                <h2><i class="fas fa-credit-card"></i> Pagamento</h2>
-                            </div>
-                            <div class="card-body">
-                                <div class="formas-pagamento">
-                                    <label class="pagamento-option">
-                                        <input type="radio" name="forma-pagamento" value="dinheiro" checked>
-                                        <div class="pagamento-content">
-                                            <i class="fas fa-money-bill-wave"></i>
-                                            <span>Dinheiro</span>
-                                        </div>
-                                    </label>
-                                    <label class="pagamento-option">
-                                        <input type="radio" name="forma-pagamento" value="cartao">
-                                        <div class="pagamento-content">
-                                            <i class="fas fa-credit-card"></i>
-                                            <span>Cartão</span>
-                                        </div>
-                                    </label>
-                                    <label class="pagamento-option">
-                                        <input type="radio" name="forma-pagamento" value="pix">
-                                        <div class="pagamento-content">
-                                            <i class="fas fa-qrcode"></i>
-                                            <span>PIX</span>
-                                        </div>
-                                    </label>
-                                </div>
-                                
-                                <div class="form-actions vendas-actions">
-                                    <button id="finalizar-venda" class="btn btn-success btn-lg">
-                                        <i class="fas fa-check"></i> Finalizar Venda
-                                    </button>
-                                    <div class="action-buttons">
-                                        <button id="cancelar-item" class="btn btn-warning">
-                                            <i class="fas fa-times"></i> Cancelar Item
-                                        </button>
-                                        <button id="cancelar-venda" class="btn btn-danger">
-                                            <i class="fas fa-trash"></i> Cancelar Tudo
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
+            <section class="categorias">
+                <h2>Categorias</h2>
+                <div class="categorias-botoes" id="categorias-container">
+                    <!-- Categorias serão carregadas dinamicamente -->
                 </div>
-            </div>
+            </section>
 
-            <!-- Mensagem de Erro -->
-            <div id="error-message" class="error-container" style="display: none;">
-                <div class="error-content">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    <h2>Erro de Conexão</h2>
-                    <p>Não foi possível conectar ao banco de dados.</p>
-                    <button onclick="location.reload()" class="btn btn-primary">Tentar Novamente</button>
+            <section class="produtos">
+                <h2>Produtos</h2>
+                <div class="produtos-grid" id="produtos-container">
+                    <!-- Produtos serão carregados aqui via JavaScript -->
                 </div>
-            </div>
+            </section>
+
+            <section class="carrinho">
+                <h2>Seu Pedido</h2>
+                <div class="carrinho-itens" id="carrinho-itens">
+                    <!-- Itens do carrinho serão carregados aqui -->
+                </div>
+                <div class="carrinho-total">
+                    <strong>Total: R$ <span id="total-carrinho">0,00</span></strong>
+                </div>
+            </section>
+
+            <section class="pagamento">
+                <h2>Forma de Pagamento</h2>
+                <div class="opcoes-pagamento">
+                    <label class="pagamento-opcao">
+                        <input type="radio" name="pagamento" value="dinheiro">
+                        <span class="pagamento-icone">💵</span>
+                        <span class="pagamento-texto">
+                            <span class="pagamento-titulo">Dinheiro</span>
+                            <span class="pagamento-descricao">Pagamento na entrega</span>
+                        </span>
+                    </label>
+                    
+                    <label class="pagamento-opcao">
+                        <input type="radio" name="pagamento" value="cartao">
+                        <span class="pagamento-icone">💳</span>
+                        <span class="pagamento-texto">
+                            <span class="pagamento-titulo">Cartão</span>
+                            <span class="pagamento-descricao">Crédito ou Débito</span>
+                        </span>
+                    </label>
+                    
+                    <label class="pagamento-opcao">
+                        <input type="radio" name="pagamento" value="pix">
+                        <span class="pagamento-icone">📱</span>
+                        <span class="pagamento-texto">
+                            <span class="pagamento-titulo">PIX</span>
+                            <span class="pagamento-descricao">Pagamento instantâneo</span>
+                        </span>
+                    </label>
+                </div>
+            </section>
+
+            <section class="cliente">
+                <h2>Dados do Cliente</h2>
+                <div class="cliente-info">
+                    <input type="text" id="nome-cliente" placeholder="Nome do cliente (opcional)">
+                </div>
+            </section>
+
+            <section class="finalizar">
+                <button id="finalizar-pedido" class="btn-finalizar">Finalizar Pedido</button>
+            </section>
         </div>
     </main>
 
-    <!-- Modal para cancelar item -->
-    <div id="modal-cancelar-item" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3><i class="fas fa-trash"></i> Cancelar Item</h3>
-                <span class="close">&times;</span>
-            </div>
-            <div class="modal-body">
-                <p>Selecione o item que deseja cancelar:</p>
-                <div id="lista-itens-cancelar" class="itens-lista">
-                    <!-- Itens serão carregados dinamicamente -->
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button id="confirmar-cancelar-item" class="btn btn-danger">
-                    <i class="fas fa-check"></i> Confirmar
-                </button>
-                <button id="cancelar-modal-item" class="btn btn-secondary">
-                    <i class="fas fa-arrow-left"></i> Voltar
-                </button>
-            </div>
+    <footer class="footer">
+        <div class="container">
+            <p>Confeitaria Doces Criativos &copy; 2025 - Todos os direitos reservados</p>
         </div>
-    </div>
+    </footer>
 
+    <!-- Configuração do Supabase -->
     <script>
         // Configuração do Supabase
         const SUPABASE_URL = 'https://jdfijbhlujoiuraoxivb.supabase.co';
@@ -235,29 +134,46 @@
 
         // Inicializar Supabase
         window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        console.log('🔧 Supabase configurado para vendas');
     </script>
 
     <script src="js/auth.js"></script>
+    <script src="js/supabase-vendas.js"></script>
     <script src="js/vendas-principal.js"></script>
-</body>
-<script>
-// Menu mobile toggle
-document.addEventListener('DOMContentLoaded', function() {
-    const menuToggle = document.getElementById('menuToggle');
-    const mainNav = document.getElementById('mainNav');
     
-    if (menuToggle && mainNav) {
-        menuToggle.addEventListener('click', function() {
-            mainNav.classList.toggle('show');
+    <script>
+        // Script para o menu mobile
+        document.addEventListener('DOMContentLoaded', function() {
+            const menuToggle = document.getElementById('menuToggle');
+            const mainNav = document.getElementById('mainNav');
+            
+            if (menuToggle && mainNav) {
+                menuToggle.addEventListener('click', function() {
+                    mainNav.classList.toggle('show');
+                });
+            }
+            
+            // Fechar menu ao clicar fora
+            document.addEventListener('click', function(event) {
+                if (!event.target.closest('.header-content') && mainNav.classList.contains('show')) {
+                    mainNav.classList.remove('show');
+                }
+            });
+
+            // Destacar página atual no menu
+            const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+            const navLinks = document.querySelectorAll('.nav-link');
+            
+            navLinks.forEach(link => {
+                const href = link.getAttribute('href');
+                if (href === currentPage) {
+                    link.classList.add('active');
+                } else {
+                    link.classList.remove('active');
+                }
+            });
         });
-    }
-    
-    // Fechar menu ao clicar fora
-    document.addEventListener('click', function(event) {
-        if (!event.target.closest('.header-content') && mainNav.classList.contains('show')) {
-            mainNav.classList.remove('show');
-        }
-    });
-});
-</script>
+    </script>
+</body>
 </html>
