@@ -945,3 +945,48 @@
         font-size: 1.5rem;
     }
 }
+
+/* Estilos para controle de acesso */
+.acesso-negado {
+    text-align: center;
+    padding: 3rem;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.acesso-negado i {
+    font-size: 4rem;
+    color: #dc3545;
+    margin-bottom: 1rem;
+}
+
+.acesso-negado h2 {
+    color: #dc3545;
+    margin-bottom: 1rem;
+}
+
+.acesso-negado p {
+    color: #666;
+    margin-bottom: 2rem;
+}
+
+/* Estilos para exportação PDF */
+.btn-pdf {
+    background: linear-gradient(135deg, #dc3545, #c82333);
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.btn-pdf:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
+}

@@ -2,11 +2,35 @@
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('🚀 Iniciando página de relatórios...');
     
-    // Verificar autenticação
+    // Verificar autenticação primeiro
     if (!window.sistemaAuth || !window.sistemaAuth.verificarAutenticacao()) {
+        console.log('❌ Usuário não autenticado, redirecionando...');
         window.location.href = 'login.html';
         return;
     }
+
+    console.log('👤 Usuário autenticado:', window.sistemaAuth.usuarioLogado);
+
+    // VERIFICAÇÃO DE PERMISSÕES - CORREÇÃO FLEXÍVEL (IGUAL ADMINISTRAÇÃO)
+    const usuario = window.sistemaAuth.usuarioLogado;
+    
+    // Lista de tipos que devem ter acesso administrativo
+    const tiposComAcesso = ['administrador', 'admin', 'Administrador', 'ADMINISTRADOR', 'gerente', 'supervisor'];
+    
+    if (!usuario || !tiposComAcesso.includes(usuario.tipo)) {
+        console.log('❌ Acesso negado - Tipo de usuário:', usuario.tipo);
+        console.log('👤 Usuário completo:', usuario);
+        
+        mostrarMensagem('❌ Acesso restrito a administradores. Seu tipo: ' + usuario.tipo, 'error');
+        
+        // Redirecionar após 3 segundos
+        setTimeout(() => {
+            window.location.href = 'index.html';
+        }, 3000);
+        return;
+    }
+
+    console.log('✅ Acesso de administração permitido para:', usuario.nome, '- Tipo:', usuario.tipo);
 
     // Elementos do DOM
     const loadingElement = document.getElementById('loading');
@@ -37,6 +61,47 @@ document.addEventListener('DOMContentLoaded', async function() {
             errorElement.style.display = 'block';
             errorElement.querySelector('p').textContent = mensagem;
         }
+    }
+
+    // FUNÇÃO: Mostrar mensagens (agora local)
+    function mostrarMensagem(mensagem, tipo = 'info') {
+        const alertContainer = document.getElementById('alert-container');
+        if (!alertContainer) return;
+        
+        // Remover mensagens antigas
+        const mensagensAntigas = alertContainer.querySelectorAll('.alert-message');
+        mensagensAntigas.forEach(msg => msg.remove());
+        
+        const alert = document.createElement('div');
+        alert.className = `alert-message alert-${tipo}`;
+        
+        const icon = tipo === 'success' ? 'fa-check-circle' : 
+                   tipo === 'error' ? 'fa-exclamation-triangle' : 
+                   tipo === 'warning' ? 'fa-exclamation-circle' : 'fa-info-circle';
+        
+        alert.innerHTML = `
+            <div class="alert-content">
+                <i class="fas ${icon}"></i>
+                <span>${mensagem}</span>
+            </div>
+            <button class="close-alert">
+                <i class="fas fa-times"></i>
+            </button>
+        `;
+        
+        alertContainer.appendChild(alert);
+        
+        // Fechar ao clicar no X
+        alert.querySelector('.close-alert').addEventListener('click', () => {
+            alert.remove();
+        });
+        
+        // Auto-remover após 5 segundos
+        setTimeout(() => {
+            if (alert.parentElement) {
+                alert.remove();
+            }
+        }, 5000);
     }
 
     try {
@@ -892,93 +957,38 @@ document.addEventListener('DOMContentLoaded', async function() {
         const relatorio = {
             periodo: `${dataInicio} a ${dataFim}`,
             dataExportacao: new Date().toLocaleString('pt-BR'),
-            resumo: {
-                totalVendas: dadosRelatorios.vendas.reduce((sum, v) => sum + (v.total || 0), 0),
-                totalPedidos: dadosRelatorios.vendas.length,
-                ticketMedio: dadosRelatorios.vendas.length > 0 ? 
-                    dadosRelatorios.vendas.reduce((sum, v) => sum + (v.total || 0), 0) / dadosRelatorios.vendas.length : 0
-            },
-            vendas: dadosRelatorios.vendas.slice(0, 50)
+            totalVendas: dadosRelatorios.vendas.reduce((sum, v) => sum + (v.total || 0), 0),
+            totalPedidos: dadosRelatorios.vendas.length,
+            ticketMedio: dadosRelatorios.vendas.length > 0 ? 
+                dadosRelatorios.vendas.reduce((sum, v) => sum + (v.total || 0), 0) / dadosRelatorios.vendas.length : 0,
+            vendas: dadosRelatorios.vendas
         };
         
-        // Criar e baixar arquivo JSON
-        const dataStr = JSON.stringify(relatorio, null, 2);
-        const dataBlob = new Blob([dataStr], {type: 'application/json'});
-        const url = URL.createObjectURL(dataBlob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `relatorio-vendas-${dataInicio}-a-${dataFim}.json`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        const blob = new Blob([JSON.stringify(relatorio, null, 2)], { 
+            type: 'application/json' 
+        });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `relatorio-vendas-${dataInicio}-a-${dataFim}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
         URL.revokeObjectURL(url);
         
         mostrarMensagem('Relatório exportado com sucesso!', 'success');
     }
 
-    // FUNÇÃO: Mostrar mensagens
-    function mostrarMensagem(mensagem, tipo = 'info') {
-        const alertContainer = document.getElementById('alert-container');
-        if (!alertContainer) return;
-        
-        // Remover mensagens antigas
-        const mensagensAntigas = alertContainer.querySelectorAll('.alert-message');
-        mensagensAntigas.forEach(msg => msg.remove());
-        
-        const alert = document.createElement('div');
-        alert.className = `alert-message alert-${tipo}`;
-        
-        const icon = tipo === 'success' ? 'fa-check-circle' : 
-                   tipo === 'error' ? 'fa-exclamation-triangle' : 
-                   tipo === 'warning' ? 'fa-exclamation-circle' : 'fa-info-circle';
-        
-        alert.innerHTML = `
-            <div class="alert-content">
-                <i class="fas ${icon}"></i>
-                <span>${mensagem}</span>
-            </div>
-            <button class="close-alert">
-                <i class="fas fa-times"></i>
-            </button>
-        `;
-        
-        alertContainer.appendChild(alert);
-        
-        // Fechar ao clicar no X
-        alert.querySelector('.close-alert').addEventListener('click', () => {
-            alert.remove();
-        });
-        
-        // Auto-remover após 5 segundos
-        setTimeout(() => {
-            if (alert.parentElement) {
-                alert.remove();
-            }
-        }, 5000);
-    }
-
-    // FUNÇÕES AUXILIARES
-    function formatarDataISO(data) {
-        return data.toISOString().split('T')[0];
-    }
-
+    // FUNÇÃO: Formatar moeda
     function formatarMoeda(valor) {
         return new Intl.NumberFormat('pt-BR', {
             style: 'currency',
             currency: 'BRL'
-        }).format(valor);
+        }).format(valor || 0);
     }
 
-    // Debug function
-    window.debugRelatorios = function() {
-        console.log('🔍 Debug Relatórios:', {
-            totalVendas: dadosRelatorios.vendas.reduce((sum, v) => sum + (v.total || 0), 0),
-            totalPedidos: dadosRelatorios.vendas.length,
-            vendas: dadosRelatorios.vendas,
-            charts: Object.keys(charts)
-        });
-    };
-
-    // Sincronização com outros módulos
-    window.atualizarRelatorios = carregarRelatorios;
+    // FUNÇÃO: Formatar data para ISO (yyyy-mm-dd)
+    function formatarDataISO(data) {
+        return data.toISOString().split('T')[0];
+    }
 });
