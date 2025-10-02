@@ -1,4 +1,4 @@
-// js/auth.js - Sistema de autenticação CORRIGIDO
+// js/auth.js - Sistema de autenticação COMPLETO CORRIGIDO
 class SistemaAuth {
     constructor() {
         this.usuarioLogado = null;
@@ -125,14 +125,34 @@ class SistemaAuth {
         }
     }
 
-    // Verificar se é admin
+    // Verificar se é admin - CORREÇÃO CRÍTICA
     isAdmin() {
-        return this.usuarioLogado && this.usuarioLogado.tipo === 'administrador';
+        if (!this.usuarioLogado) {
+            console.log('❌ isAdmin: Usuário não logado');
+            return false;
+        }
+        
+        console.log('🔍 Verificando se é admin:', {
+            usuario: this.usuarioLogado.username,
+            tipo: this.usuarioLogado.tipo,
+            tiposValidos: ['administrador', 'admin', 'Administrador', 'ADMINISTRADOR', 'gerente']
+        });
+        
+        // Aceitar múltiplas variações de "administrador"
+        const tiposAdmin = ['administrador', 'admin', 'Administrador', 'ADMINISTRADOR', 'gerente', 'supervisor'];
+        const isAdmin = tiposAdmin.includes(this.usuarioLogado.tipo);
+        
+        console.log('✅ Resultado isAdmin:', isAdmin);
+        return isAdmin;
     }
 
     // Verificar autenticação e redirecionar se necessário
     requerAutenticacao() {
-        if (!this.verificarAutenticacao()) {
+        const autenticado = this.verificarAutenticacao();
+        console.log('🔐 requerAutenticacao:', autenticado);
+        
+        if (!autenticado) {
+            console.log('❌ Não autenticado, redirecionando para login...');
             window.location.href = 'login.html';
             return false;
         }
@@ -140,12 +160,24 @@ class SistemaAuth {
     }
 
     requerAdmin() {
-        if (!this.requerAutenticacao()) return false;
-        if (!this.isAdmin()) {
+        console.log('🛡️ Verificando acesso de administrador...');
+        
+        if (!this.requerAutenticacao()) {
+            console.log('❌ requerAdmin: Não autenticado');
+            return false;
+        }
+        
+        const isAdmin = this.isAdmin();
+        console.log('🔍 requerAdmin - É admin?', isAdmin);
+        
+        if (!isAdmin) {
+            console.log('❌ Acesso negado - Usuário não é administrador');
             alert('❌ Acesso restrito a administradores');
             window.location.href = 'index.html';
             return false;
         }
+        
+        console.log('✅ Acesso de administrador permitido');
         return true;
     }
 
@@ -236,6 +268,18 @@ class SistemaAuth {
             return null;
         }
     }
+
+    // NOVO MÉTODO: Forçar tipo de usuário (para debug)
+    forcarTipoUsuario(novoTipo) {
+        if (!this.usuarioLogado) return false;
+        
+        console.log('🔄 Forçando tipo de usuário para:', novoTipo);
+        this.usuarioLogado.tipo = novoTipo;
+        localStorage.setItem('usuarioLogado', JSON.stringify(this.usuarioLogado));
+        
+        console.log('✅ Tipo de usuário atualizado:', this.usuarioLogado);
+        return true;
+    }
 }
 
 // Função global para logout
@@ -290,3 +334,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Instância global
 window.sistemaAuth = new SistemaAuth();
+
+// Funções de debug globais
+window.debugAuth = function() {
+    console.log('🔍 DEBUG AUTH:', {
+        usuario: window.sistemaAuth?.usuarioLogado,
+        isAdmin: window.sistemaAuth?.isAdmin(),
+        autenticado: window.sistemaAuth?.verificarAutenticacao()
+    });
+};
+
+window.forcarAdmin = function() {
+    if (window.sistemaAuth) {
+        window.sistemaAuth.forcarTipoUsuario('administrador');
+        console.log('✅ Tipo forçado para administrador');
+        location.reload();
+    }
+};
