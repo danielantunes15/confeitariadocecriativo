@@ -30,9 +30,6 @@ section {
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-/* Manter os estilos específicos da página de vendas abaixo */
-/* ... o restante do seu CSS atual de vendas.css ... */
-
 /* Estilos para categorias */
 .categorias-botoes {
     display: flex;
@@ -92,6 +89,7 @@ section {
 }
 
 .produto-imagem {
+    position: relative;
     height: 180px;
     background: linear-gradient(135deg, var(--rosa-claro), var(--rosa-principal));
     display: flex;
@@ -109,8 +107,9 @@ section {
     color: white;
     padding: 0.3rem 0.6rem;
     border-radius: 4px;
-    font-size: 0.8rem;
+    font-size: 0.7rem;
     font-weight: bold;
+    z-index: 2;
 }
 
 .produto-info {
@@ -272,15 +271,6 @@ section {
     display: block;
 }
 
-/* Estilos para cliente */
-.cliente-info input {
-    width: 100%;
-    padding: 0.8rem;
-    border: 1px solid var(--rosa-claro);
-    border-radius: 5px;
-    font-size: 1rem;
-}
-
 /* Estilos para finalizar pedido */
 .btn-finalizar {
     background: linear-gradient(135deg, var(--rosa-principal), var(--rosa-escuro));
@@ -407,100 +397,51 @@ footer {
     .logo {
         font-size: 2rem;
     }
+
+    .cliente-info {
+        flex-direction: column;
+    }
+
+    .cliente-info input {
+        margin-bottom: 10px;
+    }
 }
-
-/* Adicione estas regras ao seu vendas.css existente */
-
-.low-stock-badge {
-    position: absolute;
-    top: 0.5rem;
-    left: 0.5rem;
-    background-color: #ff9800;
-    color: white;
-    padding: 0.3rem 0.6rem;
-    border-radius: 4px;
-    font-size: 0.7rem;
-    font-weight: bold;
-    z-index: 2;
-}
-
-.out-of-stock-badge {
-    position: absolute;
-    top: 0.5rem;
-    right: 0.5rem;
-    background-color: #ff4757;
-    color: white;
-    padding: 0.3rem 0.6rem;
-    border-radius: 4px;
-    font-size: 0.7rem;
-    font-weight: bold;
-    z-index: 2;
-}
-
-.produto-imagem {
-    position: relative;
-    height: 180px;
-    background: linear-gradient(135deg, var(--rosa-claro), var(--rosa-principal));
+/* Estilos para cliente - NOVO DESIGN */
+.cliente-container {
     display: flex;
     align-items: center;
-    justify-content: center;
-    color: var(--branco);
-    font-size: 2rem;
+    gap: 10px;
+    margin-bottom: 20px;
 }
 
-@keyframes slideInRight {
-    from {
-        opacity: 0;
-        transform: translateX(100%);
-    }
-    to {
-        opacity: 1;
-        transform: translateX(0);
-    }
-}
-
-/* Melhorias para responsividade */
-@media (max-width: 768px) {
-    .alert-container {
-        left: 10px;
-        right: 10px;
-        max-width: none;
-    }
-}
-
-/* Estilos para os alerts */
-.alert {
-    padding: 1rem 1.5rem;
-    margin-bottom: 1rem;
+.cliente-container input {
+    flex-grow: 1; /* Faz o campo de entrada ocupar o espaço restante */
+    padding: 12px;
+    border: 1px solid #ddd;
     border-radius: 8px;
-    animation: slideInRight 0.3s ease;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 1rem;
+    font-size: 16px;
+    transition: border-color 0.3s ease;
 }
 
-.alert-success {
-    background-color: #e8f5e9;
-    color: #2e7d32;
-    border: 1px solid #c8e6c9;
+.cliente-container input:focus {
+    border-color: var(--rosa-principal);
+    outline: none;
 }
 
-.alert-error {
-    background-color: #ffebee;
-    color: #c62828;
-    border: 1px solid #ffcdd2;
+.btn-cadastrar {
+    background-color: var(--rosa-principal);
+    color: var(--branco);
+    border: none;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.3s ease;
+    white-space: nowrap;
 }
 
-.alert-warning {
-    background-color: #fff3e0;
-    color: #ef6c00;
-    border: 1px solid #ffe0b2;
-}
-
-.alert-info {
-    background-color: #e3f2fd;
-    color: #1565c0;
-    border: 1px solid #bbdefb;
+.btn-cadastrar:hover {
+    background-color: var(--rosa-escuro);
+    transform: translateY(-2px);
 }

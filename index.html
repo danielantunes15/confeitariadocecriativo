@@ -26,6 +26,10 @@
                         <i class="fas fa-cash-register"></i>
                         <span>Caixa</span>
                     </a>
+                    <a href="encomendas.html" class="nav-link active">
+                        <i class="fas fa-receipt"></i>
+                        <span>Encomendas</span>
+                    </a>
                     <a href="estoque.html" class="nav-link">
                         <i class="fas fa-boxes"></i>
                         <span>Estoque</span>
@@ -54,22 +58,19 @@
             <section class="categorias">
                 <h2>Categorias</h2>
                 <div class="categorias-botoes" id="categorias-container">
-                    <!-- Categorias serão carregadas dinamicamente -->
-                </div>
+                    </div>
             </section>
 
             <section class="produtos">
                 <h2>Produtos</h2>
                 <div class="produtos-grid" id="produtos-container">
-                    <!-- Produtos serão carregados aqui via JavaScript -->
-                </div>
+                    </div>
             </section>
 
             <section class="carrinho">
                 <h2>Seu Pedido</h2>
                 <div class="carrinho-itens" id="carrinho-itens">
-                    <!-- Itens do carrinho serão carregados aqui -->
-                </div>
+                    </div>
                 <div class="carrinho-total">
                     <strong>Total: R$ <span id="total-carrinho">0,00</span></strong>
                 </div>
@@ -79,7 +80,7 @@
                 <h2>Forma de Pagamento</h2>
                 <div class="opcoes-pagamento">
                     <label class="pagamento-opcao">
-                        <input type="radio" name="pagamento" value="dinheiro">
+                        <input type="radio" name="pagamento" value="dinheiro" checked>
                         <span class="pagamento-icone">💵</span>
                         <span class="pagamento-texto">
                             <span class="pagamento-titulo">Dinheiro</span>
@@ -109,8 +110,13 @@
 
             <section class="cliente">
                 <h2>Dados do Cliente</h2>
-                <div class="cliente-info">
-                    <input type="text" id="nome-cliente" placeholder="Nome do cliente (opcional)">
+                <div class="cliente-container">
+                    <input type="text" list="clientes-list" id="nome-cliente" placeholder="Buscar cliente...">
+                    <datalist id="clientes-list">
+                        </datalist>
+                    <button id="btn-cadastrar-cliente" class="btn-cadastrar">
+                        <i class="fas fa-user-plus"></i> Cadastrar
+                    </button>
                 </div>
             </section>
 
@@ -126,7 +132,38 @@
         </div>
     </footer>
 
-    <!-- Configuração do Supabase -->
+    <div id="modal-cadastro-cliente" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h3>Cadastrar Novo Cliente</h3>
+            <form id="form-cadastro-cliente">
+                <div class="form-group">
+                    <label for="cliente-nome">Nome do Cliente</label>
+                    <input type="text" id="cliente-nome" required>
+                </div>
+                <div class="form-group">
+                    <label for="cliente-telefone">Telefone</label>
+                    <input type="tel" id="cliente-telefone">
+                </div>
+                <div class="form-group">
+                    <label for="cliente-endereco">Endereço</label>
+                    <input type="text" id="cliente-endereco">
+                </div>
+                <div class="form-group">
+                    <label for="cliente-cpf">CPF</label>
+                    <input type="text" id="cliente-cpf">
+                </div>
+                <div class="form-group">
+                    <label for="cliente-data-nascimento">Data de Nascimento</label>
+                    <input type="date" id="cliente-data-nascimento">
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">
+                    Salvar Cliente
+                </button>
+            </form>
+        </div>
+    </div>
+    
     <script>
         // Configuração do Supabase
         const SUPABASE_URL = 'https://jdfijbhlujoiuraoxivb.supabase.co';

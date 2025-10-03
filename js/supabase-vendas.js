@@ -57,6 +57,41 @@ class VendasSupabase {
             return [];
         }
     }
+    
+    // Buscar clientes
+    async buscarClientes() {
+        try {
+            const { data, error } = await this.supabase
+                .from('clientes')
+                .select('*')
+                .order('nome');
+            
+            if (error) throw error;
+            console.log(`✅ ${data?.length || 0} clientes carregados`);
+            return data || [];
+        } catch (error) {
+            console.error('❌ Erro ao buscar clientes:', error);
+            return [];
+        }
+    }
+
+    // Cadastrar cliente
+    async criarCliente(clienteData) {
+        try {
+            const { data, error } = await this.supabase
+                .from('clientes')
+                .insert([clienteData])
+                .select()
+                .single();
+            
+            if (error) throw error;
+            console.log('✅ Cliente cadastrado com sucesso:', data);
+            return data;
+        } catch (error) {
+            console.error('❌ Erro ao cadastrar cliente:', error);
+            throw error;
+        }
+    }
 
     // Criar venda - CORRIGIDO
     async criarVenda(vendaData) {
