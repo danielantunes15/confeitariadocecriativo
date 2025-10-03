@@ -27,6 +27,70 @@
     font-size: 14px;
 }
 
+/* Abas de navegação */
+.tabs-header {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #ffb6c1;
+}
+
+.tab-button {
+    background: transparent;
+    border: none;
+    padding: 10px 15px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #db7093;
+    cursor: pointer;
+    border-radius: 5px 5px 0 0;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.tab-button:hover {
+    background-color: #fff0f5;
+}
+
+.tab-button.active {
+    background-color: #ff69b4;
+    color: white;
+}
+
+.tab-content {
+    animation: fadeIn 0.5s;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Formulário de Abertura/Movimentação */
+.form-container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group label {
+    margin-bottom: 5px;
+    font-weight: 600;
+    color: #555;
+}
+
+.form-group input,
+.form-group select {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
 /* Resumo Financeiro */
 .resumo-grid {
     display: grid;
@@ -355,9 +419,13 @@ body:not(.is-admin) .resumo-card.pix .quantidade {
 
 /* GARANTIR que dinheiro e total SEMPRE sejam visíveis */
 .resumo-card.dinheiro .valor,
+body:not(.is-admin) .resumo-card.dinheiro .valor,
 .resumo-card.dinheiro .quantidade,
+body:not(.is-admin) .resumo-card.dinheiro .quantidade,
 .resumo-card.total .valor,
-.resumo-card.total .quantidade {
+body:not(.is-admin) .resumo-card.total .valor,
+.resumo-card.total .quantidade,
+body:not(.is-admin) .resumo-card.total .quantidade {
     color: #333 !important;
     filter: none !important;
     user-select: auto !important;
