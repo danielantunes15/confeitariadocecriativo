@@ -163,6 +163,24 @@ class EncomendasSupabase {
             throw new Error('Falha ao atualizar o status da encomenda.');
         }
     }
+    
+    // Registrar uma movimentação de caixa
+    async registrarMovimentacao(movimentacaoData) {
+        try {
+            const { data, error } = await this.supabase
+                .from('caixa_movimentacoes')
+                .insert([movimentacaoData])
+                .select()
+                .single();
+            
+            if (error) throw error;
+            console.log('✅ Movimentação de caixa registrada com sucesso:', data);
+            return data;
+        } catch (error) {
+            console.error('❌ Erro ao registrar movimentação de caixa:', error);
+            throw new Error('Falha ao registrar movimentação no caixa.');
+        }
+    }
 }
 
 // Criar uma instância global para a página de encomendas

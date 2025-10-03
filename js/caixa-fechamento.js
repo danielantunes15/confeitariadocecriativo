@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     window.valorAbertura = 0;
     window.isAdmin = window.sistemaAuth?.isAdmin();
 
-    // Funções auxiliares movidas para o escopo principal
+    // Funções auxiliares
     function formatarFormaPagamento(forma) {
         const formas = {
             'dinheiro': 'Dinheiro',
@@ -62,7 +62,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         }, 5000);
     }
     
-    // Funções globais para uso no HTML e nos scripts
+    // Funções globais para uso no HTML
     window.mostrarMensagem = mostrarMensagem;
     window.formatarFormaPagamento = formatarFormaPagamento;
 
@@ -74,7 +74,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             el.style.display = 'block';
         });
     }
-
     const cardMovimentacoes = document.getElementById('movimentacoes-caixa');
     if (cardMovimentacoes) {
         cardMovimentacoes.style.display = 'block';
@@ -91,25 +90,25 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
     setHoje();
 
-    try {
-        if (loadingElement) loadingElement.style.display = 'block';
-        if (contentElement) contentElement.style.display = 'none';
-        if (errorElement) errorElement.style.display = 'none';
+    // Iniciar o módulo de caixa
+    async function inicializarCaixa() {
+        try {
+            loadingElement.style.display = 'block';
+            contentElement.style.display = 'none';
+            errorElement.style.display = 'none';
 
-        await testarConexaoSupabase();
-        
-        if (loadingElement) loadingElement.style.display = 'none';
-        if (contentElement) contentElement.style.display = 'block';
+            await testarConexaoSupabase();
+            
+            loadingElement.style.display = 'none';
+            contentElement.style.display = 'block';
 
-        configurarEventListeners();
+            configurarEventListeners();
+            await carregarFechamentoDoDia();
 
-        await carregarFechamentoDoDia();
-
-        console.log('✅ Módulo de fechamento de caixa inicializado com sucesso!');
-    } catch (error) {
-        console.error('Erro na inicialização:', error);
-        if (loadingElement) loadingElement.style.display = 'none';
-        if (errorElement) {
+            console.log('✅ Módulo de fechamento de caixa inicializado com sucesso!');
+        } catch (error) {
+            console.error('Erro na inicialização:', error);
+            loadingElement.style.display = 'none';
             errorElement.style.display = 'block';
             errorElement.innerHTML = `
                 <h2>Erro de Conexão</h2>
@@ -119,16 +118,14 @@ document.addEventListener('DOMContentLoaded', async function() {
             `;
         }
     }
-
+    
     async function testarConexaoSupabase() {
         try {
             const { data, error } = await supabase
                 .from('vendas')
                 .select('id')
                 .limit(1);
-                
             if (error) throw error;
-            
             console.log('✅ Conexão com Supabase estabelecida (fechamento)');
             return true;
         } catch (error) {
@@ -137,28 +134,16 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     function configurarEventListeners() {
-        if (carregarDadosBtn) {
-            carregarDadosBtn.addEventListener('click', carregarFechamentoDoDia);
-        }
-        if (gerarRelatorioBtn) {
-            gerarRelatorioBtn.addEventListener('click', gerarRelatorioPDF);
-        }
-        if (filtroPagamentoSelect) {
-            filtroPagamentoSelect.addEventListener('change', filtrarVendas);
-        }
-        if (abrirCaixaBtn && isAdmin) {
-            abrirCaixaBtn.addEventListener('click', abrirCaixa);
-        }
-        if (registrarMovimentacaoBtn) {
-            registrarMovimentacaoBtn.addEventListener('click', registrarMovimentacao);
-        }
-
-        tabAberturaBtn?.addEventListener('click', () => {
+        carregarDadosBtn.addEventListener('click', carregarFechamentoDoDia);
+        gerarRelatorioBtn.addEventListener('click', gerarRelatorioPDF);
+        filtroPagamentoSelect.addEventListener('change', filtrarVendas);
+        abrirCaixaBtn.addEventListener('click', abrirCaixa);
+        registrarMovimentacaoBtn.addEventListener('click', registrarMovimentacao);
+        tabAberturaBtn.addEventListener('click', () => {
             document.getElementById('tab-abertura').style.display = 'block';
             document.getElementById('tab-movimentacoes').style.display = 'none';
         });
-
-        tabMovimentacoesBtn?.addEventListener('click', () => {
+        tabMovimentacoesBtn.addEventListener('click', () => {
             document.getElementById('tab-abertura').style.display = 'none';
             document.getElementById('tab-movimentacoes').style.display = 'block';
         });
@@ -169,17 +154,19 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (!dataSelecionada) {
             return;
         }
-
         try {
-            await carregarVendas(dataSelecionada);
-            await carregarMovimentacoes(dataSelecionada);
-            await carregarValorAbertura(dataSelecionada);
-            
+            document.body.classList.add('loading-instant');
+            await Promise.all([
+                carregarVendas(dataSelecionada),
+                carregarMovimentacoes(dataSelecionada),
+                carregarValorAbertura(dataSelecionada)
+            ]);
             atualizarResumoFinanceiro();
             atualizarRelatorio();
-            
+            document.body.classList.remove('loading-instant');
         } catch (error) {
             console.error('Erro ao carregar fechamento:', error);
+            document.body.classList.remove('loading-instant');
             mostrarMensagem('Erro ao carregar fechamento: ' + error.message, 'error');
         }
     }
@@ -190,7 +177,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             mostrarMensagem('Por favor, insira um valor de abertura válido.', 'error');
             return;
         }
-
         const dataSelecionada = dataFechamentoInput.value;
         const usuario = window.sistemaAuth.usuarioLogado;
 
@@ -200,16 +186,13 @@ document.addEventListener('DOMContentLoaded', async function() {
                 .select('id')
                 .eq('tipo', 'abertura')
                 .eq('data_caixa', dataSelecionada);
-
             if (erroExistente && erroExistente.code !== 'PGRST116') {
                 throw erroExistente;
             }
-
             if (aberturaExistente && aberturaExistente.length > 0) {
                 mostrarMensagem('O caixa já foi aberto para esta data.', 'error');
                 return;
             }
-
             const { data, error } = await supabase
                 .from('caixa_movimentacoes')
                 .insert({
@@ -221,9 +204,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 })
                 .select()
                 .single();
-
             if (error) throw error;
-            
             console.log('✅ Caixa aberto com sucesso:', data);
             mostrarMensagem(`Caixa aberto com R$ ${valor.toFixed(2)}`, 'success');
             await carregarFechamentoDoDia();
@@ -237,20 +218,16 @@ document.addEventListener('DOMContentLoaded', async function() {
         const valor = parseFloat(valorMovimentacaoInput.value);
         const tipo = tipoMovimentacaoSelect.value;
         const descricao = descricaoMovimentacaoInput.value.trim();
-
         if (isNaN(valor) || valor <= 0) {
             mostrarMensagem('Por favor, insira um valor válido.', 'error');
             return;
         }
-        
         if (!descricao) {
             mostrarMensagem('Por favor, insira uma descrição para a movimentação.', 'error');
             return;
         }
-
         const dataSelecionada = dataFechamentoInput.value;
         const usuario = window.sistemaAuth.usuarioLogado;
-
         try {
             const { data, error } = await supabase
                 .from('caixa_movimentacoes')
@@ -263,15 +240,11 @@ document.addEventListener('DOMContentLoaded', async function() {
                 })
                 .select()
                 .single();
-
             if (error) throw error;
-
             console.log('✅ Movimentação registrada:', data);
             mostrarMensagem(`Movimentação de ${tipo === 'entrada' ? 'entrada' : 'saída'} de R$ ${valor.toFixed(2)} registrada!`, 'success');
-            
             valorMovimentacaoInput.value = '';
             descricaoMovimentacaoInput.value = '';
-
             await carregarFechamentoDoDia();
         } catch (error) {
             console.error('Erro ao registrar movimentação:', error);
@@ -281,52 +254,32 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     async function carregarVendas(data) {
         try {
-            document.body.classList.add('loading-instant');
             vendasBody.innerHTML = ''; 
-            
             const dataInicio = new Date(data + 'T00:00:00').toISOString();
             const dataFim = new Date(data + 'T23:59:59').toISOString();
-            
             const { data: vendas, error } = await supabase
                 .from('vendas')
                 .select('*, usuario:sistema_usuarios(nome)')
                 .gte('created_at', dataInicio)
                 .lte('created_at', dataFim)
                 .order('created_at', { ascending: false });
-
-            if (error) {
-                console.error('Erro ao buscar vendas:', error);
-                throw error;
-            }
-
+            if (error) throw error;
             window.vendasDoDia = vendas || [];
-            
-            // Buscar os detalhes de cada venda em um loop separado para evitar a consulta aninhada complexa
             for (let venda of window.vendasDoDia) {
-                try {
-                    const { data: itens, error: errorItens } = await supabase
-                        .from('vendas_itens')
-                        .select('*, produto:produtos(nome, icone)')
-                        .eq('venda_id', venda.id);
-
-                    if (!errorItens && itens) {
-                        venda.itens = itens;
-                    } else {
-                        console.warn(`Nenhum item encontrado para a venda ${venda.id}`);
-                        venda.itens = [];
-                    }
-                } catch (detalhesError) {
-                    console.warn(`Erro ao carregar detalhes da venda ${venda.id}:`, detalhesError);
+                const { data: itens, error: errorItens } = await supabase
+                    .from('vendas_itens')
+                    .select('*, produto:produtos(nome, icone)')
+                    .eq('venda_id', venda.id);
+                if (!errorItens && itens) {
+                    venda.itens = itens;
+                } else {
+                    console.warn(`Nenhum item encontrado para a venda ${venda.id}`);
                     venda.itens = [];
                 }
             }
-            
             exibirVendas(window.vendasDoDia);
-            document.body.classList.remove('loading-instant');
-
         } catch (error) {
             console.error('Erro ao carregar vendas:', error);
-            document.body.classList.remove('loading-instant');
             throw error;
         }
     }
@@ -338,11 +291,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 .select('*, usuario:sistema_usuarios(nome)')
                 .eq('data_caixa', data)
                 .order('created_at', { ascending: false });
-
             if (error) throw error;
-
             window.movimentacoesDoDia = movimentacoes || [];
-            
             const movimentacoesFiltradas = window.movimentacoesDoDia.filter(m => m.tipo === 'entrada' || m.tipo === 'saida');
             exibirMovimentacoes(movimentacoesFiltradas);
         } catch (error) {
@@ -360,11 +310,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                 .eq('tipo', 'abertura')
                 .eq('data_caixa', data)
                 .single();
-
             if (error && error.code !== 'PGRST116') {
                 throw error;
             }
-
             window.valorAbertura = abertura ? abertura.valor : 0;
         } catch (error) {
             console.error('Erro ao carregar valor de abertura:', error);
@@ -513,236 +461,237 @@ document.addEventListener('DOMContentLoaded', async function() {
         exibirVendas(vendasFiltradas);
     }
     
-});
-
-// Funções globais para uso no HTML e nos scripts
-window.gerarRelatorioPDF = async function() {
-    try {
-        window.mostrarMensagem('Gerando relatório...', 'info');
-        const dataSelecionada = document.getElementById('data-fechamento').value;
-        const dataFormatada = new Date(dataSelecionada + 'T00:00:00').toLocaleDateString('pt-BR');
-        
-        const vendasDinheiro = window.vendasDoDia.filter(v => v.forma_pagamento === 'dinheiro');
-        const vendasCartao = window.vendasDoDia.filter(v => v.forma_pagamento === 'cartao');
-        const vendasPix = window.vendasDoDia.filter(v => v.forma_pagamento === 'pix');
-        const totalDinheiro = vendasDinheiro.reduce((sum, v) => sum + (v.total || 0), 0);
-        const totalCartao = vendasCartao.reduce((sum, v) => sum + (v.total || 0), 0);
-        const totalPix = vendasPix.reduce((sum, v) => sum + (v.total || 0), 0);
-        const totalGeral = window.vendasDoDia.reduce((sum, v) => sum + (v.total || 0), 0);
-
-        const totalEntradas = window.movimentacoesDoDia.filter(m => m.tipo === 'entrada').reduce((sum, m) => sum + (m.valor || 0), 0);
-        const totalSaidas = window.movimentacoesDoDia.filter(m => m.tipo === 'saida').reduce((sum, m) => sum + (m.valor || 0), 0);
-        
-        const saldoFinal = window.valorAbertura + totalDinheiro + totalEntradas - totalSaidas;
-        const isAdmin = window.isAdmin;
-
-        let movimentacoesHtml = '';
-        if (window.movimentacoesDoDia.length > 0) {
-            const movimentacoesRelevantes = window.movimentacoesDoDia.filter(m => m.tipo !== 'abertura');
-            if (movimentacoesRelevantes.length > 0) {
-                movimentacoesHtml += `
-                    <h3 style="margin-top: 30px;">Movimentações Financeiras Detalhadas</h3>
-                    <table style="font-size: 14px;">
-                        <thead>
-                            <tr>
-                                <th>Hora</th>
-                                <th>Tipo</th>
-                                <th>Valor</th>
-                                <th>Descrição</th>
-                                <th>Usuário</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                `;
-                movimentacoesRelevantes.forEach(mov => {
-                    const hora = new Date(mov.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-                    movimentacoesHtml += `
-                        <tr>
-                            <td>${hora}</td>
-                            <td>${mov.tipo === 'entrada' ? 'Entrada' : 'Saída'}</td>
-                            <td>R$ ${mov.valor?.toFixed(2) || '0.00'}</td>
-                            <td>${mov.descricao}</td>
-                            <td>${mov.usuario?.nome || 'N/A'}</td>
-                        </tr>
-                    `;
-                });
-                movimentacoesHtml += `
-                        </tbody>
-                    </table>
-                `;
-            }
-        }
-
-        const relatorioWindow = window.open('', '_blank');
-        relatorioWindow.document.write(`
-            <html>
-                <head>
-                    <title>Relatório de Fechamento - ${dataFormatada}</title>
-                    <style>
-                        body { font-family: Arial, sans-serif; margin: 20px; }
-                        h1, h2, h3 { color: #333; }
-                        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-                        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-                        th { background-color: #f2f2f2; }
-                        .total { font-weight: bold; }
-                        .assinatura { margin-top: 50px; border-top: 1px solid #333; padding-top: 10px; }
-                    </style>
-                </head>
-                <body>
-                    <h1>Relatório de Fechamento - Confeitaria Doces Criativos</h1>
-                    <h2>Data: ${dataFormatada}</h2>
-                    
-                    <h3>Resumo Financeiro</h3>
-                    <table>
-                        <tr>
-                            <th>Item</th>
-                            <th>Valor Total</th>
-                        </tr>
-                        <tr>
-                            <td>Valor de Abertura</td>
-                            <td>R$ ${window.valorAbertura.toFixed(2)}</td>
-                        </tr>
-                        <tr>
-                            <td>Total de Vendas em Dinheiro</td>
-                            <td>R$ ${totalDinheiro.toFixed(2)}</td>
-                        </tr>
-                        ${isAdmin ? `
-                        <tr>
-                            <td>Total de Vendas em Cartão</td>
-                            <td>R$ ${totalCartao.toFixed(2)}</td>
-                        </tr>
-                        <tr>
-                            <td>Total de Vendas em PIX</td>
-                            <td>R$ ${totalPix.toFixed(2)}</td>
-                        </tr>
-                        ` : ''}
-                        <tr>
-                            <td>Total de Entradas (Reforços)</td>
-                            <td>R$ ${totalEntradas.toFixed(2)}</td>
-                        </tr>
-                        <tr>
-                            <td>Total de Saídas (Sangrias)</td>
-                            <td>R$ ${totalSaidas.toFixed(2)}</td>
-                        </tr>
-                        <tr class="total">
-                            <td>Total Geral de Vendas</td>
-                            <td>R$ ${isAdmin ? totalGeral.toFixed(2) : totalDinheiro.toFixed(2)}</td>
-                        </tr>
-                        <tr>
-                            <td>Saldo Calculado do Caixa</td>
-                            <td>R$ ${saldoFinal.toFixed(2)}</td>
-                        </tr>
-                    </table>
-                    
-                    ${movimentacoesHtml}
-
-                    <div class="assinatura">
-                        <p>_________________________________</p>
-                        <p>Vendedor</p>
-                    </div>
-                    
-                    ${isAdmin ? `
-                    <div class="assinatura">
-                        <p>_________________________________</p>
-                        <p>Gerente/Administrador</p>
-                    </div>
-                    ` : ''}
-                    
-                    <p style="margin-top: 30px; font-size: 12px; color: #666;">
-                        Relatório gerado em ${new Date().toLocaleString('pt-BR')}
-                    </p>
-                </body>
-            </html>
-        `);
-        relatorioWindow.document.close();
-        setTimeout(() => {
-            relatorioWindow.print();
-        }, 500);
-        window.mostrarMensagem('Relatório gerado com sucesso!', 'success');
-    } catch (error) {
-        console.error('Erro ao gerar relatório:', error);
-        window.mostrarMensagem('Erro ao gerar relatório: ' + error.message, 'error');
-    }
-};
-
-window.verDetalhesVenda = function(vendaId) {
-    const venda = window.vendasDoDia.find(v => v.id === vendaId);
-    if (!venda) {
-        window.mostrarMensagem('Venda não encontrada', 'error');
-        return;
-    }
-    const modal = document.getElementById('modal-detalhes-venda');
-    const content = document.getElementById('detalhes-venda-content');
-    const dataHora = new Date(venda.created_at).toLocaleString('pt-BR');
-    const isAdmin = window.sistemaAuth.isAdmin();
-    let valorTotalExibido = (venda.total || 0).toFixed(2);
-    if (!isAdmin && venda.forma_pagamento !== 'dinheiro') {
-        valorTotalExibido = '**.**';
-    }
-    let html = `
-        <div class="detalhes-venda">
-            <div class="info-item">
-                <span><strong>Data/Hora:</strong></span>
-                <span>${dataHora}</span>
-            </div>
-            <div class="info-item">
-                <span><strong>Cliente:</strong></span>
-                <span>${venda.cliente || 'Cliente não identificado'}</span>
-            </div>
-            <div class="info-item">
-                <span><strong>Vendedor:</strong></span>
-                <span>${venda.usuario?.nome || 'N/A'}</span>
-            </div>
-            <div class="info-item">
-                <span><strong>Forma de Pagamento:</strong></span>
-                <span>${window.formatarFormaPagamento(venda.forma_pagamento)}</span>
-            </div>
+    // Funções globais para uso no HTML e nos scripts
+    window.gerarRelatorioPDF = async function() {
+        try {
+            window.mostrarMensagem('Gerando relatório...', 'info');
+            const dataSelecionada = document.getElementById('data-fechamento').value;
+            const dataFormatada = new Date(dataSelecionada + 'T00:00:00').toLocaleDateString('pt-BR');
             
-            <h4>Itens da Venda:</h4>
-    `;
-    if (venda.itens && venda.itens.length > 0) {
-        venda.itens.forEach(item => {
-            let valorItemExibido = ((item.preco_unitario || 0) * (item.quantidade || 0)).toFixed(2);
-            let precoUnitarioExibido = (item.preco_unitario || 0).toFixed(2);
-            if (!isAdmin && venda.forma_pagamento !== 'dinheiro') {
-                valorItemExibido = '**.**';
-                precoUnitarioExibido = '**.**';
+            const vendasDinheiro = window.vendasDoDia.filter(v => v.forma_pagamento === 'dinheiro');
+            const vendasCartao = window.vendasDoDia.filter(v => v.forma_pagamento === 'cartao');
+            const vendasPix = window.vendasDoDia.filter(v => v.forma_pagamento === 'pix');
+            const totalDinheiro = vendasDinheiro.reduce((sum, v) => sum + (v.total || 0), 0);
+            const totalCartao = vendasCartao.reduce((sum, v) => sum + (v.total || 0), 0);
+            const totalPix = vendasPix.reduce((sum, v) => sum + (v.total || 0), 0);
+            const totalGeral = window.vendasDoDia.reduce((sum, v) => sum + (v.total || 0), 0);
+
+            const totalEntradas = window.movimentacoesDoDia.filter(m => m.tipo === 'entrada').reduce((sum, m) => sum + (m.valor || 0), 0);
+            const totalSaidas = window.movimentacoesDoDia.filter(m => m.tipo === 'saida').reduce((sum, m) => sum + (m.valor || 0), 0);
+            
+            const saldoFinal = window.valorAbertura + totalDinheiro + totalEntradas - totalSaidas;
+            const isAdmin = window.isAdmin;
+
+            let movimentacoesHtml = '';
+            if (window.movimentacoesDoDia.length > 0) {
+                const movimentacoesRelevantes = window.movimentacoesDoDia.filter(m => m.tipo !== 'abertura');
+                if (movimentacoesRelevantes.length > 0) {
+                    movimentacoesHtml += `
+                        <h3 style="margin-top: 30px;">Movimentações Financeiras Detalhadas</h3>
+                        <table style="font-size: 14px;">
+                            <thead>
+                                <tr>
+                                    <th>Hora</th>
+                                    <th>Tipo</th>
+                                    <th>Valor</th>
+                                    <th>Descrição</th>
+                                    <th>Usuário</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                    `;
+                    movimentacoesRelevantes.forEach(mov => {
+                        const hora = new Date(mov.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                        movimentacoesHtml += `
+                            <tr>
+                                <td>${hora}</td>
+                                <td>${mov.tipo === 'entrada' ? 'Entrada' : 'Saída'}</td>
+                                <td>R$ ${mov.valor?.toFixed(2) || '0.00'}</td>
+                                <td>${mov.descricao}</td>
+                                <td>${mov.usuario?.nome || 'N/A'}</td>
+                            </tr>
+                        `;
+                    });
+                    movimentacoesHtml += `
+                            </tbody>
+                        </table>
+                    `;
+                }
             }
-            html += `
-                <div class="detalhes-item">
-                    <div class="detalhes-produto">
-                        <i class="fas ${item.produto?.icone || 'fa-cube'}"></i>
+
+            const relatorioWindow = window.open('', '_blank');
+            relatorioWindow.document.write(`
+                <html>
+                    <head>
+                        <title>Relatório de Fechamento - ${dataFormatada}</title>
+                        <style>
+                            body { font-family: Arial, sans-serif; margin: 20px; }
+                            h1, h2, h3 { color: #333; }
+                            table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+                            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                            th { background-color: #f2f2f2; }
+                            .total { font-weight: bold; }
+                            .assinatura { margin-top: 50px; border-top: 1px solid #333; padding-top: 10px; }
+                        </style>
+                    </head>
+                    <body>
+                        <h1>Relatório de Fechamento - Confeitaria Doces Criativos</h1>
+                        <h2>Data: ${dataFormatada}</h2>
+                        
+                        <h3>Resumo Financeiro</h3>
+                        <table>
+                            <tr>
+                                <th>Item</th>
+                                <th>Valor Total</th>
+                            </tr>
+                            <tr>
+                                <td>Valor de Abertura</td>
+                                <td>R$ ${window.valorAbertura.toFixed(2)}</td>
+                            </tr>
+                            <tr>
+                                <td>Total de Vendas em Dinheiro</td>
+                                <td>R$ ${totalDinheiro.toFixed(2)}</td>
+                            </tr>
+                            ${isAdmin ? `
+                            <tr>
+                                <td>Total de Vendas em Cartão</td>
+                                <td>R$ ${totalCartao.toFixed(2)}</td>
+                            </tr>
+                            <tr>
+                                <td>Total de Vendas em PIX</td>
+                                <td>R$ ${totalPix.toFixed(2)}</td>
+                            </tr>
+                            ` : ''}
+                            <tr>
+                                <td>Total de Entradas (Reforços)</td>
+                                <td>R$ ${totalEntradas.toFixed(2)}</td>
+                            </tr>
+                            <tr>
+                                <td>Total de Saídas (Sangrias)</td>
+                                <td>R$ ${totalSaidas.toFixed(2)}</td>
+                            </tr>
+                            <tr class="total">
+                                <td>Total Geral de Vendas</td>
+                                <td>R$ ${isAdmin ? totalGeral.toFixed(2) : totalDinheiro.toFixed(2)}</td>
+                            </tr>
+                            <tr>
+                                <td>Saldo Calculado do Caixa</td>
+                                <td>R$ ${saldoFinal.toFixed(2)}</td>
+                            </tr>
+                        </table>
+                        
+                        ${movimentacoesHtml}
+
+                        <div class="assinatura">
+                            <p>_________________________________</p>
+                            <p>Vendedor</p>
+                        </div>
+                        
+                        ${isAdmin ? `
+                        <div class="assinatura">
+                            <p>_________________________________</p>
+                            <p>Gerente/Administrador</p>
+                        </div>
+                        ` : ''}
+                        
+                        <p style="margin-top: 30px; font-size: 12px; color: #666;">
+                            Relatório gerado em ${new Date().toLocaleString('pt-BR')}
+                        </p>
+                    </body>
+                </html>
+            `);
+            relatorioWindow.document.close();
+            setTimeout(() => {
+                relatorioWindow.print();
+            }, 500);
+            window.mostrarMensagem('Relatório gerado com sucesso!', 'success');
+        } catch (error) {
+            console.error('Erro ao gerar relatório:', error);
+            window.mostrarMensagem('Erro ao gerar relatório: ' + error.message, 'error');
+        }
+    };
+
+    window.verDetalhesVenda = function(vendaId) {
+        const venda = window.vendasDoDia.find(v => v.id === vendaId);
+        if (!venda) {
+            window.mostrarMensagem('Venda não encontrada', 'error');
+            return;
+        }
+        const modal = document.getElementById('modal-detalhes-venda');
+        const content = document.getElementById('detalhes-venda-content');
+        const dataHora = new Date(venda.created_at).toLocaleString('pt-BR');
+        const isAdmin = window.sistemaAuth.isAdmin();
+        let valorTotalExibido = (venda.total || 0).toFixed(2);
+        if (!isAdmin && venda.forma_pagamento !== 'dinheiro') {
+            valorTotalExibido = '**.**';
+        }
+        let html = `
+            <div class="detalhes-venda">
+                <div class="info-item">
+                    <span><strong>Data/Hora:</strong></span>
+                    <span>${dataHora}</span>
+                </div>
+                <div class="info-item">
+                    <span><strong>Cliente:</strong></span>
+                    <span>${venda.cliente || 'Cliente não identificado'}</span>
+                </div>
+                <div class="info-item">
+                    <span><strong>Vendedor:</strong></span>
+                    <span>${venda.usuario?.nome || 'N/A'}</span>
+                </div>
+                <div class="info-item">
+                    <span><strong>Forma de Pagamento:</strong></span>
+                    <span>${window.formatarFormaPagamento(venda.forma_pagamento)}</span>
+                </div>
+                
+                <h4>Itens da Venda:</h4>
+        `;
+        if (venda.itens && venda.itens.length > 0) {
+            venda.itens.forEach(item => {
+                let valorItemExibido = ((item.preco_unitario || 0) * (item.quantidade || 0)).toFixed(2);
+                let precoUnitarioExibido = (item.preco_unitario || 0).toFixed(2);
+                if (!isAdmin && venda.forma_pagamento !== 'dinheiro') {
+                    valorItemExibido = '**.**';
+                    precoUnitarioExibido = '**.**';
+                }
+                html += `
+                    <div class="detalhes-item">
+                        <div class="detalhes-produto">
+                            <i class="fas ${item.produto?.icone || 'fa-cube'}"></i>
+                            <div>
+                                <strong>${item.produto?.nome || 'Produto não encontrado'}</strong>
+                                <div>Quantidade: ${item.quantidade}</div>
+                            </div>
+                        </div>
                         <div>
-                            <strong>${item.produto?.nome || 'Produto não encontrado'}</strong>
-                            <div>Quantidade: ${item.quantidade}</div>
+                            <strong>R$ ${valorItemExibido}</strong>
+                            <div>Unit: R$ ${precoUnitarioExibido}</div>
                         </div>
                     </div>
-                    <div>
-                        <strong>R$ ${valorItemExibido}</strong>
-                        <div>Unit: R$ ${precoUnitarioExibido}</div>
+                `;
+            });
+        } else {
+            html += `<p>Nenhum item encontrado para esta venda</p>`;
+        }
+        html += `
+                <div class="detalhes-total">
+                    <div class="info-item">
+                        <span><strong>Total da Venda:</strong></span>
+                        <span><strong>R$ ${valorTotalExibido}</strong></span>
                     </div>
                 </div>
-            `;
-        });
-    } else {
-        html += `<p>Nenhum item encontrado para esta venda</p>`;
-    }
-    html += `
-            <div class="detalhes-total">
-                <div class="info-item">
-                    <span><strong>Total da Venda:</strong></span>
-                    <span><strong>R$ ${valorTotalExibido}</strong></span>
-                </div>
+                
+                ${venda.observacoes ? `
+                    <div class="info-item">
+                        <span><strong>Observações:</strong></span>
+                        <span>${venda.observacoes}</span>
+                    </div>
+                ` : ''}
             </div>
-            
-            ${venda.observacoes ? `
-                <div class="info-item">
-                    <span><strong>Observações:</strong></span>
-                    <span>${venda.observacoes}</span>
-                </div>
-            ` : ''}
-        </div>
-    `;
-    content.innerHTML = html;
-    modal.style.display = 'block';
-};
+        `;
+        content.innerHTML = html;
+        modal.style.display = 'block';
+    };
+
+    inicializarCaixa();
+});

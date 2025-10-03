@@ -306,8 +306,27 @@ document.addEventListener('DOMContentLoaded', async function() {
     async function marcarEncomendaComoPaga(encomendaId) {
         if (confirm('Tem certeza que deseja marcar esta encomenda como paga?')) {
             try {
+                // Obter a encomenda para calcular o valor pendente
+                const encomenda = encomendas.find(enc => enc.id === encomendaId);
+                const valorPendente = (encomenda.valor_total - encomenda.sinal_pago);
+
+                // Registrar o pagamento final no caixa
+                const dataAtual = new Date().toISOString().split('T')[0];
+                const usuario = window.sistemaAuth.usuarioLogado;
+                
+                const movimentacaoData = {
+                    data_caixa: dataAtual,
+                    tipo: 'entrada',
+                    valor: valorPendente,
+                    descricao: `Pagamento final da encomenda #${encomendaId.substring(0, 8)}`,
+                    usuario_id: usuario.id
+                };
+
+                await window.encomendasSupabase.registrarMovimentacao(movimentacaoData);
+
+                // Atualizar o status da encomenda
                 await window.encomendasSupabase.atualizarStatusEncomenda(encomendaId, 'paga');
-                mostrarMensagem('Encomenda marcada como paga com sucesso!', 'success');
+                mostrarMensagem('Encomenda marcada como paga com sucesso e pagamento registrado!', 'success');
                 await carregarEncomendas();
             } catch (error) {
                 mostrarMensagem('Erro ao marcar encomenda como paga: ' + error.message, 'error');
@@ -478,6 +497,22 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         try {
             await window.encomendasSupabase.criarEncomenda(encomendaData);
+
+            // Registrar o valor do sinal no caixa
+            if (sinalEncomenda > 0) {
+                const dataAtual = new Date().toISOString().split('T')[0];
+                const usuario = window.sistemaAuth.usuarioLogado;
+
+                const movimentacaoData = {
+                    data_caixa: dataAtual,
+                    tipo: 'entrada',
+                    valor: sinalEncomenda,
+                    descricao: `Adiantamento de encomenda (${clienteEncomendaSearch.value})`,
+                    usuario_id: usuario.id
+                };
+                await window.encomendasSupabase.registrarMovimentacao(movimentacaoData);
+            }
+
             mostrarMensagem(`Encomenda para ${clienteEncomendaSearch.value} criada com sucesso!`, 'success');
             formEncomenda.reset();
             clienteEncomendaId.value = '';
