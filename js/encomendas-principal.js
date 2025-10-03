@@ -85,18 +85,28 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     async function carregarEncomendas() {
-        const container = document.getElementById('lista-encomendas-container');
-        if (!container) return;
-        container.innerHTML = '<p class="loading-message">Carregando encomendas...</p>';
+        const pendentesContainer = document.getElementById('encomendas-pendentes-container');
+        const concluidasContainer = document.getElementById('encomendas-concluidas-container');
+        if (!pendentesContainer || !concluidasContainer) return;
+
+        pendentesContainer.innerHTML = '<p class="loading-message">Carregando encomendas pendentes...</p>';
+        concluidasContainer.innerHTML = '<p class="loading-message">Carregando encomendas concluídas...</p>';
 
         try {
             if (!window.encomendasSupabase) throw new Error('Módulo de comunicação com o Supabase não carregado.');
             encomendas = await window.encomendasSupabase.buscarEncomendas();
-            exibirListaEncomendas();
+            
+            const encomendasPendentes = encomendas.filter(enc => enc.status !== 'concluida');
+            const encomendasConcluidas = encomendas.filter(enc => enc.status === 'concluida');
+
+            exibirListaEncomendas(encomendasPendentes, pendentesContainer, 'pendentes');
+            exibirListaEncomendas(encomendasConcluidas, concluidasContainer, 'concluidas');
+
         } catch (error) {
             mostrarMensagem('Erro ao carregar a lista de encomendas: ' + error.message, 'error');
             encomendas = [];
-            container.innerHTML = '<p class="empty-message">Erro ao carregar as encomendas.</p>';
+            pendentesContainer.innerHTML = '<p class="empty-message">Erro ao carregar as encomendas.</p>';
+            concluidasContainer.innerHTML = '<p class="empty-message">Erro ao carregar as encomendas.</p>';
         }
     }
     
@@ -130,12 +140,11 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
 
-    function exibirListaEncomendas() {
-        const container = document.getElementById('lista-encomendas-container');
+    function exibirListaEncomendas(lista, container, tipo) {
         if (!container) return;
         container.innerHTML = '';
-        if (encomendas.length === 0) {
-            container.innerHTML = '<p class="empty-message">Nenhuma encomenda encontrada.</p>';
+        if (lista.length === 0) {
+            container.innerHTML = `<p class="empty-message">Nenhuma encomenda ${tipo === 'pendentes' ? 'pendente' : 'concluída'} encontrada.</p>`;
             return;
         }
         
@@ -155,7 +164,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 </tr>
             </thead>
             <tbody>
-                ${encomendas.map(enc => {
+                ${lista.map(enc => {
                     const valorPendente = (enc.valor_total - enc.sinal_pago).toFixed(2);
                     return `
                     <tr>
@@ -169,6 +178,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                         <td>
                             <button class="btn-acao pago" title="Marcar como Pago" data-id="${enc.id}" ${enc.status === 'paga' ? 'disabled' : ''}>
                                 <i class="fas fa-check-circle"></i>
+                            </button>
+                            <button class="btn-acao concluido" title="Marcar como Concluído" data-id="${enc.id}" ${enc.status === 'concluida' ? 'disabled' : ''}>
+                                <i class="fas fa-check"></i>
                             </button>
                             <button class="btn-acao editar" title="Editar" data-id="${enc.id}"><i class="fas fa-edit"></i></button>
                             <button class="btn-acao excluir" title="Excluir" data-id="${enc.id}"><i class="fas fa-trash"></i></button>
@@ -184,6 +196,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         // Adicionar event listeners aos botões de ação
         tabela.querySelectorAll('.btn-acao.pago').forEach(btn => {
             btn.addEventListener('click', () => marcarEncomendaComoPaga(btn.dataset.id));
+        });
+        tabela.querySelectorAll('.btn-acao.concluido').forEach(btn => {
+            btn.addEventListener('click', () => marcarEncomendaComoConcluida(btn.dataset.id));
         });
         tabela.querySelectorAll('.btn-acao.editar').forEach(btn => {
             btn.addEventListener('click', () => editarEncomenda(btn.dataset.id));
@@ -334,6 +349,19 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
     
+    // Nova função para marcar como concluída
+    async function marcarEncomendaComoConcluida(encomendaId) {
+        if (confirm('Tem certeza que deseja marcar esta encomenda como concluída?')) {
+            try {
+                await window.encomendasSupabase.atualizarStatusEncomenda(encomendaId, 'concluida');
+                mostrarMensagem('Encomenda marcada como concluída com sucesso!', 'success');
+                await carregarEncomendas();
+            } catch (error) {
+                mostrarMensagem('Erro ao marcar encomenda como concluída: ' + error.message, 'error');
+            }
+        }
+    }
+
     // Lógica para editar cliente
     function editarCliente(clienteId) {
         const clienteParaEditar = clientes.find(c => c.id === clienteId);
