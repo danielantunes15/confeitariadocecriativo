@@ -30,13 +30,44 @@ document.addEventListener('DOMContentLoaded', async function() {
     const tabMovimentacoesBtn = document.querySelector('[data-tab="movimentacoes"]');
 
     // Variáveis globais
-    let vendasDoDia = [];
-    let movimentacoesDoDia = [];
-    let valorAbertura = 0;
-    let isAdmin = window.sistemaAuth?.isAdmin();
+    window.vendasDoDia = [];
+    window.movimentacoesDoDia = [];
+    window.valorAbertura = 0;
+    window.isAdmin = window.sistemaAuth?.isAdmin();
+
+    // Funções auxiliares movidas para o escopo principal
+    function formatarFormaPagamento(forma) {
+        const formas = {
+            'dinheiro': 'Dinheiro',
+            'cartao': 'Cartão',
+            'pix': 'PIX'
+        };
+        return formas[forma] || forma;
+    }
+
+    function mostrarMensagem(mensagem, tipo) {
+        const alertContainer = document.getElementById('alert-container');
+        if (!alertContainer) return;
+        const alert = document.createElement('div');
+        alert.className = `alert alert-${tipo}`;
+        alert.innerHTML = `
+            <span>${mensagem}</span>
+            <button onclick="this.parentElement.remove()">&times;</button>
+        `;
+        alertContainer.appendChild(alert);
+        setTimeout(() => {
+            if (alert.parentElement) {
+                alert.remove();
+            }
+        }, 5000);
+    }
+    
+    // Funções globais para uso no HTML e nos scripts
+    window.mostrarMensagem = mostrarMensagem;
+    window.formatarFormaPagamento = formatarFormaPagamento;
 
     // Aplicar classe e mostrar seções se o usuário for administrador
-    if (isAdmin) {
+    if (window.isAdmin) {
         document.body.classList.add('is-admin');
         if (secoesCaixa) secoesCaixa.style.display = 'block';
         document.querySelectorAll('.admin-only').forEach(el => {
@@ -258,7 +289,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             
             const { data: vendas, error } = await supabase
                 .from('vendas')
-                .select('*, itens:vendas_itens(*), usuario:sistema_usuarios(nome)')
+                .select('*, usuario:sistema_usuarios(nome)')
                 .gte('created_at', dataInicio)
                 .lte('created_at', dataFim)
                 .order('created_at', { ascending: false });
@@ -268,30 +299,29 @@ document.addEventListener('DOMContentLoaded', async function() {
                 throw error;
             }
 
-            vendasDoDia = vendas || [];
+            window.vendasDoDia = vendas || [];
             
-            if (vendasDoDia.length > 0) {
-                for (let venda of vendasDoDia) {
-                    if (venda.itens) {
-                        for (let item of venda.itens) {
-                            try {
-                                const { data: produto, error: errorProduto } = await supabase
-                                    .from('produtos')
-                                    .select('nome, icone')
-                                    .eq('id', item.produto_id)
-                                    .single();
-                                if (!errorProduto && produto) {
-                                    item.produto = produto;
-                                }
-                            } catch (produtoError) {
-                                item.produto = { nome: 'Produto não encontrado', icone: 'fa-cube' };
-                            }
-                        }
+            // Buscar os detalhes de cada venda em um loop separado para evitar a consulta aninhada complexa
+            for (let venda of window.vendasDoDia) {
+                try {
+                    const { data: itens, error: errorItens } = await supabase
+                        .from('vendas_itens')
+                        .select('*, produto:produtos(nome, icone)')
+                        .eq('venda_id', venda.id);
+
+                    if (!errorItens && itens) {
+                        venda.itens = itens;
+                    } else {
+                        console.warn(`Nenhum item encontrado para a venda ${venda.id}`);
+                        venda.itens = [];
                     }
+                } catch (detalhesError) {
+                    console.warn(`Erro ao carregar detalhes da venda ${venda.id}:`, detalhesError);
+                    venda.itens = [];
                 }
             }
             
-            exibirVendas(vendasDoDia);
+            exibirVendas(window.vendasDoDia);
             document.body.classList.remove('loading-instant');
 
         } catch (error) {
@@ -311,13 +341,13 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             if (error) throw error;
 
-            movimentacoesDoDia = movimentacoes || [];
+            window.movimentacoesDoDia = movimentacoes || [];
             
-            const movimentacoesFiltradas = movimentacoesDoDia.filter(m => m.tipo === 'entrada' || m.tipo === 'saida');
+            const movimentacoesFiltradas = window.movimentacoesDoDia.filter(m => m.tipo === 'entrada' || m.tipo === 'saida');
             exibirMovimentacoes(movimentacoesFiltradas);
         } catch (error) {
             console.error('Erro ao carregar movimentações:', error);
-            movimentacoesDoDia = [];
+            window.movimentacoesDoDia = [];
             exibirMovimentacoes([]);
         }
     }
@@ -335,10 +365,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                 throw error;
             }
 
-            valorAbertura = abertura ? abertura.valor : 0;
+            window.valorAbertura = abertura ? abertura.valor : 0;
         } catch (error) {
             console.error('Erro ao carregar valor de abertura:', error);
-            valorAbertura = 0;
+            window.valorAbertura = 0;
         }
     }
 
@@ -360,7 +390,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             const hora = new Date(venda.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
             const totalItens = venda.itens ? venda.itens.reduce((sum, item) => sum + item.quantidade, 0) : 0;
             let valorExibido = venda.total?.toFixed(2) || '0.00';
-            if (!isAdmin && venda.forma_pagamento !== 'dinheiro') {
+            if (!window.isAdmin && venda.forma_pagamento !== 'dinheiro') {
                 valorExibido = '**.**';
             }
             tr.innerHTML = `
@@ -418,22 +448,18 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     function atualizarResumoFinanceiro() {
-        const vendasDinheiro = vendasDoDia.filter(v => v.forma_pagamento === 'dinheiro');
-        const vendasCartao = vendasDoDia.filter(v => v.forma_pagamento === 'cartao');
-        const vendasPix = vendasDoDia.filter(v => v.forma_pagamento === 'pix');
+        const vendasDinheiro = window.vendasDoDia.filter(v => v.forma_pagamento === 'dinheiro');
+        const vendasCartao = window.vendasDoDia.filter(v => v.forma_pagamento === 'cartao');
+        const vendasPix = window.vendasDoDia.filter(v => v.forma_pagamento === 'pix');
         const totalDinheiroVendas = vendasDinheiro.reduce((sum, v) => sum + (v.total || 0), 0);
         const totalCartao = vendasCartao.reduce((sum, v) => sum + (v.total || 0), 0);
         const totalPix = vendasPix.reduce((sum, v) => sum + (v.total || 0), 0);
-        const totalGeral = vendasDoDia.reduce((sum, v) => sum + (v.total || 0), 0);
+        const totalGeral = window.vendasDoDia.reduce((sum, v) => sum + (v.total || 0), 0);
 
         document.getElementById('total-dinheiro').textContent = `R$ ${totalDinheiroVendas.toFixed(2)}`;
         document.getElementById('qtd-dinheiro').textContent = `${vendasDinheiro.length} venda(s)`;
-        document.getElementById('total-cartao').textContent = `R$ ${totalCartao.toFixed(2)}`;
-        document.getElementById('qtd-cartao').textContent = `${vendasCartao.length} venda(s)`;
-        document.getElementById('total-pix').textContent = `R$ ${totalPix.toFixed(2)}`;
-        document.getElementById('qtd-pix').textContent = `${vendasPix.length} venda(s)`;
         
-        if (!isAdmin) {
+        if (!window.isAdmin) {
             document.getElementById('total-cartao').textContent = 'R$ **,**';
             document.getElementById('qtd-cartao').textContent = '** venda(s)';
             document.getElementById('total-pix').textContent = 'R$ **,**';
@@ -441,15 +467,19 @@ document.addEventListener('DOMContentLoaded', async function() {
             document.getElementById('total-geral').textContent = `R$ ${totalDinheiroVendas.toFixed(2)}`;
             document.getElementById('qtd-total').textContent = `${vendasDinheiro.length} venda(s)`;
         } else {
+            document.getElementById('total-cartao').textContent = `R$ ${totalCartao.toFixed(2)}`;
+            document.getElementById('qtd-cartao').textContent = `${vendasCartao.length} venda(s)`;
+            document.getElementById('total-pix').textContent = `R$ ${totalPix.toFixed(2)}`;
+            document.getElementById('qtd-pix').textContent = `${vendasPix.length} venda(s)`;
             document.getElementById('total-geral').textContent = `R$ ${totalGeral.toFixed(2)}`;
-            document.getElementById('qtd-total').textContent = `${vendasDoDia.length} venda(s)`;
+            document.getElementById('qtd-total').textContent = `${window.vendasDoDia.length} venda(s)`;
         }
     }
 
     function atualizarRelatorio() {
         const dataSelecionada = dataFechamentoInput.value;
         const dataFormatada = new Date(dataSelecionada + 'T00:00:00').toLocaleDateString('pt-BR');
-        const vendasDinheiro = vendasDoDia.filter(v => v.forma_pagamento === 'dinheiro');
+        const vendasDinheiro = window.vendasDoDia.filter(v => v.forma_pagamento === 'dinheiro');
         const totalVendasDinheiro = vendasDinheiro.reduce((sum, v) => sum + (v.total || 0), 0);
         const ticketMedioDinheiro = vendasDinheiro.length > 0 ? totalVendasDinheiro / vendasDinheiro.length : 0;
         
@@ -458,443 +488,261 @@ document.addEventListener('DOMContentLoaded', async function() {
         document.getElementById('relatorio-qtd-vendas').textContent = vendasDinheiro.length;
         document.getElementById('relatorio-ticket-medio').textContent = `R$ ${ticketMedioDinheiro.toFixed(2)}`;
 
-        const totalEntradas = movimentacoesDoDia
+        const totalEntradas = window.movimentacoesDoDia
             .filter(m => m.tipo === 'entrada')
             .reduce((sum, m) => sum + (m.valor || 0), 0);
-        const totalSaidas = movimentacoesDoDia
+        const totalSaidas = window.movimentacoesDoDia
             .filter(m => m.tipo === 'saida')
             .reduce((sum, m) => sum + (m.valor || 0), 0);
         
-        const saldoFinal = valorAbertura + totalVendasDinheiro + totalEntradas - totalSaidas;
+        const saldoFinal = window.valorAbertura + totalVendasDinheiro + totalEntradas - totalSaidas;
 
         document.getElementById('relatorio-entradas').textContent = `R$ ${totalEntradas.toFixed(2)}`;
         document.getElementById('relatorio-saidas').textContent = `R$ ${totalSaidas.toFixed(2)}`;
         document.getElementById('relatorio-saldo-final').textContent = `R$ ${saldoFinal.toFixed(2)}`;
         
-        document.getElementById('relatorio-abertura').textContent = `R$ ${valorAbertura.toFixed(2)}`;
+        document.getElementById('relatorio-abertura').textContent = `R$ ${window.valorAbertura.toFixed(2)}`;
     }
     
     function filtrarVendas() {
         const filtro = filtroPagamentoSelect.value;
-        let vendasFiltradas = vendasDoDia;
+        let vendasFiltradas = window.vendasDoDia;
         if (filtro !== 'todos') {
-            vendasFiltradas = vendasDoDia.filter(v => v.forma_pagamento === filtro);
+            vendasFiltradas = window.vendasDoDia.filter(v => v.forma_pagamento === filtro);
         }
         exibirVendas(vendasFiltradas);
     }
-
-    window.verDetalhesVenda = function(vendaId) {
-        const venda = vendasDoDia.find(v => v.id === vendaId);
-        if (!venda) {
-            mostrarMensagem('Venda não encontrada', 'error');
-            return;
-        }
-        const modal = document.getElementById('modal-detalhes-venda');
-        const content = document.getElementById('detalhes-venda-content');
-        const dataHora = new Date(venda.created_at).toLocaleString('pt-BR');
-        let valorTotalExibido = (venda.total || 0).toFixed(2);
-        if (!isAdmin && venda.forma_pagamento !== 'dinheiro') {
-            valorTotalExibido = '**.**';
-        }
-        let html = `
-            <div class="detalhes-venda">
-                <div class="info-item">
-                    <span><strong>Data/Hora:</strong></span>
-                    <span>${dataHora}</span>
-                </div>
-                <div class="info-item">
-                    <span><strong>Cliente:</strong></span>
-                    <span>${venda.cliente || 'Cliente não identificado'}</span>
-                </div>
-                <div class="info-item">
-                    <span><strong>Vendedor:</strong></span>
-                    <span>${venda.usuario?.nome || 'N/A'}</span>
-                </div>
-                <div class="info-item">
-                    <span><strong>Forma de Pagamento:</strong></span>
-                    <span>${formatarFormaPagamento(venda.forma_pagamento)}</span>
-                </div>
-                
-                <h4>Itens da Venda:</h4>
-        `;
-        if (venda.itens && venda.itens.length > 0) {
-            venda.itens.forEach(item => {
-                let valorItemExibido = ((item.preco_unitario || 0) * (item.quantidade || 0)).toFixed(2);
-                let precoUnitarioExibido = (item.preco_unitario || 0).toFixed(2);
-                if (!isAdmin && venda.forma_pagamento !== 'dinheiro') {
-                    valorItemExibido = '**.**';
-                    precoUnitarioExibido = '**.**';
-                }
-                html += `
-                    <div class="detalhes-item">
-                        <div class="detalhes-produto">
-                            <i class="fas ${item.produto?.icone || 'fa-cube'}"></i>
-                            <div>
-                                <strong>${item.produto?.nome || 'Produto não encontrado'}</strong>
-                                <div>Quantidade: ${item.quantidade}</div>
-                            </div>
-                        </div>
-                        <div>
-                            <strong>R$ ${valorItemExibido}</strong>
-                            <div>Unit: R$ ${precoUnitarioExibido}</div>
-                        </div>
-                    </div>
-                `;
-            });
-        } else {
-            html += `<p>Nenhum item encontrado para esta venda</p>`;
-        }
-        html += `
-                <div class="detalhes-total">
-                    <div class="info-item">
-                        <span><strong>Total da Venda:</strong></span>
-                        <span><strong>R$ ${valorTotalExibido}</strong></span>
-                    </div>
-                </div>
-                
-                ${venda.observacoes ? `
-                    <div class="info-item">
-                        <span><strong>Observações:</strong></span>
-                        <span>${venda.observacoes}</span>
-                    </div>
-                ` : ''}
-            </div>
-        `;
-        content.innerHTML = html;
-        modal.style.display = 'block';
-    };
-
-    document.querySelectorAll('.close').forEach(closeBtn => {
-        closeBtn.addEventListener('click', function() {
-            document.getElementById('modal-detalhes-venda').style.display = 'none';
-        });
-    });
-
-    window.addEventListener('click', function(event) {
-        const modal = document.getElementById('modal-detalhes-venda');
-        if (event.target === modal) {
-            modal.style.display = 'none';
-        }
-    });
-
-    async function gerarRelatorioPDF() {
-        try {
-            mostrarMensagem('Gerando relatório...', 'info');
-            const dataSelecionada = dataFechamentoInput.value;
-            const dataFormatada = new Date(dataSelecionada + 'T00:00:00').toLocaleDateString('pt-BR');
-            const vendasDinheiro = vendasDoDia.filter(v => v.forma_pagamento === 'dinheiro');
-            const vendasCartao = vendasDoDia.filter(v => v.forma_pagamento === 'cartao');
-            const vendasPix = vendasDoDia.filter(v => v.forma_pagamento === 'pix');
-            const totalDinheiro = vendasDinheiro.reduce((sum, v) => sum + (v.total || 0), 0);
-            const totalCartao = vendasCartao.reduce((sum, v) => sum + (v.total || 0), 0);
-            const totalPix = vendasPix.reduce((sum, v) => sum + (v.total || 0), 0);
-            const totalGeral = vendasDoDia.reduce((sum, v) => sum + (v.total || 0), 0);
-            
-            let totalEntradas = movimentacoesDoDia.filter(m => m.tipo === 'entrada').reduce((sum, m) => sum + (m.valor || 0), 0);
-            let totalSaidas = movimentacoesDoDia.filter(m => m.tipo === 'saida').reduce((sum, m) => sum + (m.valor || 0), 0);
-            
-            const saldoFinal = valorAbertura + totalDinheiro + totalEntradas - totalSaidas;
-
-            let movimentacoesHtml = '';
-            if (movimentacoesDoDia.length > 0) {
-                const movimentacoesRelevantes = movimentacoesDoDia.filter(m => m.tipo !== 'abertura');
-                if (movimentacoesRelevantes.length > 0) {
-                    movimentacoesHtml += `
-                        <h3 style="margin-top: 30px;">Movimentações Financeiras Detalhadas</h3>
-                        <table style="font-size: 14px;">
-                            <thead>
-                                <tr>
-                                    <th>Hora</th>
-                                    <th>Tipo</th>
-                                    <th>Valor</th>
-                                    <th>Descrição</th>
-                                    <th>Usuário</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                    `;
-                    movimentacoesRelevantes.forEach(mov => {
-                        const hora = new Date(mov.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-                        movimentacoesHtml += `
-                            <tr>
-                                <td>${hora}</td>
-                                <td>${mov.tipo === 'entrada' ? 'Entrada' : 'Saída'}</td>
-                                <td>R$ ${mov.valor?.toFixed(2) || '0.00'}</td>
-                                <td>${mov.descricao}</td>
-                                <td>${mov.usuario?.nome || 'N/A'}</td>
-                            </tr>
-                        `;
-                    });
-                    movimentacoesHtml += `
-                            </tbody>
-                        </table>
-                    `;
-                }
-            }
-
-            const relatorioWindow = window.open('', '_blank');
-            relatorioWindow.document.write(`
-                <html>
-                    <head>
-                        <title>Relatório de Fechamento - ${dataFormatada}</title>
-                        <style>
-                            body { font-family: Arial, sans-serif; margin: 20px; }
-                            h1, h2, h3 { color: #333; }
-                            table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-                            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-                            th { background-color: #f2f2f2; }
-                            .total { font-weight: bold; }
-                            .assinatura { margin-top: 50px; border-top: 1px solid #333; padding-top: 10px; }
-                        </style>
-                    </head>
-                    <body>
-                        <h1>Relatório de Fechamento - Confeitaria Doces Criativos</h1>
-                        <h2>Data: ${dataFormatada}</h2>
-                        
-                        <h3>Resumo Financeiro</h3>
-                        <table>
-                            <tr>
-                                <th>Item</th>
-                                <th>Valor Total</th>
-                            </tr>
-                            <tr>
-                                <td>Valor de Abertura</td>
-                                <td>R$ ${valorAbertura.toFixed(2)}</td>
-                            </tr>
-                            <tr>
-                                <td>Total de Vendas em Dinheiro</td>
-                                <td>R$ ${totalDinheiro.toFixed(2)}</td>
-                            </tr>
-                            ${isAdmin ? `
-                            <tr>
-                                <td>Total de Vendas em Cartão</td>
-                                <td>R$ ${totalCartao.toFixed(2)}</td>
-                            </tr>
-                            <tr>
-                                <td>Total de Vendas em PIX</td>
-                                <td>R$ ${totalPix.toFixed(2)}</td>
-                            </tr>
-                            ` : ''}
-                            <tr>
-                                <td>Total de Entradas (Reforços)</td>
-                                <td>R$ ${totalEntradas.toFixed(2)}</td>
-                            </tr>
-                            <tr>
-                                <td>Total de Saídas (Sangrias)</td>
-                                <td>R$ ${totalSaidas.toFixed(2)}</td>
-                            </tr>
-                            <tr class="total">
-                                <td>Total Geral de Vendas</td>
-                                <td>R$ ${totalGeral.toFixed(2)}</td>
-                            </tr>
-                            <tr>
-                                <td>Saldo Calculado do Caixa</td>
-                                <td>R$ ${saldoFinal.toFixed(2)}</td>
-                            </tr>
-                        </table>
-                        
-                        ${movimentacoesHtml}
-
-                        <div class="assinatura">
-                            <p>_________________________________</p>
-                            <p>Vendedor</p>
-                        </div>
-                        
-                        ${isAdmin ? `
-                        <div class="assinatura">
-                            <p>_________________________________</p>
-                            <p>Gerente/Administrador</p>
-                        </div>
-                        ` : ''}
-                        
-                        <p style="margin-top: 30px; font-size: 12px; color: #666;">
-                            Relatório gerado em ${new Date().toLocaleString('pt-BR')}
-                        </p>
-                    </body>
-                </html>
-            `);
-            relatorioWindow.document.close();
-            setTimeout(() => {
-    relatorioWindow.print();
-}, 500);
-        } catch (error) {
-            console.error('Erro ao gerar relatório:', error);
-        }
-    }
-
-    function formatarFormaPagamento(forma) {
-        const formas = {
-            'dinheiro': 'Dinheiro',
-            'cartao': 'Cartão',
-            'pix': 'PIX'
-        };
-        return formas[forma] || forma;
-    }
+    
 });
 
 // Funções globais para uso no HTML e nos scripts
-window.mostrarMensagem = function(mensagem, tipo) {
-    const alertContainer = document.getElementById('alert-container');
-    if (!alertContainer) return;
-    const alert = document.createElement('div');
-    alert.className = `alert alert-${tipo}`;
-    alert.innerHTML = `
-        <span>${mensagem}</span>
-        <button onclick="this.parentElement.remove()">&times;</button>
-    `;
-    alertContainer.appendChild(alert);
-    setTimeout(() => {
-        if (alert.parentElement) {
-            alert.remove();
-        }
-    }, 5000);
-}
-
 window.gerarRelatorioPDF = async function() {
-    // Reutiliza a função já definida no escopo principal
-    await document.querySelector('[data-tab="relatorio"]').dispatchEvent(new Event('click'));
-    // A lógica de geração de PDF deve ser chamada após o carregamento da aba
-    // Para simplificar, vou copiar a lógica aqui, mas a ideal é refatorar
-    const dataSelecionada = document.getElementById('data-fechamento').value;
-    const dataFormatada = new Date(dataSelecionada + 'T00:00:00').toLocaleDateString('pt-BR');
-    const vendasDoDia = window.vendasDoDia; // Assumindo que a variável global está acessível
-    const movimentacoesDoDia = window.movimentacoesDoDia; // Assumindo que a variável global está acessível
-    const valorAbertura = window.valorAbertura; // Assumindo que a variável global está acessível
-    const isAdmin = window.isAdmin; // Assumindo que a variável global está acessível
+    try {
+        window.mostrarMensagem('Gerando relatório...', 'info');
+        const dataSelecionada = document.getElementById('data-fechamento').value;
+        const dataFormatada = new Date(dataSelecionada + 'T00:00:00').toLocaleDateString('pt-BR');
+        
+        const vendasDinheiro = window.vendasDoDia.filter(v => v.forma_pagamento === 'dinheiro');
+        const vendasCartao = window.vendasDoDia.filter(v => v.forma_pagamento === 'cartao');
+        const vendasPix = window.vendasDoDia.filter(v => v.forma_pagamento === 'pix');
+        const totalDinheiro = vendasDinheiro.reduce((sum, v) => sum + (v.total || 0), 0);
+        const totalCartao = vendasCartao.reduce((sum, v) => sum + (v.total || 0), 0);
+        const totalPix = vendasPix.reduce((sum, v) => sum + (v.total || 0), 0);
+        const totalGeral = window.vendasDoDia.reduce((sum, v) => sum + (v.total || 0), 0);
 
-    const vendasDinheiro = vendasDoDia.filter(v => v.forma_pagamento === 'dinheiro');
-    const vendasCartao = vendasDoDia.filter(v => v.forma_pagamento === 'cartao');
-    const vendasPix = vendasDoDia.filter(v => v.forma_pagamento === 'pix');
-    const totalDinheiro = vendasDinheiro.reduce((sum, v) => sum + (v.total || 0), 0);
-    const totalCartao = vendasCartao.reduce((sum, v) => sum + (v.total || 0), 0);
-    const totalPix = vendasPix.reduce((sum, v) => sum + (v.total || 0), 0);
-    const totalGeral = vendasDoDia.reduce((sum, v) => sum + (v.total || 0), 0);
-    
-    let totalEntradas = movimentacoesDoDia.filter(m => m.tipo === 'entrada').reduce((sum, m) => sum + (m.valor || 0), 0);
-    let totalSaidas = movimentacoesDoDia.filter(m => m.tipo === 'saida').reduce((sum, m) => sum + (m.valor || 0), 0);
-    
-    const saldoFinal = valorAbertura + totalDinheiro + totalEntradas - totalSaidas;
+        const totalEntradas = window.movimentacoesDoDia.filter(m => m.tipo === 'entrada').reduce((sum, m) => sum + (m.valor || 0), 0);
+        const totalSaidas = window.movimentacoesDoDia.filter(m => m.tipo === 'saida').reduce((sum, m) => sum + (m.valor || 0), 0);
+        
+        const saldoFinal = window.valorAbertura + totalDinheiro + totalEntradas - totalSaidas;
+        const isAdmin = window.isAdmin;
 
-    let movimentacoesHtml = '';
-    if (movimentacoesDoDia.length > 0) {
-        const movimentacoesRelevantes = movimentacoesDoDia.filter(m => m.tipo !== 'abertura');
-        if (movimentacoesRelevantes.length > 0) {
-            movimentacoesHtml += `
-                <h3 style="margin-top: 30px;">Movimentações Financeiras Detalhadas</h3>
-                <table style="font-size: 14px;">
-                    <thead>
-                        <tr>
-                            <th>Hora</th>
-                            <th>Tipo</th>
-                            <th>Valor</th>
-                            <th>Descrição</th>
-                            <th>Usuário</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-            `;
-            movimentacoesRelevantes.forEach(mov => {
-                const hora = new Date(mov.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        let movimentacoesHtml = '';
+        if (window.movimentacoesDoDia.length > 0) {
+            const movimentacoesRelevantes = window.movimentacoesDoDia.filter(m => m.tipo !== 'abertura');
+            if (movimentacoesRelevantes.length > 0) {
                 movimentacoesHtml += `
-                    <tr>
-                        <td>${hora}</td>
-                        <td>${mov.tipo === 'entrada' ? 'Entrada' : 'Saída'}</td>
-                        <td>R$ ${mov.valor?.toFixed(2) || '0.00'}</td>
-                        <td>${mov.descricao}</td>
-                        <td>${mov.usuario?.nome || 'N/A'}</td>
-                    </tr>
+                    <h3 style="margin-top: 30px;">Movimentações Financeiras Detalhadas</h3>
+                    <table style="font-size: 14px;">
+                        <thead>
+                            <tr>
+                                <th>Hora</th>
+                                <th>Tipo</th>
+                                <th>Valor</th>
+                                <th>Descrição</th>
+                                <th>Usuário</th>
+                            </tr>
+                        </thead>
+                        <tbody>
                 `;
-            });
-            movimentacoesHtml += `
-                    </tbody>
-                </table>
-            `;
+                movimentacoesRelevantes.forEach(mov => {
+                    const hora = new Date(mov.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                    movimentacoesHtml += `
+                        <tr>
+                            <td>${hora}</td>
+                            <td>${mov.tipo === 'entrada' ? 'Entrada' : 'Saída'}</td>
+                            <td>R$ ${mov.valor?.toFixed(2) || '0.00'}</td>
+                            <td>${mov.descricao}</td>
+                            <td>${mov.usuario?.nome || 'N/A'}</td>
+                        </tr>
+                    `;
+                });
+                movimentacoesHtml += `
+                        </tbody>
+                    </table>
+                `;
+            }
         }
-    }
 
-    const relatorioWindow = window.open('', '_blank');
-    relatorioWindow.document.write(`
-        <html>
-            <head>
-                <title>Relatório de Fechamento - ${dataFormatada}</title>
-                <style>
-                    body { font-family: Arial, sans-serif; margin: 20px; }
-                    h1, h2, h3 { color: #333; }
-                    table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-                    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-                    th { background-color: #f2f2f2; }
-                    .total { font-weight: bold; }
-                    .assinatura { margin-top: 50px; border-top: 1px solid #333; padding-top: 10px; }
-                </style>
-            </head>
-            <body>
-                <h1>Relatório de Fechamento - Confeitaria Doces Criativos</h1>
-                <h2>Data: ${dataFormatada}</h2>
-                
-                <h3>Resumo Financeiro</h3>
-                <table>
-                    <tr>
-                        <th>Item</th>
-                        <th>Valor Total</th>
-                    </tr>
-                    <tr>
-                        <td>Valor de Abertura</td>
-                        <td>R$ ${valorAbertura.toFixed(2)}</td>
-                    </tr>
-                    <tr>
-                        <td>Total de Vendas em Dinheiro</td>
-                        <td>R$ ${totalDinheiro.toFixed(2)}</td>
-                    </tr>
+        const relatorioWindow = window.open('', '_blank');
+        relatorioWindow.document.write(`
+            <html>
+                <head>
+                    <title>Relatório de Fechamento - ${dataFormatada}</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; margin: 20px; }
+                        h1, h2, h3 { color: #333; }
+                        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+                        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                        th { background-color: #f2f2f2; }
+                        .total { font-weight: bold; }
+                        .assinatura { margin-top: 50px; border-top: 1px solid #333; padding-top: 10px; }
+                    </style>
+                </head>
+                <body>
+                    <h1>Relatório de Fechamento - Confeitaria Doces Criativos</h1>
+                    <h2>Data: ${dataFormatada}</h2>
+                    
+                    <h3>Resumo Financeiro</h3>
+                    <table>
+                        <tr>
+                            <th>Item</th>
+                            <th>Valor Total</th>
+                        </tr>
+                        <tr>
+                            <td>Valor de Abertura</td>
+                            <td>R$ ${window.valorAbertura.toFixed(2)}</td>
+                        </tr>
+                        <tr>
+                            <td>Total de Vendas em Dinheiro</td>
+                            <td>R$ ${totalDinheiro.toFixed(2)}</td>
+                        </tr>
+                        ${isAdmin ? `
+                        <tr>
+                            <td>Total de Vendas em Cartão</td>
+                            <td>R$ ${totalCartao.toFixed(2)}</td>
+                        </tr>
+                        <tr>
+                            <td>Total de Vendas em PIX</td>
+                            <td>R$ ${totalPix.toFixed(2)}</td>
+                        </tr>
+                        ` : ''}
+                        <tr>
+                            <td>Total de Entradas (Reforços)</td>
+                            <td>R$ ${totalEntradas.toFixed(2)}</td>
+                        </tr>
+                        <tr>
+                            <td>Total de Saídas (Sangrias)</td>
+                            <td>R$ ${totalSaidas.toFixed(2)}</td>
+                        </tr>
+                        <tr class="total">
+                            <td>Total Geral de Vendas</td>
+                            <td>R$ ${isAdmin ? totalGeral.toFixed(2) : totalDinheiro.toFixed(2)}</td>
+                        </tr>
+                        <tr>
+                            <td>Saldo Calculado do Caixa</td>
+                            <td>R$ ${saldoFinal.toFixed(2)}</td>
+                        </tr>
+                    </table>
+                    
+                    ${movimentacoesHtml}
+
+                    <div class="assinatura">
+                        <p>_________________________________</p>
+                        <p>Vendedor</p>
+                    </div>
+                    
                     ${isAdmin ? `
-                    <tr>
-                        <td>Total de Vendas em Cartão</td>
-                        <td>R$ ${totalCartao.toFixed(2)}</td>
-                    </tr>
-                    <tr>
-                        <td>Total de Vendas em PIX</td>
-                        <td>R$ ${totalPix.toFixed(2)}</td>
-                    </tr>
+                    <div class="assinatura">
+                        <p>_________________________________</p>
+                        <p>Gerente/Administrador</p>
+                    </div>
                     ` : ''}
-                    <tr>
-                        <td>Total de Entradas (Reforços)</td>
-                        <td>R$ ${totalEntradas.toFixed(2)}</td>
-                    </tr>
-                    <tr>
-                        <td>Total de Saídas (Sangrias)</td>
-                        <td>R$ ${totalSaidas.toFixed(2)}</td>
-                    </tr>
-                    <tr class="total">
-                        <td>Total Geral de Vendas</td>
-                        <td>R$ ${totalGeral.toFixed(2)}</td>
-                    </tr>
-                    <tr>
-                        <td>Saldo Calculado do Caixa</td>
-                        <td>R$ ${saldoFinal.toFixed(2)}</td>
-                    </tr>
-                </table>
-                
-                ${movimentacoesHtml}
+                    
+                    <p style="margin-top: 30px; font-size: 12px; color: #666;">
+                        Relatório gerado em ${new Date().toLocaleString('pt-BR')}
+                    </p>
+                </body>
+            </html>
+        `);
+        relatorioWindow.document.close();
+        setTimeout(() => {
+            relatorioWindow.print();
+        }, 500);
+        window.mostrarMensagem('Relatório gerado com sucesso!', 'success');
+    } catch (error) {
+        console.error('Erro ao gerar relatório:', error);
+        window.mostrarMensagem('Erro ao gerar relatório: ' + error.message, 'error');
+    }
+};
 
-                <div class="assinatura">
-                    <p>_________________________________</p>
-                    <p>Vendedor</p>
+window.verDetalhesVenda = function(vendaId) {
+    const venda = window.vendasDoDia.find(v => v.id === vendaId);
+    if (!venda) {
+        window.mostrarMensagem('Venda não encontrada', 'error');
+        return;
+    }
+    const modal = document.getElementById('modal-detalhes-venda');
+    const content = document.getElementById('detalhes-venda-content');
+    const dataHora = new Date(venda.created_at).toLocaleString('pt-BR');
+    const isAdmin = window.sistemaAuth.isAdmin();
+    let valorTotalExibido = (venda.total || 0).toFixed(2);
+    if (!isAdmin && venda.forma_pagamento !== 'dinheiro') {
+        valorTotalExibido = '**.**';
+    }
+    let html = `
+        <div class="detalhes-venda">
+            <div class="info-item">
+                <span><strong>Data/Hora:</strong></span>
+                <span>${dataHora}</span>
+            </div>
+            <div class="info-item">
+                <span><strong>Cliente:</strong></span>
+                <span>${venda.cliente || 'Cliente não identificado'}</span>
+            </div>
+            <div class="info-item">
+                <span><strong>Vendedor:</strong></span>
+                <span>${venda.usuario?.nome || 'N/A'}</span>
+            </div>
+            <div class="info-item">
+                <span><strong>Forma de Pagamento:</strong></span>
+                <span>${window.formatarFormaPagamento(venda.forma_pagamento)}</span>
+            </div>
+            
+            <h4>Itens da Venda:</h4>
+    `;
+    if (venda.itens && venda.itens.length > 0) {
+        venda.itens.forEach(item => {
+            let valorItemExibido = ((item.preco_unitario || 0) * (item.quantidade || 0)).toFixed(2);
+            let precoUnitarioExibido = (item.preco_unitario || 0).toFixed(2);
+            if (!isAdmin && venda.forma_pagamento !== 'dinheiro') {
+                valorItemExibido = '**.**';
+                precoUnitarioExibido = '**.**';
+            }
+            html += `
+                <div class="detalhes-item">
+                    <div class="detalhes-produto">
+                        <i class="fas ${item.produto?.icone || 'fa-cube'}"></i>
+                        <div>
+                            <strong>${item.produto?.nome || 'Produto não encontrado'}</strong>
+                            <div>Quantidade: ${item.quantidade}</div>
+                        </div>
+                    </div>
+                    <div>
+                        <strong>R$ ${valorItemExibido}</strong>
+                        <div>Unit: R$ ${precoUnitarioExibido}</div>
+                    </div>
                 </div>
-                
-                ${isAdmin ? `
-                <div class="assinatura">
-                    <p>_________________________________</p>
-                    <p>Gerente/Administrador</p>
+            `;
+        });
+    } else {
+        html += `<p>Nenhum item encontrado para esta venda</p>`;
+    }
+    html += `
+            <div class="detalhes-total">
+                <div class="info-item">
+                    <span><strong>Total da Venda:</strong></span>
+                    <span><strong>R$ ${valorTotalExibido}</strong></span>
                 </div>
-                ` : ''}
-                
-                <p style="margin-top: 30px; font-size: 12px; color: #666;">
-                    Relatório gerado em ${new Date().toLocaleString('pt-BR')}
-                </p>
-            </body>
-        </html>
-    `);
-    relatorioWindow.document.close();
-    setTimeout(() => {
-    relatorioWindow.print();
-}, 500);
-}
+            </div>
+            
+            ${venda.observacoes ? `
+                <div class="info-item">
+                    <span><strong>Observações:</strong></span>
+                    <span>${venda.observacoes}</span>
+                </div>
+            ` : ''}
+        </div>
+    `;
+    content.innerHTML = html;
+    modal.style.display = 'block';
+};
