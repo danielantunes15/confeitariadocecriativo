@@ -76,7 +76,7 @@
                         <form id="form-encomenda">
                             <div class="form-group">
                                 <label for="cliente-encomenda-search">Cliente</label>
-                                <input type="text" id="cliente-encomenda-search" placeholder="Buscar cliente por nome ou CPF..." required>
+                                <input type="text" id="cliente-encomenda-search" placeholder="Buscar cliente por nome ou CPF..." required autocomplete="off">
                                 <div id="cliente-encomenda-results" class="search-results-list"></div>
                                 <input type="hidden" id="cliente-encomenda-id" required>
                             </div>
@@ -144,6 +144,7 @@
                         <div id="tab-cadastrar-cliente" class="tab-content" style="display: none;">
                             <h3 class="card-title">Novo Cadastro</h3>
                             <form id="form-cadastro-cliente">
+                                <input type="hidden" id="cliente-id-edicao">
                                 <div class="form-group">
                                     <label for="cliente-nome">Nome do Cliente</label>
                                     <input type="text" id="cliente-nome" required>

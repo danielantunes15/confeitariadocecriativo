@@ -74,6 +74,59 @@ class EncomendasSupabase {
             throw error;
         }
     }
+    
+    // **NOVA FUNÇÃO** - Atualizar um cliente existente
+    async atualizarCliente(clienteId, clienteData) {
+        try {
+            const { data, error } = await this.supabase
+                .from('clientes')
+                .update(clienteData)
+                .eq('id', clienteId)
+                .select()
+                .single();
+
+            if (error) throw error;
+            console.log('✅ Cliente atualizado com sucesso:', data);
+            return data;
+        } catch (error) {
+            console.error('❌ Erro ao atualizar cliente:', error);
+            throw new Error('Falha ao atualizar o cliente.');
+        }
+    }
+
+    // **NOVA FUNÇÃO** - Excluir um cliente
+    async excluirCliente(clienteId) {
+        try {
+            const { error } = await this.supabase
+                .from('clientes')
+                .delete()
+                .eq('id', clienteId);
+            
+            if (error) throw error;
+            console.log('✅ Cliente excluído com sucesso.');
+            return true;
+        } catch (error) {
+            console.error('❌ Erro ao excluir cliente:', error);
+            throw new Error('Falha ao excluir o cliente.');
+        }
+    }
+
+    // **NOVA FUNÇÃO** - Atualizar status da encomenda
+    async atualizarStatusEncomenda(encomendaId, status) {
+        try {
+            const { data, error } = await this.supabase
+                .from('encomendas')
+                .update({ status: status })
+                .eq('id', encomendaId);
+
+            if (error) throw error;
+            console.log(`✅ Status da encomenda ${encomendaId} atualizado para ${status}`);
+            return data;
+        } catch (error) {
+            console.error('❌ Erro ao atualizar status da encomenda:', error);
+            throw new Error('Falha ao atualizar o status da encomenda.');
+        }
+    }
 }
 
 // Criar uma instância global para a página de encomendas

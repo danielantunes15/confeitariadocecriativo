@@ -22,6 +22,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     const tabButtons = document.querySelectorAll('.tabs-header .tab-button');
     const pageContents = document.querySelectorAll('.page-content');
     const tabContents = document.querySelectorAll('.tab-content');
+    const clienteIdEdicao = document.getElementById('cliente-id-edicao');
 
     // Variáveis globais
     let clientes = [];
@@ -96,11 +97,18 @@ document.addEventListener('DOMContentLoaded', async function() {
                     <td>${cliente.telefone || 'N/A'}</td>
                     <td>${cliente.cpf || 'N/A'}</td>
                     <td class="text-center">
-                        <button class="btn-acao editar" title="Editar"><i class="fas fa-edit"></i></button>
-                        <button class="btn-acao excluir" title="Excluir"><i class="fas fa-trash"></i></button>
+                        <button class="btn-acao editar" title="Editar" data-id="${cliente.id}"><i class="fas fa-edit"></i></button>
+                        <button class="btn-acao excluir" title="Excluir" data-id="${cliente.id}"><i class="fas fa-trash"></i></button>
                     </td>
                 `;
                 clientesTabelaBody.appendChild(tr);
+            });
+            // Adicionar event listeners aos botões de ação
+            document.querySelectorAll('.btn-acao.editar').forEach(btn => {
+                btn.addEventListener('click', (e) => editarCliente(e.currentTarget.dataset.id));
+            });
+            document.querySelectorAll('.btn-acao.excluir').forEach(btn => {
+                btn.addEventListener('click', (e) => excluirCliente(e.currentTarget.dataset.id));
             });
         }
     }
@@ -155,7 +163,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Funções de eventos e navegação
     function configurarEventListeners() {
         if (formEncomenda) formEncomenda.addEventListener('submit', criarEncomenda);
-        if (formCadastroCliente) formCadastroCliente.addEventListener('submit', cadastrarCliente);
+        if (formCadastroCliente) formCadastroCliente.addEventListener('submit', cadastrarOuAtualizarCliente);
         if (clienteEncomendaSearch) {
             clienteEncomendaSearch.addEventListener('input', buscarClientesNaInput);
             document.addEventListener('click', (e) => {
@@ -172,7 +180,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                     btn.classList.add('active');
                     pageContents.forEach(p => p.style.display = 'none');
                     document.getElementById(`page-${page}`).style.display = 'block';
-
                     if (page === 'clientes-submenu') {
                         await carregarClientes();
                     } else if (page === 'lista-encomendas') {
@@ -239,6 +246,37 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
         }
     }
+    
+    // **NOVA FUNÇÃO** - Lógica para editar cliente
+    function editarCliente(clienteId) {
+        const clienteParaEditar = clientes.find(c => c.id === clienteId);
+        if (clienteParaEditar) {
+            // Alterna para a aba de cadastro
+            document.querySelector('.tab-button[data-tab="tab-cadastrar-cliente"]').click();
+            // Preenche o formulário
+            document.getElementById('cliente-id-edicao').value = clienteParaEditar.id;
+            document.getElementById('cliente-nome').value = clienteParaEditar.nome;
+            document.getElementById('cliente-telefone').value = clienteParaEditar.telefone;
+            document.getElementById('cliente-endereco').value = clienteParaEditar.endereco;
+            document.getElementById('cliente-cpf').value = clienteParaEditar.cpf;
+            document.getElementById('cliente-data-nascimento').value = clienteParaEditar.data_nascimento;
+        } else {
+            mostrarMensagem('Cliente não encontrado.', 'error');
+        }
+    }
+
+    // **NOVA FUNÇÃO** - Lógica para excluir cliente
+    async function excluirCliente(clienteId) {
+        if (confirm('Atenção! Esta ação é irreversível. Deseja realmente excluir este cliente?')) {
+            try {
+                await window.encomendasSupabase.excluirCliente(clienteId);
+                mostrarMensagem('Cliente excluído com sucesso!', 'success');
+                await carregarClientes();
+            } catch (error) {
+                mostrarMensagem('Erro ao excluir cliente: ' + error.message, 'error');
+            }
+        }
+    }
 
     // Lógica principal
     async function criarEncomenda(event) {
@@ -265,18 +303,20 @@ document.addEventListener('DOMContentLoaded', async function() {
         };
 
         try {
-            const novaEncomenda = await window.encomendasSupabase.criarEncomenda(encomendaData);
+            await window.encomendasSupabase.criarEncomenda(encomendaData);
             mostrarMensagem(`Encomenda para ${clienteEncomendaSearch.value} criada com sucesso!`, 'success');
             formEncomenda.reset();
             clienteEncomendaId.value = '';
+            clienteEncomendaSearch.value = '';
             await carregarEncomendas();
         } catch (error) {
             mostrarMensagem('Erro ao criar a encomenda: ' + error.message, 'error');
         }
     }
 
-    async function cadastrarCliente(event) {
+    async function cadastrarOuAtualizarCliente(event) {
         event.preventDefault();
+        const isEdicao = !!clienteIdEdicao.value;
         const clienteData = {
             nome: document.getElementById('cliente-nome').value.trim(),
             telefone: document.getElementById('cliente-telefone').value.trim(),
@@ -289,25 +329,22 @@ document.addEventListener('DOMContentLoaded', async function() {
             mostrarMensagem('O nome do cliente é obrigatório.', 'error');
             return;
         }
-        if (clienteData.cpf) {
-            const clienteExistente = clientes.find(c => c.cpf === clienteData.cpf);
-            if (clienteExistente) {
-                mostrarMensagem('Já existe um cliente cadastrado com este CPF.', 'error');
-                return;
-            }
-        }
         
         try {
-            mostrarMensagem('Cadastrando cliente...', 'info');
-            const novoCliente = await window.encomendasSupabase.criarCliente(clienteData);
-            if (novoCliente) {
+            mostrarMensagem(isEdicao ? 'Atualizando cliente...' : 'Cadastrando cliente...', 'info');
+            if (isEdicao) {
+                await window.encomendasSupabase.atualizarCliente(clienteIdEdicao.value, clienteData);
+                mostrarMensagem(`Cliente atualizado com sucesso!`, 'success');
+            } else {
+                const novoCliente = await window.encomendasSupabase.criarCliente(clienteData);
                 mostrarMensagem(`Cliente ${novoCliente.nome} cadastrado com sucesso!`, 'success');
-                formCadastroCliente.reset();
-                await carregarClientes();
-                document.querySelector('.tab-button[data-tab="tab-lista-clientes"]').click();
             }
+            formCadastroCliente.reset();
+            clienteIdEdicao.value = ''; // Limpa o ID de edição
+            await carregarClientes();
+            document.querySelector('.tab-button[data-tab="tab-lista-clientes"]').click();
         } catch (error) {
-            mostrarMensagem(`Erro ao cadastrar cliente: ${error.message}`, 'error');
+            mostrarMensagem(`Erro ao ${isEdicao ? 'atualizar' : 'cadastrar'} cliente: ${error.message}`, 'error');
         }
     }
     
