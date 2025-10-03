@@ -85,6 +85,17 @@
                                 <input type="date" id="data-entrega" required>
                             </div>
                             <div class="form-group">
+                                <label for="tipo-entrega">Tipo de Entrega</label>
+                                <select id="tipo-entrega" required>
+                                    <option value="retirada">Retirar na Loja</option>
+                                    <option value="entrega">Entrega</option>
+                                </select>
+                            </div>
+                            <div class="form-group" id="endereco-entrega-group" style="display: none;">
+                                <label for="endereco-entrega">Endereço de Entrega</label>
+                                <textarea id="endereco-entrega" rows="3" placeholder="Rua, número, bairro, cidade..."></textarea>
+                            </div>
+                            <div class="form-group">
                                 <label for="detalhes-encomenda">Detalhes do Pedido</label>
                                 <textarea id="detalhes-encomenda" rows="5" placeholder="Ex: Bolo de chocolate, 2kg, tema de unicórnio, com recheio de brigadeiro e cobertura de chantilly." required></textarea>
                             </div>
@@ -189,6 +200,17 @@
                 <div class="form-group">
                     <label for="edit-data-entrega">Data de Entrega</label>
                     <input type="date" id="edit-data-entrega" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-tipo-entrega">Tipo de Entrega</label>
+                    <select id="edit-tipo-entrega" required>
+                        <option value="retirada">Retirar na Loja</option>
+                        <option value="entrega">Entrega</option>
+                    </select>
+                </div>
+                <div class="form-group" id="edit-endereco-entrega-group">
+                    <label for="edit-endereco-entrega">Endereço de Entrega</label>
+                    <textarea id="edit-endereco-entrega" rows="3"></textarea>
                 </div>
                 <div class="form-group">
                     <label for="edit-detalhes-encomenda">Detalhes do Pedido</label>

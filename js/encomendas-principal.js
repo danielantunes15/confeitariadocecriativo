@@ -13,6 +13,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     const clienteEncomendaId = document.getElementById('cliente-encomenda-id');
     const clienteEncomendaResults = document.getElementById('cliente-encomenda-results');
     const dataEntregaInput = document.getElementById('data-entrega');
+    const tipoEntregaSelect = document.getElementById('tipo-entrega');
+    const enderecoEntregaGroup = document.getElementById('endereco-entrega-group');
+    const enderecoEntregaInput = document.getElementById('endereco-entrega');
     const detalhesEncomendaInput = document.getElementById('detalhes-encomenda');
     const valorTotalEncomendaInput = document.getElementById('valor-total-encomenda');
     const sinalEncomendaInput = document.getElementById('sinal-encomenda');
@@ -31,6 +34,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     const editEncomendaId = document.getElementById('encomenda-id-edicao');
     const editClienteNome = document.getElementById('edit-cliente-nome');
     const editDataEntrega = document.getElementById('edit-data-entrega');
+    const editTipoEntrega = document.getElementById('edit-tipo-entrega');
+    const editEnderecoEntregaGroup = document.getElementById('edit-endereco-entrega-group');
+    const editEnderecoEntrega = document.getElementById('edit-endereco-entrega');
     const editDetalhesEncomenda = document.getElementById('edit-detalhes-encomenda');
     const editValorTotalEncomenda = document.getElementById('edit-valor-total-encomenda');
     const editSinalEncomenda = document.getElementById('edit-sinal-encomenda');
@@ -140,17 +146,25 @@ document.addEventListener('DOMContentLoaded', async function() {
                 <tr>
                     <th>Cliente</th>
                     <th>Data Entrega</th>
-                    <th>Valor</th>
+                    <th>Detalhes</th>
+                    <th>Total</th>
+                    <th>Sinal</th>
+                    <th>Pendente</th>
                     <th>Status</th>
                     <th>Ações</th>
                 </tr>
             </thead>
             <tbody>
-                ${encomendas.map(enc => `
+                ${encomendas.map(enc => {
+                    const valorPendente = (enc.valor_total - enc.sinal_pago).toFixed(2);
+                    return `
                     <tr>
                         <td>${enc.cliente?.nome || 'N/A'}</td>
                         <td>${new Date(enc.data_entrega).toLocaleDateString('pt-BR')}</td>
+                        <td>${enc.detalhes.substring(0, 50)}...</td>
                         <td>R$ ${enc.valor_total.toFixed(2)}</td>
+                        <td>R$ ${enc.sinal_pago.toFixed(2)}</td>
+                        <td>R$ ${valorPendente}</td>
                         <td><span class="status-${enc.status}">${enc.status}</span></td>
                         <td>
                             <button class="btn-acao pago" title="Marcar como Pago" data-id="${enc.id}" ${enc.status === 'paga' ? 'disabled' : ''}>
@@ -158,9 +172,11 @@ document.addEventListener('DOMContentLoaded', async function() {
                             </button>
                             <button class="btn-acao editar" title="Editar" data-id="${enc.id}"><i class="fas fa-edit"></i></button>
                             <button class="btn-acao excluir" title="Excluir" data-id="${enc.id}"><i class="fas fa-trash"></i></button>
+                            <button class="btn-acao imprimir" title="Imprimir Canhoto" data-id="${enc.id}"><i class="fas fa-print"></i></button>
                         </td>
                     </tr>
-                `).join('')}
+                `;
+                }).join('')}
             </tbody>
         `;
         container.appendChild(tabela);
@@ -175,12 +191,26 @@ document.addEventListener('DOMContentLoaded', async function() {
         tabela.querySelectorAll('.btn-acao.excluir').forEach(btn => {
             btn.addEventListener('click', () => excluirEncomenda(btn.dataset.id));
         });
+        tabela.querySelectorAll('.btn-acao.imprimir').forEach(btn => {
+            btn.addEventListener('click', () => imprimirCanhoto(btn.dataset.id));
+        });
     }
 
     // Funções de eventos e navegação
     function configurarEventListeners() {
         if (formEncomenda) formEncomenda.addEventListener('submit', criarEncomenda);
         if (formCadastroCliente) formCadastroCliente.addEventListener('submit', cadastrarOuAtualizarCliente);
+        
+        tipoEntregaSelect.addEventListener('change', () => {
+            if (tipoEntregaSelect.value === 'entrega') {
+                enderecoEntregaGroup.style.display = 'block';
+                enderecoEntregaInput.setAttribute('required', 'required');
+            } else {
+                enderecoEntregaGroup.style.display = 'none';
+                enderecoEntregaInput.removeAttribute('required');
+            }
+        });
+
         if (clienteEncomendaSearch) {
             clienteEncomendaSearch.addEventListener('input', buscarClientesNaInput);
             document.addEventListener('click', (e) => {
@@ -228,6 +258,16 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
             });
         }
+
+        editTipoEntrega.addEventListener('change', () => {
+            if (editTipoEntrega.value === 'entrega') {
+                editEnderecoEntregaGroup.style.display = 'block';
+                editEnderecoEntrega.setAttribute('required', 'required');
+            } else {
+                editEnderecoEntregaGroup.style.display = 'none';
+                editEnderecoEntrega.removeAttribute('required');
+            }
+        });
     }
 
     function buscarClientesNaInput() {
@@ -311,9 +351,18 @@ document.addEventListener('DOMContentLoaded', async function() {
             editEncomendaId.value = encomendaParaEditar.id;
             editClienteNome.value = encomendaParaEditar.cliente?.nome || 'N/A';
             editDataEntrega.value = encomendaParaEditar.data_entrega;
+            editTipoEntrega.value = encomendaParaEditar.tipo_entrega;
             editDetalhesEncomenda.value = encomendaParaEditar.detalhes;
             editValorTotalEncomenda.value = encomendaParaEditar.valor_total;
             editSinalEncomenda.value = encomendaParaEditar.sinal_pago;
+
+            if (encomendaParaEditar.tipo_entrega === 'entrega') {
+                editEnderecoEntregaGroup.style.display = 'block';
+                editEnderecoEntrega.value = encomendaParaEditar.endereco_entrega || '';
+            } else {
+                editEnderecoEntregaGroup.style.display = 'none';
+                editEnderecoEntrega.value = '';
+            }
             modalEdicaoEncomenda.style.display = 'flex';
         } else {
             mostrarMensagem('Encomenda não encontrada.', 'error');
@@ -326,6 +375,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         const encomendaId = editEncomendaId.value;
         const encomendaData = {
             data_entrega: editDataEntrega.value,
+            tipo_entrega: editTipoEntrega.value,
+            endereco_entrega: editEnderecoEntrega.value.trim() || null,
             detalhes: editDetalhesEncomenda.value.trim(),
             valor_total: parseFloat(editValorTotalEncomenda.value),
             sinal_pago: parseFloat(editSinalEncomenda.value) || 0,
@@ -354,11 +405,56 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
 
+    // Lógica para imprimir o canhoto
+    function imprimirCanhoto(encomendaId) {
+        const encomenda = encomendas.find(enc => enc.id === encomendaId);
+        if (!encomenda) {
+            mostrarMensagem('Encomenda não encontrada para impressão.', 'error');
+            return;
+        }
+
+        const valorPendente = (encomenda.valor_total - encomenda.sinal_pago).toFixed(2);
+        const tipoEntregaTexto = encomenda.tipo_entrega === 'retirada' ? 'Retirada na Loja' : 'Entrega';
+        const enderecoEntregaTexto = encomenda.tipo_entrega === 'entrega' ? `Endereço: ${encomenda.endereco_entrega}` : '';
+
+        const canhotoContent = `
+            <div id="canhoto-impressao">
+                <div class="canhoto-pedido">
+                    <h4>Confeitaria Doces Criativos</h4>
+                    <hr>
+                    <div class="canhoto-info">
+                        <p><strong>Pedido:</strong> #${encomenda.id.substring(0, 8)}</p>
+                        <p><strong>Cliente:</strong> ${encomenda.cliente?.nome || 'N/A'}</p>
+                        <p><strong>Data de Entrega:</strong> ${new Date(encomenda.data_entrega).toLocaleDateString('pt-BR')}</p>
+                        <p><strong>Tipo:</strong> ${tipoEntregaTexto}</p>
+                        ${enderecoEntregaTexto ? `<p>${enderecoEntregaTexto}</p>` : ''}
+                        <p><strong>Detalhes:</strong> ${encomenda.detalhes}</p>
+                        <hr>
+                        <p><strong>Valor Total:</strong> R$ ${encomenda.valor_total.toFixed(2)}</p>
+                        <p><strong>Sinal Pago:</strong> R$ ${encomenda.sinal_pago.toFixed(2)}</p>
+                        <p class="total"><strong>Valor Pendente:</strong> R$ ${valorPendente}</p>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        const printWindow = window.open('', '', 'height=600,width=800');
+        printWindow.document.write('<html><head><title>Canhoto do Pedido</title>');
+        printWindow.document.write('<link rel="stylesheet" href="css/encomendas.css">');
+        printWindow.document.write('</head><body>');
+        printWindow.document.write(canhotoContent);
+        printWindow.document.write('<script>window.onload = function() { window.print(); window.onafterprint = function() { window.close(); }; }</script>');
+        printWindow.document.write('</body></html>');
+        printWindow.document.close();
+    }
+
     // Lógica principal
     async function criarEncomenda(event) {
         event.preventDefault();
         const clienteId = clienteEncomendaId.value;
         const dataEntrega = dataEntregaInput.value;
+        const tipoEntrega = tipoEntregaSelect.value;
+        const enderecoEntrega = tipoEntrega === 'entrega' ? enderecoEntregaInput.value.trim() : null;
         const detalhesEncomenda = detalhesEncomendaInput.value.trim();
         const valorTotalEncomenda = parseFloat(valorTotalEncomendaInput.value);
         const sinalEncomenda = parseFloat(sinalEncomendaInput.value) || 0;
@@ -371,6 +467,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         const encomendaData = {
             cliente_id: clienteId,
             data_entrega: dataEntrega,
+            tipo_entrega: tipoEntrega,
+            endereco_entrega: enderecoEntrega,
             detalhes: detalhesEncomenda,
             valor_total: valorTotalEncomenda,
             sinal_pago: sinalEncomenda,
@@ -384,6 +482,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             formEncomenda.reset();
             clienteEncomendaId.value = '';
             clienteEncomendaSearch.value = '';
+            enderecoEntregaGroup.style.display = 'none';
             await carregarEncomendas();
         } catch (error) {
             mostrarMensagem('Erro ao criar a encomenda: ' + error.message, 'error');

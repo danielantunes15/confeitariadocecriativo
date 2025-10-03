@@ -128,7 +128,7 @@ class EncomendasSupabase {
         }
     }
 
-    // **NOVA FUNÇÃO** - Atualizar encomenda
+    // Atualizar encomenda
     async atualizarEncomenda(encomendaId, encomendaData) {
         try {
             const { data, error } = await this.supabase
