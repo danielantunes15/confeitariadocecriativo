@@ -75,7 +75,7 @@ class EncomendasSupabase {
         }
     }
     
-    // **NOVA FUNÇÃO** - Atualizar um cliente existente
+    // Atualizar um cliente existente
     async atualizarCliente(clienteId, clienteData) {
         try {
             const { data, error } = await this.supabase
@@ -94,7 +94,7 @@ class EncomendasSupabase {
         }
     }
 
-    // **NOVA FUNÇÃO** - Excluir um cliente
+    // Excluir um cliente
     async excluirCliente(clienteId) {
         try {
             const { error } = await this.supabase
@@ -110,8 +110,44 @@ class EncomendasSupabase {
             throw new Error('Falha ao excluir o cliente.');
         }
     }
+    
+    // Excluir uma encomenda
+    async excluirEncomenda(encomendaId) {
+        try {
+            const { error } = await this.supabase
+                .from('encomendas')
+                .delete()
+                .eq('id', encomendaId);
 
-    // **NOVA FUNÇÃO** - Atualizar status da encomenda
+            if (error) throw error;
+            console.log(`✅ Encomenda ${encomendaId} excluída com sucesso.`);
+            return true;
+        } catch (error) {
+            console.error('❌ Erro ao excluir encomenda:', error);
+            throw new Error('Falha ao excluir a encomenda.');
+        }
+    }
+
+    // **NOVA FUNÇÃO** - Atualizar encomenda
+    async atualizarEncomenda(encomendaId, encomendaData) {
+        try {
+            const { data, error } = await this.supabase
+                .from('encomendas')
+                .update(encomendaData)
+                .eq('id', encomendaId)
+                .select()
+                .single();
+
+            if (error) throw error;
+            console.log('✅ Encomenda atualizada com sucesso:', data);
+            return data;
+        } catch (error) {
+            console.error('❌ Erro ao atualizar encomenda:', error);
+            throw new Error('Falha ao atualizar a encomenda.');
+        }
+    }
+
+    // Atualizar status da encomenda
     async atualizarStatusEncomenda(encomendaId, status) {
         try {
             const { data, error } = await this.supabase

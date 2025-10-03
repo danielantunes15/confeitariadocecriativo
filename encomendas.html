@@ -175,6 +175,39 @@
             </div>
         </div>
     </main>
+
+    <div id="modal-edicao-encomenda" class="modal-backdrop" style="display: none;">
+        <div class="modal-content">
+            <h3 class="modal-title">Editar Encomenda</h3>
+            <span class="close-modal-btn">&times;</span>
+            <form id="form-edicao-encomenda">
+                <input type="hidden" id="encomenda-id-edicao">
+                <div class="form-group">
+                    <label for="edit-cliente-nome">Cliente</label>
+                    <input type="text" id="edit-cliente-nome" disabled>
+                </div>
+                <div class="form-group">
+                    <label for="edit-data-entrega">Data de Entrega</label>
+                    <input type="date" id="edit-data-entrega" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-detalhes-encomenda">Detalhes do Pedido</label>
+                    <textarea id="edit-detalhes-encomenda" rows="5" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="edit-valor-total-encomenda">Valor Total (R$)</label>
+                    <input type="number" id="edit-valor-total-encomenda" step="0.01" min="0" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-sinal-encomenda">Sinal/Adiantamento (R$)</label>
+                    <input type="number" id="edit-sinal-encomenda" step="0.01" min="0">
+                </div>
+                <button type="submit" class="btn-primary-full">
+                    <i class="fas fa-save"></i> Salvar Alterações
+                </button>
+            </form>
+        </div>
+    </div>
     
     <footer class="footer">
         <div class="container">

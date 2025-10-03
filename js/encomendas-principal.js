@@ -24,6 +24,17 @@ document.addEventListener('DOMContentLoaded', async function() {
     const tabContents = document.querySelectorAll('.tab-content');
     const clienteIdEdicao = document.getElementById('cliente-id-edicao');
 
+    // Elementos do Modal de Edição de Encomenda
+    const modalEdicaoEncomenda = document.getElementById('modal-edicao-encomenda');
+    const formEdicaoEncomenda = document.getElementById('form-edicao-encomenda');
+    const closeEdicaoModalBtn = document.querySelector('.close-modal-btn');
+    const editEncomendaId = document.getElementById('encomenda-id-edicao');
+    const editClienteNome = document.getElementById('edit-cliente-nome');
+    const editDataEntrega = document.getElementById('edit-data-entrega');
+    const editDetalhesEncomenda = document.getElementById('edit-detalhes-encomenda');
+    const editValorTotalEncomenda = document.getElementById('edit-valor-total-encomenda');
+    const editSinalEncomenda = document.getElementById('edit-sinal-encomenda');
+
     // Variáveis globais
     let clientes = [];
     let encomendas = [];
@@ -158,6 +169,12 @@ document.addEventListener('DOMContentLoaded', async function() {
         tabela.querySelectorAll('.btn-acao.pago').forEach(btn => {
             btn.addEventListener('click', () => marcarEncomendaComoPaga(btn.dataset.id));
         });
+        tabela.querySelectorAll('.btn-acao.editar').forEach(btn => {
+            btn.addEventListener('click', () => editarEncomenda(btn.dataset.id));
+        });
+        tabela.querySelectorAll('.btn-acao.excluir').forEach(btn => {
+            btn.addEventListener('click', () => excluirEncomenda(btn.dataset.id));
+        });
     }
 
     // Funções de eventos e navegação
@@ -200,6 +217,17 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
         }
         document.getElementById('logout-btn')?.addEventListener('click', () => window.sistemaAuth.fazerLogout());
+
+        // Eventos do modal de edição de encomenda
+        if (formEdicaoEncomenda) {
+            formEdicaoEncomenda.addEventListener('submit', salvarEdicaoEncomenda);
+            closeEdicaoModalBtn.addEventListener('click', () => modalEdicaoEncomenda.style.display = 'none');
+            window.addEventListener('click', (event) => {
+                if (event.target === modalEdicaoEncomenda) {
+                    modalEdicaoEncomenda.style.display = 'none';
+                }
+            });
+        }
     }
 
     function buscarClientesNaInput() {
@@ -247,13 +275,11 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
     
-    // **NOVA FUNÇÃO** - Lógica para editar cliente
+    // Lógica para editar cliente
     function editarCliente(clienteId) {
         const clienteParaEditar = clientes.find(c => c.id === clienteId);
         if (clienteParaEditar) {
-            // Alterna para a aba de cadastro
             document.querySelector('.tab-button[data-tab="tab-cadastrar-cliente"]').click();
-            // Preenche o formulário
             document.getElementById('cliente-id-edicao').value = clienteParaEditar.id;
             document.getElementById('cliente-nome').value = clienteParaEditar.nome;
             document.getElementById('cliente-telefone').value = clienteParaEditar.telefone;
@@ -265,7 +291,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
 
-    // **NOVA FUNÇÃO** - Lógica para excluir cliente
+    // Lógica para excluir cliente
     async function excluirCliente(clienteId) {
         if (confirm('Atenção! Esta ação é irreversível. Deseja realmente excluir este cliente?')) {
             try {
@@ -274,6 +300,56 @@ document.addEventListener('DOMContentLoaded', async function() {
                 await carregarClientes();
             } catch (error) {
                 mostrarMensagem('Erro ao excluir cliente: ' + error.message, 'error');
+            }
+        }
+    }
+
+    // Lógica para abrir modal de edição de encomenda
+    function editarEncomenda(encomendaId) {
+        const encomendaParaEditar = encomendas.find(enc => enc.id === encomendaId);
+        if (encomendaParaEditar) {
+            editEncomendaId.value = encomendaParaEditar.id;
+            editClienteNome.value = encomendaParaEditar.cliente?.nome || 'N/A';
+            editDataEntrega.value = encomendaParaEditar.data_entrega;
+            editDetalhesEncomenda.value = encomendaParaEditar.detalhes;
+            editValorTotalEncomenda.value = encomendaParaEditar.valor_total;
+            editSinalEncomenda.value = encomendaParaEditar.sinal_pago;
+            modalEdicaoEncomenda.style.display = 'flex';
+        } else {
+            mostrarMensagem('Encomenda não encontrada.', 'error');
+        }
+    }
+
+    // Lógica para salvar a edição da encomenda
+    async function salvarEdicaoEncomenda(event) {
+        event.preventDefault();
+        const encomendaId = editEncomendaId.value;
+        const encomendaData = {
+            data_entrega: editDataEntrega.value,
+            detalhes: editDetalhesEncomenda.value.trim(),
+            valor_total: parseFloat(editValorTotalEncomenda.value),
+            sinal_pago: parseFloat(editSinalEncomenda.value) || 0,
+        };
+
+        try {
+            await window.encomendasSupabase.atualizarEncomenda(encomendaId, encomendaData);
+            mostrarMensagem('Encomenda atualizada com sucesso!', 'success');
+            modalEdicaoEncomenda.style.display = 'none';
+            await carregarEncomendas();
+        } catch (error) {
+            mostrarMensagem('Erro ao salvar edição da encomenda: ' + error.message, 'error');
+        }
+    }
+
+    // Lógica para excluir encomenda
+    async function excluirEncomenda(encomendaId) {
+        if (confirm('Atenção! Esta ação é irreversível. Deseja realmente excluir esta encomenda?')) {
+            try {
+                await window.encomendasSupabase.excluirEncomenda(encomendaId);
+                mostrarMensagem('Encomenda excluída com sucesso!', 'success');
+                await carregarEncomendas();
+            } catch (error) {
+                mostrarMensagem('Erro ao excluir encomenda: ' + error.message, 'error');
             }
         }
     }
