@@ -13,12 +13,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     const carrinhoItens = document.getElementById('carrinho-itens');
     const totalCarrinho = document.getElementById('total-carrinho');
     const finalizarPedidoBtn = document.getElementById('finalizar-pedido');
-    const nomeClienteInput = document.getElementById('nome-cliente');
-    const clientesList = document.getElementById('clientes-list');
-    const btnCadastrarCliente = document.getElementById('btn-cadastrar-cliente');
-    const modalCadastroCliente = document.getElementById('modal-cadastro-cliente');
-    const formCadastroCliente = document.getElementById('form-cadastro-cliente');
-    const closeModals = document.querySelectorAll('.close-modal');
+    const clienteSelect = document.getElementById('cliente-select'); // Novo elemento de seleção
+    const pagamentoOpcoes = document.querySelectorAll('.pagamento-opcao');
     
     // Variáveis globais
     let categorias = [];
@@ -61,7 +57,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         }, 5000);
         alertDiv.querySelector('.alert-close').addEventListener('click', () => alertDiv.remove());
     };
-    
+
     const adicionarAoCarrinho = (produto) => {
         const itemExistente = carrinho.find(item => item.produto.id === produto.id);
         if (itemExistente) {
@@ -260,80 +256,31 @@ document.addEventListener('DOMContentLoaded', async function() {
     const carregarClientes = async () => {
         try {
             clientes = await window.vendasSupabase.buscarClientes();
-            exibirClientesNaDatalist();
+            exibirClientesNaLista();
         } catch (error) {
             console.error('❌ Erro ao carregar clientes:', error);
             clientes = [];
         }
     };
     
-    // LÓGICA CORRIGIDA para exibir clientes na datalist
-    const exibirClientesNaDatalist = () => {
-        if (!clientesList) return;
+    // LÓGICA CORRIGIDA para exibir clientes na lista de seleção
+    const exibirClientesNaLista = () => {
+        if (!clienteSelect) return;
         
-        // Limpa a lista existente
-        clientesList.innerHTML = '';
-
-        // Adiciona a opção padrão "Cliente sem cadastro"
+        clienteSelect.innerHTML = '';
         const optionDefault = document.createElement('option');
-        optionDefault.value = 'Cliente sem cadastro';
-        optionDefault.dataset.id = null; // ID nulo para clientes sem cadastro
-        clientesList.appendChild(optionDefault);
+        optionDefault.value = '';
+        optionDefault.textContent = 'Cliente sem cadastro';
+        optionDefault.dataset.nome = 'Cliente sem cadastro';
+        clienteSelect.appendChild(optionDefault);
         
-        // Adiciona os clientes do banco de dados
         clientes.forEach(cliente => {
             const option = document.createElement('option');
-            option.value = cliente.nome;
-            option.dataset.id = cliente.id;
-            clientesList.appendChild(option);
+            option.value = cliente.id;
+            option.textContent = cliente.nome;
+            option.dataset.nome = cliente.nome;
+            clienteSelect.appendChild(option);
         });
-        
-        // Mantém o valor padrão no input
-        nomeClienteInput.value = 'Cliente sem cadastro';
-    };
-
-    const cadastrarCliente = async (event) => {
-        event.preventDefault();
-        
-        const clienteData = {
-            nome: document.getElementById('cliente-nome').value.trim(),
-            telefone: document.getElementById('cliente-telefone').value.trim(),
-            endereco: document.getElementById('cliente-endereco').value.trim(),
-            cpf: document.getElementById('cliente-cpf').value.trim(),
-            data_nascimento: document.getElementById('cliente-data-nascimento').value.trim() || null
-        };
-        
-        if (!clienteData.nome) {
-            mostrarMensagem('O nome do cliente é obrigatório.', 'error');
-            return;
-        }
-
-        // Validação de CPF (se fornecido)
-        if (clienteData.cpf) {
-            const clienteExistente = clientes.find(c => c.cpf === clienteData.cpf);
-            if (clienteExistente) {
-                mostrarMensagem('Já existe um cliente cadastrado com este CPF.', 'error');
-                return;
-            }
-        }
-        
-        try {
-            mostrarMensagem('Cadastrando cliente...', 'info');
-            const novoCliente = await window.vendasSupabase.criarCliente(clienteData);
-            
-            if (novoCliente) {
-                mostrarMensagem(`Cliente ${novoCliente.nome} cadastrado com sucesso!`, 'success');
-                modalCadastroCliente.style.display = 'none';
-                formCadastroCliente.reset();
-                
-                await carregarClientes();
-                nomeClienteInput.value = novoCliente.nome;
-            }
-            
-        } catch (error) {
-            console.error('❌ Erro ao cadastrar cliente:', error);
-            mostrarMensagem(`Erro ao cadastrar cliente: ${error.message}`, 'error');
-        }
     };
 
     const finalizarPedido = async () => {
@@ -348,10 +295,11 @@ document.addEventListener('DOMContentLoaded', async function() {
             return;
         }
         
-        const nomeCliente = nomeClienteInput.value.trim() || 'Cliente sem cadastro';
+        const clienteId = clienteSelect.value || null;
+        const clienteNome = clienteSelect.options[clienteSelect.selectedIndex].dataset.nome;
         const total = carrinho.reduce((sum, item) => sum + (item.produto.preco_venda * item.quantidade), 0);
 
-        if (!confirm(`Deseja finalizar o pedido com ${carrinho.length} item(s)?\n\nCliente: ${nomeCliente}\nForma de pagamento: ${formaPagamento.value}\n\nTotal: R$ ${total.toFixed(2)}`)) {
+        if (!confirm(`Deseja finalizar o pedido com ${carrinho.length} item(s)?\n\nCliente: ${clienteNome}\nForma de pagamento: ${formaPagamento.value}\n\nTotal: R$ ${total.toFixed(2)}`)) {
             return;
         }
         
@@ -375,7 +323,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             const usuarioAtual = window.sistemaAuth.usuarioLogado;
             const vendaData = {
                 data_venda: new Date().toISOString().split('T')[0],
-                cliente: nomeCliente,
+                cliente: clienteNome,
+                cliente_id: clienteId, 
                 total: total,
                 forma_pagamento: formaPagamento.value,
                 observacoes: '',
@@ -403,7 +352,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             let mensagem = `✅ Pedido finalizado com sucesso!\n\n`;
             mensagem += `📋 Número do Pedido: ${venda.id}\n`;
-            mensagem += `👤 Cliente: ${nomeCliente}\n`;
+            mensagem += `👤 Cliente: ${clienteNome}\n`;
             mensagem += `💳 Forma de pagamento: ${formaPagamento.value}\n`;
             mensagem += `👨‍💼 Vendedor: ${usuarioAtual.nome}\n\n`;
             mensagem += `🛍️ Itens do pedido:\n`;
@@ -418,7 +367,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             
             carrinho = [];
             atualizarCarrinho();
-            nomeClienteInput.value = 'Cliente sem cadastro';
+            clienteSelect.value = '';
             document.querySelectorAll('input[name="pagamento"]').forEach(radio => radio.checked = false);
             
             await carregarProdutos();
@@ -445,22 +394,14 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Configura os event listeners
     const configurarEventListeners = () => {
         if (finalizarPedidoBtn) finalizarPedidoBtn.addEventListener('click', finalizarPedido);
-        if (nomeClienteInput) nomeClienteInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter' && carrinho.length > 0) finalizarPedido();
-        });
-        if (btnCadastrarCliente) btnCadastrarCliente.addEventListener('click', () => modalCadastroCliente.style.display = 'block');
-        if (closeModals) closeModals.forEach(btn => btn.addEventListener('click', () => {
-            modalCadastroCliente.style.display = 'none';
-            formCadastroCliente.reset();
-        }));
-        window.addEventListener('click', (e) => {
-            if (e.target === modalCadastroCliente) {
-                modalCadastroCliente.style.display = 'none';
-                formCadastroCliente.reset();
-            }
-        });
-        if (formCadastroCliente) formCadastroCliente.addEventListener('submit', cadastrarCliente);
         document.getElementById('logout-btn')?.addEventListener('click', () => window.sistemaAuth.fazerLogout());
+        pagamentoOpcoes.forEach(opcao => {
+            opcao.addEventListener('click', () => {
+                pagamentoOpcoes.forEach(op => op.classList.remove('selected'));
+                opcao.classList.add('selected');
+                opcao.querySelector('input[type="radio"]').checked = true;
+            });
+        });
     };
 
     // Função de inicialização

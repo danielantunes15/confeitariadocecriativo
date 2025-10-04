@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vendas - Confeitaria Doces Criativos</title>
     <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/vendas.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/vendas.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -58,19 +58,19 @@
             <section class="categorias">
                 <h2>Categorias</h2>
                 <div class="categorias-botoes" id="categorias-container">
-                    </div>
+                </div>
             </section>
 
             <section class="produtos">
                 <h2>Produtos</h2>
                 <div class="produtos-grid" id="produtos-container">
-                    </div>
+                </div>
             </section>
 
             <section class="carrinho">
                 <h2>Seu Pedido</h2>
                 <div class="carrinho-itens" id="carrinho-itens">
-                    </div>
+                </div>
                 <div class="carrinho-total">
                     <strong>Total: R$ <span id="total-carrinho">0,00</span></strong>
                 </div>
@@ -84,16 +84,25 @@
                         <span class="pagamento-icone">💵</span>
                         <span class="pagamento-texto">
                             <span class="pagamento-titulo">Dinheiro</span>
-                            <span class="pagamento-descricao">Pagamento na entrega</span>
+                            <span class="pagamento-descricao">Pagamento em espécie</span>
                         </span>
                     </label>
                     
                     <label class="pagamento-opcao">
-                        <input type="radio" name="pagamento" value="cartao">
+                        <input type="radio" name="pagamento" value="cartao_credito">
                         <span class="pagamento-icone">💳</span>
                         <span class="pagamento-texto">
-                            <span class="pagamento-titulo">Cartão</span>
-                            <span class="pagamento-descricao">Crédito ou Débito</span>
+                            <span class="pagamento-titulo">Cartão de Crédito</span>
+                            <span class="pagamento-descricao">Transação na maquininha</span>
+                        </span>
+                    </label>
+
+                    <label class="pagamento-opcao">
+                        <input type="radio" name="pagamento" value="cartao_debito">
+                        <span class="pagamento-icone">💳</span>
+                        <span class="pagamento-texto">
+                            <span class="pagamento-titulo">Cartão de Débito</span>
+                            <span class="pagamento-descricao">Transação na maquininha</span>
                         </span>
                     </label>
                     
@@ -111,12 +120,9 @@
             <section class="cliente">
                 <h2>Dados do Cliente</h2>
                 <div class="cliente-container">
-                    <input type="text" list="clientes-list" id="nome-cliente" placeholder="Buscar cliente...">
-                    <datalist id="clientes-list">
-                        </datalist>
-                    <button id="btn-cadastrar-cliente" class="btn-cadastrar">
-                        <i class="fas fa-user-plus"></i> Cadastrar
-                    </button>
+                    <label for="cliente-select" style="display: none;">Selecione o Cliente</label>
+                    <select id="cliente-select">
+                    </select>
                 </div>
             </section>
 
@@ -131,38 +137,6 @@
             <p>Confeitaria Doces Criativos &copy; 2025 - Todos os direitos reservados</p>
         </div>
     </footer>
-
-    <div id="modal-cadastro-cliente" class="modal">
-        <div class="modal-content">
-            <span class="close-modal">&times;</span>
-            <h3>Cadastrar Novo Cliente</h3>
-            <form id="form-cadastro-cliente">
-                <div class="form-group">
-                    <label for="cliente-nome">Nome do Cliente</label>
-                    <input type="text" id="cliente-nome" required>
-                </div>
-                <div class="form-group">
-                    <label for="cliente-telefone">Telefone</label>
-                    <input type="tel" id="cliente-telefone">
-                </div>
-                <div class="form-group">
-                    <label for="cliente-endereco">Endereço</label>
-                    <input type="text" id="cliente-endereco">
-                </div>
-                <div class="form-group">
-                    <label for="cliente-cpf">CPF</label>
-                    <input type="text" id="cliente-cpf">
-                </div>
-                <div class="form-group">
-                    <label for="cliente-data-nascimento">Data de Nascimento</label>
-                    <input type="date" id="cliente-data-nascimento">
-                </div>
-                <button type="submit" class="btn btn-primary" style="width: 100%;">
-                    Salvar Cliente
-                </button>
-            </form>
-        </div>
-    </div>
     
     <script>
         // Configuração do Supabase
