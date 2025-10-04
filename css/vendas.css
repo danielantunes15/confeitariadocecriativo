@@ -64,9 +64,12 @@ section {
 
 /* Estilos para produtos */
 .produtos-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    /* MUDANÇA PRINCIPAL: Usa Flexbox para rolagem horizontal */
+    display: flex;
+    flex-wrap: nowrap; /* Impede a quebra de linha */
     gap: 1.5rem;
+    overflow-x: auto; /* Habilita a rolagem */
+    padding-bottom: 10px; /* Evita que a barra de rolagem corte o conteúdo */
 }
 
 .produto-card {
@@ -76,6 +79,8 @@ section {
     transition: transform 0.3s ease;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
     cursor: pointer;
+    /* MUDANÇA: Define largura mínima para garantir que o scroll funcione */
+    min-width: 250px; 
 }
 
 .produto-card:hover {
@@ -383,7 +388,8 @@ footer {
     }
     
     .produtos-grid {
-        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        /* Desnecessário redefinir aqui, mas mantido para clareza */
+        /* grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); */
     }
     
     .opcoes-pagamento {

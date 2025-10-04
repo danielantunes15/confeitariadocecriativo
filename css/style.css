@@ -545,6 +545,8 @@ table tr:hover {
     
     .section-produtos {
         grid-area: produtos;
+        /* HABILITA ROLAGEM HORIZONTAL PARA PRODUTOS EM TELA DE TABLET */
+        overflow-x: auto; 
     }
     
     .section-lateral {
@@ -566,6 +568,8 @@ table tr:hover {
     
     .section-produtos {
         grid-area: produtos;
+        /* MANTÉM ROLAGEM HORIZONTAL */
+        overflow-x: auto; 
     }
     
     .section-lateral {
