@@ -15,9 +15,7 @@
         <div class="container">
             <div class="header-content">
                 <h1 class="logo">Doces Criativos</h1>
-                <button class="menu-toggle" id="menuToggle">
-                    <i class="fas fa-bars"></i>
-                </button>
+                <button class="menu-toggle" id="menuToggle"><i class="fas fa-bars"></i></button>
                 <nav class="nav" id="mainNav">
                     <a href="index.html" class="nav-link"><i class="fas fa-shopping-cart"></i><span>Vendas</span></a>
                     <a href="caixa-fechamento.html" class="nav-link"><i class="fas fa-cash-register"></i><span>Caixa</span></a>
@@ -42,12 +40,9 @@
 
             <div id="content" style="display: none;">
                 <div class="tabs-nav">
-                    <button class="tab-button active" data-tab="dashboard">
-                        <i class="fas fa-chart-pie"></i> Dashboard Principal
-                    </button>
-                    <button class="tab-button" data-tab="pdf-generator">
-                        <i class="fas fa-file-pdf"></i> Gerador de Relatórios
-                    </button>
+                    <button class="tab-button active" data-tab="dashboard"><i class="fas fa-chart-pie"></i> Dashboard</button>
+                    <button class="tab-button" data-tab="pdf-generator"><i class="fas fa-file-pdf"></i> Gerar Relatórios</button>
+                    <button class="tab-button" data-tab="settings"><i class="fas fa-cogs"></i> Configuração de Taxas</button>
                 </div>
 
                 <div class="tabs-content">
@@ -56,7 +51,6 @@
                             <h2><i class="fas fa-chart-line"></i> Análise de Performance</h2>
                             <p>Visão geral das vendas e do desempenho da confeitaria.</p>
                         </header>
-
                         <div class="card filtros-container">
                              <div class="filtros-rapidos">
                                 <button class="filtro-rapido active" data-periodo="hoje">Hoje</button>
@@ -78,7 +72,6 @@
                                 </div>
                             </div>
                         </div>
-
                         <section class="resumo-grid">
                             <div class="resumo-card">
                                 <div class="resumo-icon" style="background: #ff69b4;"><i class="fas fa-dollar-sign"></i></div>
@@ -114,7 +107,6 @@
                                 </div>
                             </div>
                         </section>
-
                         <section class="dashboard-grid">
                             <div class="grafico-card grid-col-span-2">
                                 <h3><i class="fas fa-chart-bar"></i> Vendas por Dia</h3>
@@ -135,63 +127,64 @@
                                 </div>
                             </div>
                         </section>
-
-                        <section class="tabelas-grid">
-                            <div class="card">
-                                <div class="card-header"><h3><i class="fas fa-receipt"></i> Últimas Vendas</h3></div>
-                                <div class="table-container">
-                                    <table class="table-moderna">
-                                        <thead><tr><th>Data</th><th>Cliente</th><th>Vendedor</th><th>Itens</th><th>Total</th><th>Pagamento</th></tr></thead>
-                                        <tbody id="tabela-ultimas-vendas"></tbody>
-                                    </table>
-                                </div>
-                            </div>
-                            <div class="card">
-                                <div class="card-header"><h3><i class="fas fa-medal"></i> Ranking de Vendedores</h3></div>
-                                <div class="table-container">
-                                    <table class="table-moderna">
-                                        <thead><tr><th>Pos.</th><th>Vendedor</th><th>Vendas</th><th>Valor Total</th><th>Ticket Médio</th></tr></thead>
-                                        <tbody id="tabela-ranking-vendedores"></tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </section>
                     </div>
 
                     <div id="tab-pdf-generator" class="tab-pane">
                          <header class="relatorios-header">
-                            <h2><i class="fas fa-file-invoice-dollar"></i> Gerador de Relatórios</h2>
-                            <p>Crie relatórios detalhados para impressão e análise financeira.</p>
+                            <h2><i class="fas fa-file-invoice-dollar"></i> Central de Relatórios</h2>
+                            <p>Escolha um relatório abaixo para gerar uma versão detalhada para impressão.</p>
                         </header>
-                        <section class="card relatorios-pdf-container">
-                            <div class="pdf-controls">
+                        <div class="report-options-grid">
+                            <div class="report-option-card">
+                                <div class="report-icon"><i class="fas fa-receipt"></i></div>
+                                <h3>Vendas Gerais</h3>
+                                <p>Um resumo completo de todas as vendas no período selecionado.</p>
+                                <button class="btn btn-primary" data-report-type="geral">Gerar Relatório</button>
+                            </div>
+                            <div class="report-option-card">
+                                <div class="report-icon"><i class="fas fa-credit-card"></i></div>
+                                <h3>Vendas por Pagamento</h3>
+                                <p>Agrupa as vendas por forma de pagamento (Dinheiro, PIX, Cartões).</p>
+                                <button class="btn btn-primary" data-report-type="pagamento">Gerar Relatório</button>
+                            </div>
+                            <div class="report-option-card">
+                                <div class="report-icon"><i class="fas fa-user-tie"></i></div>
+                                <h3>Performance de Vendedores</h3>
+                                <p>Mostra o total de vendas e desempenho de cada vendedor.</p>
+                                <button class="btn btn-primary" data-report-type="vendedor">Gerar Relatório</button>
+                            </div>
+                            <div class="report-option-card">
+                                <div class="report-icon"><i class="fas fa-box-open"></i></div>
+                                <h3>Produtos Vendidos</h3>
+                                <p>Lista todos os produtos vendidos, quantidades e valores totais.</p>
+                                <button class="btn btn-primary" data-report-type="produto">Gerar Relatório</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="tab-settings" class="tab-pane">
+                        <header class="relatorios-header">
+                           <h2><i class="fas fa-percent"></i> Configuração de Taxas</h2>
+                           <p>Informe as taxas das operadoras de cartão para calcular os valores líquidos.</p>
+                       </header>
+                       <div class="card settings-container">
+                            <h3>Taxas de Cartão</h3>
+                            <div class="settings-form">
                                 <div class="filtro-item">
-                                    <label for="filtro-pagamento-pdf">1. Filtrar por Pagamento</label>
-                                    <select id="filtro-pagamento-pdf">
-                                        <option value="todos">Todas as Vendas</option>
-                                        <option value="dinheiro">Dinheiro</option>
-                                        <option value="cartao_debito">Cartão de Débito</option>
-                                        <option value="cartao_credito">Cartão de Crédito</option>
-                                        <option value="pix">PIX</option>
-                                    </select>
-                                </div>
-                                <div class="filtro-item taxa-container">
-                                    <label for="taxa-debito">2. Taxa Débito (%)</label>
+                                    <label for="taxa-debito">Taxa de Débito (%)</label>
                                     <input type="number" id="taxa-debito" placeholder="Ex: 1.99" step="0.01">
                                 </div>
-                                <div class="filtro-item taxa-container">
-                                    <label for="taxa-credito">3. Taxa Crédito (%)</label>
+                                <div class="filtro-item">
+                                    <label for="taxa-credito">Taxa de Crédito (%)</label>
                                     <input type="number" id="taxa-credito" placeholder="Ex: 4.98" step="0.01">
                                 </div>
-                                <button id="gerar-pdf" class="btn btn-danger btn-pdf">
-                                    <i class="fas fa-print"></i> 4. Gerar PDF
-                                </button>
+                                <button id="salvar-taxas" class="btn btn-success"><i class="fas fa-save"></i> Salvar Taxas</button>
                             </div>
-                            <div class="pdf-instructions">
+                            <div class="settings-instructions">
                                 <i class="fas fa-info-circle"></i>
-                                <p>Os relatórios em PDF usarão os mesmos filtros de data definidos no Dashboard Principal. As taxas informadas aqui serão usadas para calcular o valor líquido das vendas no relatório gerado.</p>
+                                <p>As taxas salvas aqui serão usadas em todos os relatórios e no dashboard para calcular os valores líquidos recebidos. Elas ficam armazenadas no seu navegador.</p>
                             </div>
-                        </section>
+                       </div>
                     </div>
                 </div>
             </div>
@@ -211,6 +204,7 @@
     </main>
     
     <script>
+        // Configuração Supabase
         const SUPABASE_URL = 'https://jdfijbhlujoiuraoxivb.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpkZmlqYmhsdWpvaXVyYW94aXZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg4NDE3MzgsImV4cCI6MjA3NDQxNzczOH0.yEMThoZdXPx1aNCO1a6wO-FPoMU-gTgxJlsW883rKvc';
         window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
