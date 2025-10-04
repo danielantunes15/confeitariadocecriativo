@@ -11,6 +11,11 @@
     --success-color: #28a745;
 }
 
+/* CORREÇÃO APLICADA AQUI: Previne rolagem horizontal que quebra o layout */
+body {
+    overflow-x: hidden;
+}
+
 .loading-card { text-align: center; padding: 3rem; display: flex; flex-direction: column; justify-content: center; align-items: center; }
 .spinner-moderno {
     width: 50px; height: 50px; border: 5px solid #f3f3f3;
@@ -24,8 +29,8 @@
     gap: 0.5rem; 
     margin-bottom: -1px; 
     position: relative; 
-    z-index: 2; 
-    flex-wrap: wrap; /* CORREÇÃO: Permite que as abas quebrem a linha no mobile */
+    z-index: 10; 
+    flex-wrap: wrap; 
 }
 .tab-button {
     padding: 0.8rem 1.5rem; border: 1px solid var(--border-color); border-bottom: none;
@@ -137,13 +142,35 @@
 }
 .settings-instructions i { font-size: 1.5rem; }
 
-@media (max-width: 992px) { .dashboard-layout { grid-template-columns: 1fr; } }
+/* REGRAS DE MOBILE ESPECÍFICAS PARA RELATÓRIOS */
+@media (max-width: 992px) { 
+    .dashboard-layout { 
+        grid-template-columns: 1fr; /* Força gráficos e tabelas a empilhar */
+    } 
+    .resumo-grid {
+        /* Garante que os cards de resumo tenham espaço e quebrem */
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    }
+}
 
-/* A CORREÇÃO PRINCIPAL: REMOVER a regra anterior de 768px que estava em conflito */
-/* Deixa-se o manejo de quebra de filtros para o responsive.css */
+@media (max-width: 768px) {
+    /* CORREÇÃO PRINCIPAL: Garante que os blocos de filtros empilhem e não causem overflow */
+    .filtros-container {
+        flex-direction: column; 
+        align-items: stretch;
+        gap: 1.5rem;
+    }
+    
+    .filtros-avancados,
+    .settings-form {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+    }
+}
 
 @media (max-width: 500px) {
-    /* CORREÇÃO: Força os inputs de data do gerador de PDF a empilhar em telas de celular */
+    /* Força os inputs de data do gerador de PDF a empilhar em telas de celular */
     .report-date-filter-inputs {
         flex-direction: column;
         align-items: stretch;
