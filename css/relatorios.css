@@ -11,10 +11,7 @@
     --success-color: #28a745;
 }
 
-/* CORREÇÃO APLICADA AQUI: Previne rolagem horizontal que quebra o layout */
-body {
-    overflow-x: hidden;
-}
+/* Removido: body { overflow-x: hidden; } - Movido para style.css */
 
 .loading-card { text-align: center; padding: 3rem; display: flex; flex-direction: column; justify-content: center; align-items: center; }
 .spinner-moderno {

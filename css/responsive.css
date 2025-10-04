@@ -65,15 +65,22 @@
         gap: 1rem;
     }
     
-    /* Ajustes específicos para filtros (Administracao, Estoque, Relatorios, Caixa) */
+    /* Ajustes específicos para filtros (Administracao, Estoque, Caixa) */
     .table-controls, 
-    .filtros,
+    .filtros {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+    }
+
+    /* REMOVIDAS AS REGRAS ABAIXO PARA EVITAR CONFLITO COM relatorios.css:
     .filtros-avancados,
     .settings-form {
         flex-direction: column;
         align-items: stretch;
         gap: 1rem;
     }
+    */
 
     .table-controls .search-box {
         max-width: 100%;

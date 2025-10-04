@@ -32,6 +32,7 @@ body {
     color: var(--text-color);
     background: linear-gradient(135deg, #fff0f5 0%, #ffe4e9 100%);
     min-height: 100vh;
+    overflow-x: hidden; /* AJUSTE FINAL: Garante que nada quebre horizontalmente */
 }
 
 .container {
