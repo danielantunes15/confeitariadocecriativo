@@ -5,13 +5,13 @@ class SistemaAuth {
         this.carregarUsuarioSalvo();
     }
 
-    // Carregar usuário do localStorage
+    // Carregar usuário do sessionStorage
     carregarUsuarioSalvo() {
         try {
-            const usuarioSalvo = localStorage.getItem('usuarioLogado');
+            const usuarioSalvo = sessionStorage.getItem('usuarioLogado');
             if (usuarioSalvo) {
                 this.usuarioLogado = JSON.parse(usuarioSalvo);
-                console.log('✅ Usuário carregado do localStorage:', this.usuarioLogado.username);
+                console.log('✅ Usuário carregado do sessionStorage:', this.usuarioLogado.username);
             }
         } catch (error) {
             console.error('❌ Erro ao carregar usuário:', error);
@@ -78,7 +78,7 @@ class SistemaAuth {
                 ativo: usuario.ativo
             };
 
-            localStorage.setItem('usuarioLogado', JSON.stringify(this.usuarioLogado));
+            sessionStorage.setItem('usuarioLogado', JSON.stringify(this.usuarioLogado));
             console.log('✅ Login realizado com sucesso! ID do usuário:', this.usuarioLogado.id);
             
             return { 
@@ -100,7 +100,7 @@ class SistemaAuth {
     fazerLogout() {
         console.log('🚪 Fazendo logout...');
         this.usuarioLogado = null;
-        localStorage.removeItem('usuarioLogado');
+        sessionStorage.removeItem('usuarioLogado');
         window.location.href = 'login.html';
     }
 
@@ -234,7 +234,7 @@ class SistemaAuth {
                 ativo: usuario.ativo
             };
 
-            localStorage.setItem('usuarioLogado', JSON.stringify(this.usuarioLogado));
+            sessionStorage.setItem('usuarioLogado', JSON.stringify(this.usuarioLogado));
             console.log('✅ Usuário sincronizado com banco:', this.usuarioLogado.id);
             return true;
 
@@ -275,7 +275,7 @@ class SistemaAuth {
         
         console.log('🔄 Forçando tipo de usuário para:', novoTipo);
         this.usuarioLogado.tipo = novoTipo;
-        localStorage.setItem('usuarioLogado', JSON.stringify(this.usuarioLogado));
+        sessionStorage.setItem('usuarioLogado', JSON.stringify(this.usuarioLogado));
         
         console.log('✅ Tipo de usuário atualizado:', this.usuarioLogado);
         return true;
@@ -287,7 +287,7 @@ window.fazerLogoutGlobal = function() {
     if (window.sistemaAuth) {
         window.sistemaAuth.fazerLogout();
     } else {
-        localStorage.removeItem('usuarioLogado');
+        sessionStorage.removeItem('usuarioLogado');
         window.location.href = 'login.html';
     }
 };
