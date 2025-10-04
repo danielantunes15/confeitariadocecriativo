@@ -1,4 +1,4 @@
-// js/relatorios.js - VERSÃO FINAL COM DASHBOARD DINÂMICO E FILTRO DE PDF
+// js/relatorios.js - VERSÃO FINAL COM DASHBOARD DINÂMICO E FILTRO DE PDF E PERSISTÊNCIA DE TAXAS VIA SUPABASE
 document.addEventListener('DOMContentLoaded', async function () {
     // LÓGICA DAS ABAS
     const tabButtons = document.querySelectorAll('.tab-button');
@@ -48,21 +48,63 @@ document.addEventListener('DOMContentLoaded', async function () {
         toggleDisplay(contentElement, !show);
     };
 
-    function salvarTaxas() {
-        localStorage.setItem('confeitaria_taxa_debito', document.getElementById('taxa-debito').value);
-        localStorage.setItem('confeitaria_taxa_credito', document.getElementById('taxa-credito').value);
-        mostrarMensagem('Taxas salvas com sucesso!', 'success');
-        atualizarDashboardCompleto(vendasDoDashboard);
+    /**
+     * NOVO: Salva as taxas no Supabase, tornando-as persistentes entre dispositivos.
+     */
+    async function salvarTaxas() {
+        const novaTaxaDebito = document.getElementById('taxa-debito').value;
+        const novaTaxaCredito = document.getElementById('taxa-credito').value;
+
+        try {
+            // Salva/Atualiza a linha de configuração (assumindo id=1 para configurações globais)
+            const { error } = await supabase.from('configuracoes')
+                .upsert({ 
+                    id: 1, 
+                    taxa_debito: parseFloat(novaTaxaDebito) || 0, 
+                    taxa_credito: parseFloat(novaTaxaCredito) || 0 
+                }, { onConflict: 'id' });
+
+            if (error) throw error;
+            
+            mostrarMensagem('Taxas salvas com sucesso em todos os dispositivos!', 'success');
+            // Re-renderiza o dashboard para usar as novas taxas imediatamente
+            atualizarDashboardCompleto(vendasDoDashboard); 
+        } catch (error) {
+            console.error('❌ Erro ao salvar taxas:', error);
+            mostrarMensagem('Erro ao salvar as taxas no banco de dados. Verifique a tabela "configuracoes".', 'error');
+        }
     }
 
-    function carregarTaxas() {
-        document.getElementById('taxa-debito').value = localStorage.getItem('confeitaria_taxa_debito') || '';
-        document.getElementById('taxa-credito').value = localStorage.getItem('confeitaria_taxa_credito') || '';
+    /**
+     * NOVO: Busca as taxas salvas no Supabase.
+     */
+    async function buscarTaxasDoBanco() {
+        try {
+            const { data, error } = await supabase.from('configuracoes')
+                .select('taxa_debito, taxa_credito')
+                .limit(1)
+                .single();
+
+            if (error && error.code !== 'PGRST116') throw error; 
+            
+            if (data) {
+                // Preenche os inputs com os valores do banco
+                document.getElementById('taxa-debito').value = data.taxa_debito || '';
+                document.getElementById('taxa-credito').value = data.taxa_credito || '';
+            }
+        } catch (error) {
+            console.error('❌ Erro ao buscar taxas no Supabase:', error);
+            mostrarMensagem('Não foi possível carregar as taxas salvas.', 'error');
+        }
     }
+    
+    // Função carregarTaxas original removida/mantida vazia, pois a lógica está em buscarTaxasDoBanco
+    function carregarTaxas() { /* Lógica movida para buscarTaxasDoBanco() */ }
 
     async function inicializar() {
         toggleLoading(true);
-        carregarTaxas();
+        // NOVO: Busca as taxas do banco antes de configurar o dashboard
+        await buscarTaxasDoBanco();
         configurarFiltrosEEventos();
         // Garante que o dashboard inicialize com o filtro "Hoje"
         await carregarDadosEAtualizarDashboard(); 
@@ -288,8 +330,9 @@ document.addEventListener('DOMContentLoaded', async function () {
             mostrarMensagem('Não há dados para gerar o relatório no período selecionado.', 'warning'); return;
         }
 
-        const taxaDebito = parseFloat(localStorage.getItem('confeitaria_taxa_debito')) || 0;
-        const taxaCredito = parseFloat(localStorage.getItem('confeitaria_taxa_credito')) || 0;
+        // NOVO: Lê as taxas diretamente do input (que foi preenchido pelo Supabase)
+        const taxaDebito = parseFloat(document.getElementById('taxa-debito').value) || 0;
+        const taxaCredito = parseFloat(document.getElementById('taxa-credito').value) || 0;
         let reportData = {};
 
         switch (tipoRelatorio) {
@@ -391,7 +434,7 @@ document.addEventListener('DOMContentLoaded', async function () {
                 .report-period { font-size: 1.1em; margin-bottom: 15px; }
                 .report-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
                 .report-table th, .report-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-                .report-table th { background-color: #f8f9fa; }
+                .report-table th { background-color: #f8f9fa; font-weight: bold; }
                 .group-header { background-color: #e9ecef !important; font-weight: bold; }
                 .report-summary { background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-top: 20px; }
                 @media print { body { margin: 0; } .no-print { display: none; } }
