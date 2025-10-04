@@ -68,11 +68,18 @@
     /* Ajustes específicos para filtros (Administracao, Estoque, Relatorios, Caixa) */
     .table-controls, 
     .filtros,
-    .filtros-avancados,
+    .filtros-avancados, /* Mantido, garante que os inputs de data empilhem */
     .settings-form {
         flex-direction: column;
         align-items: stretch;
         gap: 1rem;
+    }
+
+    /* CORREÇÃO APLICADA: Empilha o container de filtros e o avançado para melhor visualização em 768px */
+    .filtros-container {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1.5rem;
     }
 
     .table-controls .search-box {
