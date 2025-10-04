@@ -19,7 +19,6 @@
 }
 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
-/* Estrutura de Abas */
 .tabs-nav { display: flex; gap: 0.5rem; margin-bottom: -1px; position: relative; z-index: 2; }
 .tab-button {
     padding: 0.8rem 1.5rem; border: 1px solid var(--border-color); border-bottom: none;
@@ -36,11 +35,11 @@
 .tab-pane.active { display: block; }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-/* Cabeçalho e Filtros */
 .relatorios-header {
     background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
     color: white; padding: 2rem; border-radius: 12px;
     margin-bottom: 1.5rem; box-shadow: var(--card-shadow);
+    transition: opacity 0.3s ease-in-out;
 }
 .relatorios-header.loading-state { opacity: 0.7; }
 .relatorios-header h2 { margin: 0 0 0.5rem 0; font-size: 2rem; }
@@ -63,7 +62,6 @@
 .filtro-item label { font-size: 0.8rem; margin-bottom: 0.25rem; color: var(--text-color); }
 .filtro-item input, .filtro-item select { padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 6px; }
 
-/* Cards de Resumo (KPIs) */
 .resumo-grid {
     display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
     gap: 1.5rem; margin-bottom: 2rem;
@@ -80,50 +78,59 @@
 }
 .resumo-info h3 { margin: 0 0 0.25rem; font-size: 0.9rem; color: var(--text-color); text-transform: uppercase; }
 .resumo-info .valor { margin: 0; font-size: 2rem; font-weight: 700; color: var(--dark-color); }
-.card-taxas .resumo-info { width: 100%; }
-.detalhes-taxas { font-size: 1rem; width: 100%; }
-.detalhes-taxas span { display: flex; justify-content: space-between; margin-bottom: 0.5rem; }
-.detalhes-taxas hr { border: 0; border-top: 1px solid var(--border-color); margin: 0.5rem 0; }
-.detalhes-taxas .negativo { color: var(--danger-color); }
-.detalhes-taxas .positivo { color: var(--success-color); font-size: 1.2rem; }
 
-/* Gráficos */
-.dashboard-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; margin-bottom: 2rem; }
+.dashboard-layout { display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; margin-top: 2rem; }
+.main-column, .side-column { display: flex; flex-direction: column; gap: 1.5rem; }
+.dashboard-layout .grafico-card { flex-grow: 1; }
 .grafico-card { background: white; padding: 1.5rem; border-radius: 12px; box-shadow: var(--card-shadow); }
-.grid-col-span-2 { grid-column: span 2; }
-.grafico-card h3 { margin: 0 0 1rem; font-size: 1.2rem; color: var(--dark-color); }
-.grafico-container { height: 350px; }
+.grafico-card h3 { margin: 0 0 1rem; font-size: 1.2rem; color: var(--dark-color); display: flex; align-items: center; gap: 0.5rem; }
+.grafico-container { height: 350px; position: relative; }
+.table-container { max-height: 400px; overflow-y: auto; }
+.table-moderna { width: 100%; border-collapse: collapse; }
+.table-moderna th, .table-moderna td { padding: 1rem; text-align: left; border-bottom: 1px solid var(--border-color); }
+.table-moderna th { background-color: var(--light-color); font-weight: 600; font-size: 0.9rem; position: sticky; top: 0; }
+.table-moderna tbody tr:hover { background-color: #fcf4f8; }
+.badge-pagamento {
+    padding: 0.25rem 0.6rem; border-radius: 12px; font-size: 0.8rem;
+    background-color: #e9ecef; color: #495057; text-transform: capitalize;
+}
 
-/* Aba Gerador de Relatórios */
+.report-date-filter { padding: 1.5rem; margin-bottom: 1.5rem; border-radius: 12px; background-color: var(--light-color); }
+.report-date-filter h4 { margin-top: 0; margin-bottom: 1rem; color: var(--dark-color); }
+/* NOVO ESTILO PARA O FILTRO DE DATAS DO PDF */
+.report-date-filter-inputs { 
+    display: flex; 
+    flex-wrap: wrap; 
+    gap: 1.5rem; /* Aumento o espaçamento */
+    align-items: flex-end; /* Alinha os inputs pelo fundo */
+}
+.report-date-filter .filtro-item { min-width: 200px; }
+/* FIM NOVO ESTILO */
+.filter-note { margin-top: 1rem; font-size: 0.85rem; color: var(--text-color); }
+.filter-note i { color: var(--secondary-color); margin-right: 0.5rem; }
 .report-options-grid {
     display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 1.5rem; margin-top: 1.5rem;
 }
 .report-option-card {
-    background: var(--light-color); border: 1px solid var(--border-color);
+    background: white; border: 1px solid var(--border-color);
     border-radius: 12px; padding: 1.5rem; text-align: center;
     transition: all 0.3s ease; display: flex; flex-direction: column;
 }
-.report-option-card:hover {
-    transform: translateY(-5px); box-shadow: var(--card-shadow);
-    border-color: var(--primary-color);
-}
+.report-option-card:hover { transform: translateY(-5px); box-shadow: var(--card-shadow); border-color: var(--primary-color); }
 .report-icon { font-size: 2.5rem; color: var(--primary-color); margin-bottom: 1rem; }
 .report-option-card h3 { margin: 0 0 0.5rem 0; color: var(--dark-color); }
 .report-option-card p { margin: 0 0 1.5rem 0; font-size: 0.9rem; color: var(--text-color); min-height: 40px; flex-grow: 1; }
 
-/* Aba Configurações */
 .settings-container { padding: 2rem; }
 .settings-container h3 { margin-top: 0; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; }
 .settings-form { display: flex; flex-wrap: wrap; gap: 1.5rem; align-items: flex-end; }
 .settings-instructions {
     margin-top: 2rem; padding: 1rem; background-color: #e3f2fd;
-    border-left: 4px solid #17a2b8; display: flex;
-    align-items: center; gap: 1rem; color: #0c5460;
-    font-size: 0.9rem; border-radius: 4px;
+    border-left: 4px solid #17a2b8; display: flex; align-items: center;
+    gap: 1rem; color: #0c5460; font-size: 0.9rem; border-radius: 4px;
 }
 .settings-instructions i { font-size: 1.5rem; }
 
-/* Responsividade */
-@media (max-width: 1200px) { .dashboard-grid { grid-template-columns: 1fr; } .grid-col-span-2 { grid-column: span 1; } }
+@media (max-width: 992px) { .dashboard-layout { grid-template-columns: 1fr; } }
 @media (max-width: 768px) { .filtros-container, .filtros-avancados { flex-direction: column; align-items: stretch; } }

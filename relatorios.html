@@ -32,7 +32,6 @@
     <main class="main">
         <div class="container">
             <div id="alert-container"></div>
-            
             <div id="loading" class="card loading-card">
                 <div class="spinner-moderno"></div>
                 <p>Carregando dashboard de performance...</p>
@@ -52,78 +51,74 @@
                             <p>Visão geral das vendas e do desempenho da confeitaria.</p>
                         </header>
                         <div class="card filtros-container">
-                             <div class="filtros-rapidos">
+                            <div class="filtros-rapidos">
                                 <button class="filtro-rapido active" data-periodo="hoje">Hoje</button>
                                 <button class="filtro-rapido" data-periodo="ontem">Ontem</button>
                                 <button class="filtro-rapido" data-periodo="semana">Esta Semana</button>
                                 <button class="filtro-rapido" data-periodo="mes">Este Mês</button>
                             </div>
                             <div class="filtros-avancados">
-                                <div class="filtro-item">
-                                    <label for="data-inicio"><i class="fas fa-calendar-alt"></i> Início</label>
-                                    <input type="date" id="data-inicio">
-                                </div>
-                                <div class="filtro-item">
-                                    <label for="data-fim"><i class="fas fa-calendar-alt"></i> Fim</label>
-                                    <input type="date" id="data-fim">
-                                </div>
-                                <div class="acoes-relatorio">
-                                    <button id="aplicar-filtro" class="btn btn-primary"><i class="fas fa-filter"></i> Aplicar</button>
-                                </div>
+                                <div class="filtro-item"><label for="data-inicio"><i class="fas fa-calendar-alt"></i> Início</label><input type="date" id="data-inicio"></div>
+                                <div class="filtro-item"><label for="data-fim"><i class="fas fa-calendar-alt"></i> Fim</label><input type="date" id="data-fim"></div>
+                                <div class="acoes-relatorio"><button id="aplicar-filtro" class="btn btn-primary"><i class="fas fa-filter"></i> Aplicar</button></div>
                             </div>
                         </div>
+                        
                         <section class="resumo-grid">
                             <div class="resumo-card">
-                                <div class="resumo-icon" style="background: #ff69b4;"><i class="fas fa-dollar-sign"></i></div>
+                                <div class="resumo-icon" style="background: #28a745;"><i class="fas fa-dollar-sign"></i></div>
                                 <div class="resumo-info">
-                                    <h3>Total de Vendas</h3>
-                                    <p class="valor" id="total-vendas">R$ 0,00</p>
+                                    <h3>Faturamento Total</h3>
+                                    <p class="valor" id="kpi-faturamento">R$ 0,00</p>
                                 </div>
                             </div>
                             <div class="resumo-card">
-                                <div class="resumo-icon" style="background: #8a2be2;"><i class="fas fa-shopping-cart"></i></div>
+                                <div class="resumo-icon" style="background: #17a2b8;"><i class="fas fa-receipt"></i></div>
                                 <div class="resumo-info">
-                                    <h3>Total de Pedidos</h3>
-                                    <p class="valor" id="total-pedidos">0</p>
+                                    <h3>Total de Transações</h3>
+                                    <p class="valor" id="kpi-transacoes">0</p>
                                 </div>
                             </div>
                             <div class="resumo-card">
-                                <div class="resumo-icon" style="background: #28a745;"><i class="fas fa-chart-line"></i></div>
+                                <div class="resumo-icon" style="background: #ffc107;"><i class="fas fa-calculator"></i></div>
                                 <div class="resumo-info">
                                     <h3>Ticket Médio</h3>
-                                    <p class="valor" id="ticket-medio">R$ 0,00</p>
+                                    <p class="valor" id="kpi-ticket-medio">R$ 0,00</p>
                                 </div>
                             </div>
-                            <div class="resumo-card card-taxas">
-                                <div class="resumo-icon" style="background: #6c757d;"><i class="fas fa-credit-card"></i></div>
+                            <div class="resumo-card">
+                                <div class="resumo-icon" style="background: #6f42c1;"><i class="fas fa-calendar-day"></i></div>
                                 <div class="resumo-info">
-                                    <h3>Resumo de Cartões</h3>
-                                    <div class="detalhes-taxas">
-                                        <span>Bruto: <strong id="cartoes-bruto">R$ 0,00</strong></span>
-                                        <span>Taxas: <strong id="cartoes-taxas" class="negativo">- R$ 0,00</strong></span>
-                                        <hr>
-                                        <span>Líquido: <strong id="cartoes-liquido" class="positivo">R$ 0,00</strong></span>
-                                    </div>
+                                    <h3>Vendas / Dia</h3>
+                                    <p class="valor" id="kpi-vendas-dia">0.0</p>
                                 </div>
                             </div>
                         </section>
-                        <section class="dashboard-grid">
-                            <div class="grafico-card grid-col-span-2">
-                                <h3><i class="fas fa-chart-bar"></i> Vendas por Dia</h3>
-                                <div class="grafico-container">
-                                    <canvas id="grafico-vendas-diarias"></canvas>
+                        
+                        <section class="dashboard-layout">
+                            <div class="main-column">
+                                <div class="grafico-card">
+                                    <h3><i class="fas fa-credit-card"></i> Distribuição por Método de Pagamento</h3>
+                                    <div class="grafico-container" style="height: 300px;"><canvas id="chart-pagamentos"></canvas></div>
+                                </div>
+                                <div class="grafico-card">
+                                    <h3><i class="fas fa-list-alt"></i> Vendas Recentes</h3>
+                                    <div class="table-container">
+                                        <table class="table-moderna">
+                                            <thead><tr><th>Data</th><th>Vendedor</th><th>Itens</th><th>Pagamento</th><th>Total</th></tr></thead>
+                                            <tbody id="tabela-vendas-recentes"></tbody>
+                                        </table>
+                                    </div>
                                 </div>
                             </div>
-                             <div class="grafico-card">
-                                <h3><i class="fas fa-chart-pie"></i> Formas de Pagamento</h3>
-                                <div class="grafico-container">
-                                    <canvas id="grafico-pagamentos"></canvas>
+                            <div class="side-column">
+                                <div class="grafico-card">
+                                    <h3><i class="fas fa-chart-pie"></i> Distribuição por Categoria</h3>
+                                    <div class="grafico-container" style="height: 250px;"><canvas id="chart-categorias"></canvas></div>
                                 </div>
-                            </div>
-                            <div class="grafico-card">
-                                <h3><i class="fas fa-tags"></i> Vendas por Categoria</h3>
-                                <div class="grafico-container">
-                                    <canvas id="grafico-categorias"></canvas>
+                                <div class="grafico-card">
+                                    <h3><i class="fas fa-trophy"></i> Top 5 Produtos Mais Vendidos</h3>
+                                    <div class="grafico-container" style="height: 280px;"><canvas id="chart-top-produtos"></canvas></div>
                                 </div>
                             </div>
                         </section>
@@ -132,8 +127,26 @@
                     <div id="tab-pdf-generator" class="tab-pane">
                          <header class="relatorios-header">
                             <h2><i class="fas fa-file-invoice-dollar"></i> Central de Relatórios</h2>
-                            <p>Escolha um relatório abaixo para gerar uma versão detalhada para impressão.</p>
+                            <p>Escolha um relatório para gerar uma versão detalhada para impressão.</p>
                         </header>
+
+                        <div class="card report-date-filter">
+                            <h4>Período do Relatório</h4>
+                            <div class="report-date-filter-inputs">
+                                <div class="filtro-item">
+                                    <label for="pdf-data-inicio"><i class="fas fa-calendar-alt"></i> Data de Início</label>
+                                    <input type="date" id="pdf-data-inicio">
+                                </div>
+                                <div class="filtro-item">
+                                    <label for="pdf-data-fim"><i class="fas fa-calendar-alt"></i> Data Final</label>
+                                    <input type="date" id="pdf-data-fim">
+                                </div>
+                            </div>
+                            <p class="filter-note">
+                                <i class="fas fa-info-circle"></i> Deixe em branco para usar o mesmo período do Dashboard.
+                            </p>
+                        </div>
+
                         <div class="report-options-grid">
                             <div class="report-option-card">
                                 <div class="report-icon"><i class="fas fa-receipt"></i></div>
@@ -156,7 +169,7 @@
                             <div class="report-option-card">
                                 <div class="report-icon"><i class="fas fa-box-open"></i></div>
                                 <h3>Produtos Vendidos</h3>
-                                <p>Lista todos os produtos vendidos, quantidades e valores totais.</p>
+                                <p>Lista todos os produtos vendidos, ordenados pelo maior valor de venda.</p>
                                 <button class="btn btn-primary" data-report-type="produto">Gerar Relatório</button>
                             </div>
                         </div>
@@ -182,7 +195,7 @@
                             </div>
                             <div class="settings-instructions">
                                 <i class="fas fa-info-circle"></i>
-                                <p>As taxas salvas aqui serão usadas em todos os relatórios e no dashboard para calcular os valores líquidos recebidos. Elas ficam armazenadas no seu navegador.</p>
+                                <p>As taxas salvas aqui serão usadas em todos os relatórios para calcular os valores líquidos recebidos. Elas ficam armazenadas no seu navegador.</p>
                             </div>
                        </div>
                     </div>
@@ -204,7 +217,6 @@
     </main>
     
     <script>
-        // Configuração Supabase
         const SUPABASE_URL = 'https://jdfijbhlujoiuraoxivb.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpkZmlqYmhsdWpvaXVyYW94aXZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg4NDE3MzgsImV4cCI6MjA3NDQxNzczOH0.yEMThoZdXPx1aNCO1a6wO-FPoMU-gTgxJlsW883rKvc';
         window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
