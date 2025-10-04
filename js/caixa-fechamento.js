@@ -39,7 +39,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     function formatarFormaPagamento(forma) {
         const formas = {
             'dinheiro': 'Dinheiro',
-            'cartao': 'Cartão',
+            'cartao_debito': 'Débito',
+            'cartao_credito': 'Crédito',
             'pix': 'PIX'
         };
         return formas[forma] || forma;
@@ -338,7 +339,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             const hora = new Date(venda.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
             const totalItens = venda.itens ? venda.itens.reduce((sum, item) => sum + item.quantidade, 0) : 0;
             let valorExibido = venda.total?.toFixed(2) || '0.00';
-            if (!window.isAdmin && venda.forma_pagamento !== 'dinheiro') {
+            if (!window.isAdmin && (venda.forma_pagamento === 'cartao_debito' || venda.forma_pagamento === 'cartao_credito' || venda.forma_pagamento === 'pix')) {
                 valorExibido = '**.**';
             }
             tr.innerHTML = `
@@ -397,10 +398,13 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     function atualizarResumoFinanceiro() {
         const vendasDinheiro = window.vendasDoDia.filter(v => v.forma_pagamento === 'dinheiro');
-        const vendasCartao = window.vendasDoDia.filter(v => v.forma_pagamento === 'cartao');
+        const vendasDebito = window.vendasDoDia.filter(v => v.forma_pagamento === 'cartao_debito');
+        const vendasCredito = window.vendasDoDia.filter(v => v.forma_pagamento === 'cartao_credito');
         const vendasPix = window.vendasDoDia.filter(v => v.forma_pagamento === 'pix');
+
         const totalDinheiroVendas = vendasDinheiro.reduce((sum, v) => sum + (v.total || 0), 0);
-        const totalCartao = vendasCartao.reduce((sum, v) => sum + (v.total || 0), 0);
+        const totalDebito = vendasDebito.reduce((sum, v) => sum + (v.total || 0), 0);
+        const totalCredito = vendasCredito.reduce((sum, v) => sum + (v.total || 0), 0);
         const totalPix = vendasPix.reduce((sum, v) => sum + (v.total || 0), 0);
         const totalGeral = window.vendasDoDia.reduce((sum, v) => sum + (v.total || 0), 0);
 
@@ -408,15 +412,19 @@ document.addEventListener('DOMContentLoaded', async function() {
         document.getElementById('qtd-dinheiro').textContent = `${vendasDinheiro.length} venda(s)`;
         
         if (!window.isAdmin) {
-            document.getElementById('total-cartao').textContent = 'R$ **,**';
-            document.getElementById('qtd-cartao').textContent = '** venda(s)';
+            document.getElementById('total-debito').textContent = 'R$ **,**';
+            document.getElementById('qtd-debito').textContent = '** venda(s)';
+            document.getElementById('total-credito').textContent = 'R$ **,**';
+            document.getElementById('qtd-credito').textContent = '** venda(s)';
             document.getElementById('total-pix').textContent = 'R$ **,**';
             document.getElementById('qtd-pix').textContent = '** venda(s)';
             document.getElementById('total-geral').textContent = `R$ ${totalDinheiroVendas.toFixed(2)}`;
             document.getElementById('qtd-total').textContent = `${vendasDinheiro.length} venda(s)`;
         } else {
-            document.getElementById('total-cartao').textContent = `R$ ${totalCartao.toFixed(2)}`;
-            document.getElementById('qtd-cartao').textContent = `${vendasCartao.length} venda(s)`;
+            document.getElementById('total-debito').textContent = `R$ ${totalDebito.toFixed(2)}`;
+            document.getElementById('qtd-debito').textContent = `${vendasDebito.length} venda(s)`;
+            document.getElementById('total-credito').textContent = `R$ ${totalCredito.toFixed(2)}`;
+            document.getElementById('qtd-credito').textContent = `${vendasCredito.length} venda(s)`;
             document.getElementById('total-pix').textContent = `R$ ${totalPix.toFixed(2)}`;
             document.getElementById('qtd-pix').textContent = `${vendasPix.length} venda(s)`;
             document.getElementById('total-geral').textContent = `R$ ${totalGeral.toFixed(2)}`;
@@ -427,13 +435,40 @@ document.addEventListener('DOMContentLoaded', async function() {
     function atualizarRelatorio() {
         const dataSelecionada = dataFechamentoInput.value;
         const dataFormatada = new Date(dataSelecionada + 'T00:00:00').toLocaleDateString('pt-BR');
+        
         const vendasDinheiro = window.vendasDoDia.filter(v => v.forma_pagamento === 'dinheiro');
+        const vendasDebito = window.vendasDoDia.filter(v => v.forma_pagamento === 'cartao_debito');
+        const vendasCredito = window.vendasDoDia.filter(v => v.forma_pagamento === 'cartao_credito');
+        const vendasPix = window.vendasDoDia.filter(v => v.forma_pagamento === 'pix');
+        
         const totalVendasDinheiro = vendasDinheiro.reduce((sum, v) => sum + (v.total || 0), 0);
+        const totalVendasDebito = vendasDebito.reduce((sum, v) => sum + (v.total || 0), 0);
+        const totalVendasCredito = vendasCredito.reduce((sum, v) => sum + (v.total || 0), 0);
+        const totalVendasPix = vendasPix.reduce((sum, v) => sum + (v.total || 0), 0);
+        
+        const vendasTotaisCartao = vendasDebito.length + vendasCredito.length;
+        const vendasTotaisPix = vendasPix.length;
+        const vendasTotaisDinheiro = vendasDinheiro.length;
+        
         const ticketMedioDinheiro = vendasDinheiro.length > 0 ? totalVendasDinheiro / vendasDinheiro.length : 0;
         
         document.getElementById('relatorio-data').textContent = dataFormatada;
-        document.getElementById('relatorio-total-vendas').textContent = `R$ ${totalVendasDinheiro.toFixed(2)}`;
-        document.getElementById('relatorio-qtd-vendas').textContent = vendasDinheiro.length;
+        
+        if (window.isAdmin) {
+             document.getElementById('relatorio-total-vendas-dinheiro').textContent = `R$ ${totalVendasDinheiro.toFixed(2)}`;
+             document.getElementById('relatorio-total-vendas-debito').textContent = `R$ ${totalVendasDebito.toFixed(2)}`;
+             document.getElementById('relatorio-total-vendas-credito').textContent = `R$ ${totalVendasCredito.toFixed(2)}`;
+             document.getElementById('relatorio-total-vendas-pix').textContent = `R$ ${totalVendasPix.toFixed(2)}`;
+        } else {
+             document.getElementById('relatorio-total-vendas-dinheiro').textContent = `R$ ${totalVendasDinheiro.toFixed(2)}`;
+             document.getElementById('relatorio-total-vendas-debito').textContent = `R$ **,**`;
+             document.getElementById('relatorio-total-vendas-credito').textContent = `R$ **,**`;
+             document.getElementById('relatorio-total-vendas-pix').textContent = `R$ **,**`;
+        }
+
+        document.getElementById('relatorio-qtd-vendas-dinheiro').textContent = vendasTotaisDinheiro;
+        document.getElementById('relatorio-qtd-vendas-cartao').textContent = window.isAdmin ? vendasTotaisCartao : '**';
+        document.getElementById('relatorio-qtd-vendas-pix').textContent = window.isAdmin ? vendasTotaisPix : '**';
         document.getElementById('relatorio-ticket-medio').textContent = `R$ ${ticketMedioDinheiro.toFixed(2)}`;
 
         const totalEntradas = window.movimentacoesDoDia
@@ -443,6 +478,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             .filter(m => m.tipo === 'saida')
             .reduce((sum, m) => sum + (m.valor || 0), 0);
         
+        // CORREÇÃO: Somar todas as entradas, subtrair todas as saídas e adicionar ao saldo final do caixa.
+        // As vendas em dinheiro são a primeira entrada.
         const saldoFinal = window.valorAbertura + totalVendasDinheiro + totalEntradas - totalSaidas;
 
         document.getElementById('relatorio-entradas').textContent = `R$ ${totalEntradas.toFixed(2)}`;
@@ -469,16 +506,20 @@ document.addEventListener('DOMContentLoaded', async function() {
             const dataFormatada = new Date(dataSelecionada + 'T00:00:00').toLocaleDateString('pt-BR');
             
             const vendasDinheiro = window.vendasDoDia.filter(v => v.forma_pagamento === 'dinheiro');
-            const vendasCartao = window.vendasDoDia.filter(v => v.forma_pagamento === 'cartao');
+            const vendasDebito = window.vendasDoDia.filter(v => v.forma_pagamento === 'cartao_debito');
+            const vendasCredito = window.vendasDoDia.filter(v => v.forma_pagamento === 'cartao_credito');
             const vendasPix = window.vendasDoDia.filter(v => v.forma_pagamento === 'pix');
+
             const totalDinheiro = vendasDinheiro.reduce((sum, v) => sum + (v.total || 0), 0);
-            const totalCartao = vendasCartao.reduce((sum, v) => sum + (v.total || 0), 0);
+            const totalDebito = vendasDebito.reduce((sum, v) => sum + (v.total || 0), 0);
+            const totalCredito = vendasCredito.reduce((sum, v) => sum + (v.total || 0), 0);
             const totalPix = vendasPix.reduce((sum, v) => sum + (v.total || 0), 0);
             const totalGeral = window.vendasDoDia.reduce((sum, v) => sum + (v.total || 0), 0);
 
             const totalEntradas = window.movimentacoesDoDia.filter(m => m.tipo === 'entrada').reduce((sum, m) => sum + (m.valor || 0), 0);
             const totalSaidas = window.movimentacoesDoDia.filter(m => m.tipo === 'saida').reduce((sum, m) => sum + (m.valor || 0), 0);
             
+            // CORREÇÃO: Incluir todas as entradas e saídas no cálculo do saldo final
             const saldoFinal = window.valorAbertura + totalDinheiro + totalEntradas - totalSaidas;
             const isAdmin = window.isAdmin;
 
@@ -554,14 +595,22 @@ document.addEventListener('DOMContentLoaded', async function() {
                             </tr>
                             ${isAdmin ? `
                             <tr>
-                                <td>Total de Vendas em Cartão</td>
-                                <td>R$ ${totalCartao.toFixed(2)}</td>
+                                <td>Total de Vendas em Débito</td>
+                                <td>R$ ${totalDebito.toFixed(2)}</td>
+                            </tr>
+                            <tr>
+                                <td>Total de Vendas em Crédito</td>
+                                <td>R$ ${totalCredito.toFixed(2)}</td>
                             </tr>
                             <tr>
                                 <td>Total de Vendas em PIX</td>
                                 <td>R$ ${totalPix.toFixed(2)}</td>
                             </tr>
                             ` : ''}
+                            <tr class="total">
+                                <td>Total Geral de Vendas</td>
+                                <td>R$ ${isAdmin ? totalGeral.toFixed(2) : totalDinheiro.toFixed(2)}</td>
+                            </tr>
                             <tr>
                                 <td>Total de Entradas (Reforços)</td>
                                 <td>R$ ${totalEntradas.toFixed(2)}</td>
@@ -569,10 +618,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                             <tr>
                                 <td>Total de Saídas (Sangrias)</td>
                                 <td>R$ ${totalSaidas.toFixed(2)}</td>
-                            </tr>
-                            <tr class="total">
-                                <td>Total Geral de Vendas</td>
-                                <td>R$ ${isAdmin ? totalGeral.toFixed(2) : totalDinheiro.toFixed(2)}</td>
                             </tr>
                             <tr>
                                 <td>Saldo Calculado do Caixa</td>
@@ -622,7 +667,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         const dataHora = new Date(venda.created_at).toLocaleString('pt-BR');
         const isAdmin = window.sistemaAuth.isAdmin();
         let valorTotalExibido = (venda.total || 0).toFixed(2);
-        if (!isAdmin && venda.forma_pagamento !== 'dinheiro') {
+        if (!isAdmin && (venda.forma_pagamento === 'cartao_debito' || venda.forma_pagamento === 'cartao_credito' || venda.forma_pagamento === 'pix')) {
             valorTotalExibido = '**.**';
         }
         let html = `
@@ -650,7 +695,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             venda.itens.forEach(item => {
                 let valorItemExibido = ((item.preco_unitario || 0) * (item.quantidade || 0)).toFixed(2);
                 let precoUnitarioExibido = (item.preco_unitario || 0).toFixed(2);
-                if (!isAdmin && venda.forma_pagamento !== 'dinheiro') {
+                if (!isAdmin && (venda.forma_pagamento === 'cartao_debito' || venda.forma_pagamento === 'cartao_credito' || venda.forma_pagamento === 'pix')) {
                     valorItemExibido = '**.**';
                     precoUnitarioExibido = '**.**';
                 }

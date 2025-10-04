@@ -164,20 +164,34 @@ class EncomendasSupabase {
         }
     }
     
-    // Registrar uma movimentação de caixa
+    // Registrar uma movimentação de caixa (VERSÃO REVISADA)
     async registrarMovimentacao(movimentacaoData) {
         try {
+            // Verificação para garantir que os dados essenciais estão presentes
+            if (!movimentacaoData.data_caixa || !movimentacaoData.tipo || !movimentacaoData.valor || !movimentacaoData.usuario_id) {
+                throw new Error('Dados insuficientes para registrar movimentação no caixa.');
+            }
+
+            console.log('📦 Enviando movimentação para o Supabase (caixa_movimentacoes):', movimentacaoData);
+
             const { data, error } = await this.supabase
                 .from('caixa_movimentacoes')
                 .insert([movimentacaoData])
                 .select()
                 .single();
             
-            if (error) throw error;
-            console.log('✅ Movimentação de caixa registrada com sucesso:', data);
+            if (error) {
+                // Loga o erro específico retornado pelo Supabase para facilitar o diagnóstico
+                console.error('❌ Erro retornado pelo Supabase ao registrar movimentação:', error);
+                throw error; // Lança o erro original do Supabase
+            }
+            
+            console.log('✅ Movimentação de caixa registrada com sucesso no Supabase:', data);
             return data;
         } catch (error) {
-            console.error('❌ Erro ao registrar movimentação de caixa:', error);
+            // Pega qualquer erro (da verificação inicial ou do Supabase)
+            console.error('❌ Falha crítica ao tentar registrar movimentação de caixa:', error.message);
+            // Lança um novo erro para que a função que chamou saiba que a operação falhou
             throw new Error('Falha ao registrar movimentação no caixa.');
         }
     }

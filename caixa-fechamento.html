@@ -131,14 +131,25 @@
                             </div>
                         </div>
                         
-                        <div class="resumo-card cartao">
-                            <div class="resumo-icon cartao">
+                        <div class="resumo-card cartao-debito">
+                            <div class="resumo-icon cartao-debito">
                                 <i class="fas fa-credit-card"></i>
                             </div>
                             <div class="resumo-info">
-                                <h4>Total Cartão</h4>
-                                <span class="valor" id="total-cartao">R$ 0,00</span>
-                                <span class="quantidade" id="qtd-cartao">0 vendas</span>
+                                <h4>Total Débito</h4>
+                                <span class="valor" id="total-debito">R$ 0,00</span>
+                                <span class="quantidade" id="qtd-debito">0 vendas</span>
+                            </div>
+                        </div>
+
+                        <div class="resumo-card cartao-credito">
+                            <div class="resumo-icon cartao-credito">
+                                <i class="fas fa-credit-card"></i>
+                            </div>
+                            <div class="resumo-info">
+                                <h4>Total Crédito</h4>
+                                <span class="valor" id="total-credito">R$ 0,00</span>
+                                <span class="quantidade" id="qtd-credito">0 vendas</span>
                             </div>
                         </div>
                         
@@ -173,7 +184,8 @@
                             <select id="filtro-pagamento">
                                 <option value="todos">Todos os Pagamentos</option>
                                 <option value="dinheiro">Dinheiro</option>
-                                <option value="cartao">Cartão</option>
+                                <option value="cartao_debito">Débito</option>
+                                <option value="cartao_credito">Crédito</option>
                                 <option value="pix">PIX</option>
                             </select>
                         </div>
@@ -236,11 +248,31 @@
                         </div>
                         <div class="info-item">
                             <span>Total em Vendas (Dinheiro):</span>
-                            <strong id="relatorio-total-vendas">R$ 0,00</strong>
+                            <strong id="relatorio-total-vendas-dinheiro">R$ 0,00</strong>
+                        </div>
+                         <div class="info-item">
+                            <span>Total em Vendas (Débito):</span>
+                            <strong id="relatorio-total-vendas-debito">R$ 0,00</strong>
+                        </div>
+                         <div class="info-item">
+                            <span>Total em Vendas (Crédito):</span>
+                            <strong id="relatorio-total-vendas-credito">R$ 0,00</strong>
+                        </div>
+                         <div class="info-item">
+                            <span>Total em Vendas (PIX):</span>
+                            <strong id="relatorio-total-vendas-pix">R$ 0,00</strong>
                         </div>
                         <div class="info-item">
                             <span>Quantidade de Vendas (Dinheiro):</span>
-                            <strong id="relatorio-qtd-vendas">0</strong>
+                            <strong id="relatorio-qtd-vendas-dinheiro">0</strong>
+                        </div>
+                         <div class="info-item">
+                            <span>Quantidade de Vendas (Cartão):</span>
+                            <strong id="relatorio-qtd-vendas-cartao">0</strong>
+                        </div>
+                         <div class="info-item">
+                            <span>Quantidade de Vendas (PIX):</span>
+                            <strong id="relatorio-qtd-vendas-pix">0</strong>
                         </div>
                         <div class="info-item">
                             <span>Ticket Médio (Dinheiro):</span>
