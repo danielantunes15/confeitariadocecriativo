@@ -51,7 +51,7 @@ async function diagnosticoCompleto() {
         return false;
     }
 }
-
+//teste
 // Executar diagnóstico
 diagnosticoCompleto().then(sucesso => {
     console.log(sucesso ? '✅ Diagnóstico completo' : '❌ Diagnóstico falhou');
