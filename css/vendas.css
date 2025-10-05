@@ -64,11 +64,11 @@ section {
 
 /* Estilos para produtos */
 .produtos-grid {
-    /* MUDANÇA PRINCIPAL: Usa Flexbox para rolagem horizontal */
+    /* REFORÇADO: Usa Flexbox para rolagem horizontal */
     display: flex;
     flex-wrap: nowrap; /* Impede a quebra de linha */
     gap: 1.5rem;
-    overflow-x: auto; /* Habilita a rolagem */
+    overflow-x: auto; /* Habilita a rolagem LATERAL */
     padding-bottom: 10px; /* Evita que a barra de rolagem corte o conteúdo */
 }
 
@@ -79,7 +79,7 @@ section {
     transition: transform 0.3s ease;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
     cursor: pointer;
-    /* MUDANÇA: Define largura mínima para garantir que o scroll funcione */
+    /* REFORÇADO: Define largura mínima para garantir que o scroll funcione */
     min-width: 250px; 
 }
 
@@ -387,11 +387,6 @@ footer {
         justify-content: center;
     }
     
-    .produtos-grid {
-        /* Desnecessário redefinir aqui, mas mantido para clareza */
-        /* grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); */
-    }
-    
     .opcoes-pagamento {
         gap: 0.8rem;
     }
@@ -493,3 +488,4 @@ footer {
     border-color: var(--rosa-principal);
     outline: none;
 }
+/* REMOVIDO: Regras de Grid/Lateral que causaram o problema de layout anterior. */
