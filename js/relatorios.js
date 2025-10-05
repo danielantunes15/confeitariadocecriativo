@@ -1,4 +1,5 @@
-// js/relatorios.js - VERSÃO CORRIGIDA COM PDFS MODERNOS E FUNCIONAIS
+// js/relatorios.js - VERSÃO FINAL CORRIGIDA COM PDFS MODERNOS E FUNCIONAIS E FILTROS DE DATA
+
 document.addEventListener('DOMContentLoaded', async function () {
 
     // --- VARIÁVEIS GLOBAIS ---
@@ -21,7 +22,6 @@ document.addEventListener('DOMContentLoaded', async function () {
         if (!container) return;
         const alertDiv = document.createElement('div');
         alertDiv.className = `alert alert-${tipo}`;
-        alertDiv.innerHTML = `<span>${mensagem}</span><button onclick="this.parentElement.remove()">&times;</button>`;
         container.appendChild(alertDiv);
         setTimeout(() => { if (alertDiv.parentNode) alertDiv.remove(); }, 5000);
     };
@@ -130,41 +130,58 @@ document.addEventListener('DOMContentLoaded', async function () {
         });
     }
 
-    // --- FUNÇÕES DE DATA ---
+    // --- FUNÇÕES DE DATA CORRIGIDAS DEFINITIVAMENTE (FUSO HORÁRIO) ---
+    
     const createLocalISO = (dateStr, endOfDay = false) => {
         const [year, month, day] = dateStr.split('-').map(Number);
         const localDate = new Date(year, month - 1, day);
         if (endOfDay) localDate.setHours(23, 59, 59, 999);
         else localDate.setHours(0, 0, 0, 0);
-        return localDate.toISOString();
+
+        // ✅ CORREÇÃO: Usa formato local 'sv-SE' (ISO sem sufixo Z de UTC) para
+        // evitar o desvio de fuso horário na consulta ao Supabase.
+        return localDate.toLocaleString('sv-SE').replace(' ', 'T');
     };
+    
+    const formatarParaInput = (date) => date.toISOString().split('T')[0];
 
     function atualizarDatasPorPeriodo(periodo) {
+        // 1. Cria uma data de referência para 'hoje' e zera o tempo.
         const hoje = new Date();
-        const hoje_iso_string = hoje.toISOString().split('T')[0];
-        let inicio = new Date(hoje_iso_string);
-        let fim = new Date(hoje_iso_string);
-
+        hoje.setHours(0, 0, 0, 0); 
+        
+        let inicio = new Date(hoje); 
+        let fim = new Date(hoje);    
+        
         switch (periodo) {
             case 'ontem':
-                inicio.setDate(inicio.getDate() - 1);
-                fim.setDate(fim.getDate() - 1);
+                // Ontem: início e fim são o dia de ontem
+                inicio.setDate(hoje.getDate() - 1);
+                fim.setDate(hoje.getDate() - 1); 
                 break;
             case 'semana':
-                inicio.setDate(hoje.getDate() - hoje.getDay());
-                fim = new Date(hoje_iso_string); 
+                // Esta Semana: início é o Domingo (0)
+                inicio.setDate(hoje.getDate() - hoje.getDay()); 
+                // data-fim = Hoje
                 break;
             case 'mes':
+                // Este Mês: início é o dia 1 do mês atual
                 inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-                fim = new Date(hoje_iso_string);
+                // data-fim = Hoje
                 break;
             case 'hoje':
             default:
+                // Hoje: início e fim são o dia de hoje.
                 break;
         }
 
-        document.getElementById('data-inicio').value = inicio.toISOString().split('T')[0];
-        document.getElementById('data-fim').value = fim.toISOString().split('T')[0];
+        // Atualiza os inputs de data do Dashboard
+        document.getElementById('data-inicio').value = formatarParaInput(inicio);
+        document.getElementById('data-fim').value = formatarParaInput(fim);
+        
+        // Sincroniza o filtro de PDF com o filtro do Dashboard
+        document.getElementById('pdf-data-inicio').value = formatarParaInput(inicio);
+        document.getElementById('pdf-data-fim').value = formatarParaInput(fim);
     }
 
     // --- CARREGAMENTO DE DADOS ---
@@ -177,6 +194,7 @@ document.addEventListener('DOMContentLoaded', async function () {
             return;
         }
 
+        // CORREÇÃO: createLocalISO garantirá que as datas de início e fim estejam no fuso local.
         const dataInicioQuery = createLocalISO(dataInicioInput);
         const dataFimQuery = createLocalISO(dataFimInput, true); 
 
@@ -239,6 +257,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         dataInicioObj.setHours(0, 0, 0, 0);
         dataFimObj.setHours(0, 0, 0, 0); 
         
+        // Correção para calcular o número de dias (incluindo o dia de hoje)
         const diffTime = Math.abs(dataFimObj.getTime() - dataInicioObj.getTime());
         const diffDays = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1); 
         
@@ -322,7 +341,9 @@ document.addEventListener('DOMContentLoaded', async function () {
     };
 
     const getRelatorioBase = (dataInicioPDF, dataFimPDF) => {
+        // Usa os dados que já estão no dashboard, filtrando pelo período do PDF se diferente
         return vendasDoDashboard.filter(v => {
+            // Este filtro é menos preciso (apenas data), mas é um backup.
             const dataVenda = new Date(v.data_venda).toISOString().split('T')[0];
             return dataVenda >= dataInicioPDF && dataVenda <= dataFimPDF;
         });
@@ -331,16 +352,12 @@ document.addEventListener('DOMContentLoaded', async function () {
     // --- GERAÇÃO DE PDF CORRIGIDA ---
     async function gerarRelatorioPDF(tipoRelatorio) {
         // Verificação robusta das dependências
-        if (typeof window.jspdf === 'undefined') {
+        if (typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF === 'undefined') {
             mostrarMensagem('ERRO: Biblioteca jsPDF não carregada. Verifique a conexão com a internet.', 'error');
             return;
         }
 
-        if (typeof window.jspdf.jsPDF === 'undefined') {
-            mostrarMensagem('ERRO: jsPDF não inicializado corretamente.', 'error');
-            return;
-        }
-
+        // Pega as datas do filtro de PDF (que está sincronizado com o dashboard)
         let dataInicioPDF = document.getElementById('pdf-data-inicio').value || dataInicioDashboard;
         let dataFimPDF = document.getElementById('pdf-data-fim').value || dataFimDashboard;
         
