@@ -1,18 +1,18 @@
-/* css/relatorios.css - Estilos completos para o dashboard avançado */
+/* css/relatorios.css - Estilos COMPLETAMENTE NOVOS para o dashboard avançado V2 */
 :root {
-    --primary-color: #ff69b4;
-    --secondary-color: #8a2be2;
+    --primary-color: #ff69b4; /* Pink */
+    --secondary-color: #8a2be2; /* BlueViolet */
     --dark-color: #343a40;
     --light-color: #f8f9fa;
     --border-color: #dee2e6;
-    --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    --card-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
     --text-color: #495057;
     --danger-color: #dc3545;
     --success-color: #28a745;
+    --info-color: #17a2b8;
 }
 
-/* Removido: body { overflow-x: hidden; } - Movido para style.css */
-
+/* Base e Loading */
 .loading-card { text-align: center; padding: 3rem; display: flex; flex-direction: column; justify-content: center; align-items: center; }
 .spinner-moderno {
     width: 50px; height: 50px; border: 5px solid #f3f3f3;
@@ -21,14 +21,8 @@
 }
 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
-.tabs-nav { 
-    display: flex; 
-    gap: 0.5rem; 
-    margin-bottom: -1px; 
-    position: relative; 
-    z-index: 10; 
-    flex-wrap: wrap; 
-}
+/* Navegação de Abas */
+.tabs-nav { display: flex; gap: 0.5rem; margin-bottom: -1px; position: relative; z-index: 10; flex-wrap: wrap; }
 .tab-button {
     padding: 0.8rem 1.5rem; border: 1px solid var(--border-color); border-bottom: none;
     background-color: var(--light-color); cursor: pointer; font-size: 1rem; font-weight: 500;
@@ -37,86 +31,119 @@
 }
 .tab-button:hover { background-color: #e9ecef; }
 .tab-button.active {
-    background-color: white; color: var(--primary-color);
+    background-color: white; color: var(--secondary-color);
     border-color: var(--border-color); font-weight: 700;
 }
 .tab-pane { display: none; animation: fadeIn 0.5s; }
 .tab-pane.active { display: block; }
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-.relatorios-header {
-    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-    color: white; padding: 2rem; border-radius: 12px;
-    margin-bottom: 1.5rem; box-shadow: var(--card-shadow);
+/* Cabeçalho Novo */
+.new-dashboard-header {
+    background: var(--secondary-color);
+    color: white; padding: 1.5rem 2rem; border-radius: 12px;
+    margin-bottom: 1rem; box-shadow: var(--card-shadow);
     transition: opacity 0.3s ease-in-out;
 }
-.relatorios-header.loading-state { opacity: 0.7; }
-.relatorios-header h2 { margin: 0 0 0.5rem 0; font-size: 2rem; }
-.filtros-container {
-    padding: 1.5rem; margin-bottom: 1.5rem; display: flex;
-    flex-wrap: wrap; align-items: center; gap: 1.5rem;
+.new-dashboard-header h2 { margin: 0 0 0.25rem 0; font-size: 1.8rem; }
+.new-dashboard-header p { margin: 0; font-size: 0.9rem; opacity: 0.9; }
+
+/* Filtros Novo Layout */
+.filtros-container-novo {
+    padding: 1rem 1.5rem; margin-bottom: 1.5rem; display: flex;
+    justify-content: space-between; align-items: center; gap: 1rem;
     background-color: white; border: 1px solid var(--border-color);
     border-radius: 0 12px 12px 12px; position: relative; z-index: 1;
 }
-.filtros-rapidos { display: flex; gap: 0.5rem; flex-grow: 1; flex-wrap: wrap; }
+.filtros-rapidos-group { display: flex; gap: 0.5rem; flex-wrap: wrap; }
 .filtro-rapido {
-    padding: 0.5rem 1rem; border: 1px solid var(--border-color);
+    padding: 0.5rem 1rem; border: 1px solid var(--secondary-color);
     background-color: white; border-radius: 20px; cursor: pointer; transition: all 0.2s ease;
+    color: var(--secondary-color);
 }
 .filtro-rapido:hover, .filtro-rapido.active {
-    background-color: var(--primary-color); color: white; border-color: var(--primary-color);
+    background-color: var(--secondary-color); color: white; border-color: var(--secondary-color);
 }
-.filtros-avancados { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; }
+.filtros-data-personalizada { display: flex; gap: 0.5rem; align-items: flex-end; }
 .filtro-item { display: flex; flex-direction: column; }
-.filtro-item label { font-size: 0.8rem; margin-bottom: 0.25rem; color: var(--text-color); }
-.filtro-item input, .filtro-item select { padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 6px; }
+.filtro-item label { font-size: 0.75rem; margin-bottom: 0.25rem; color: var(--text-color); }
+.filtro-item input { padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 6px; width: 120px; }
 
-.resumo-grid {
-    display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 1.5rem; margin-bottom: 2rem;
+/* Novo Grid de KPIs Detalhados */
+.kpi-financial-grid {
+    display: grid; 
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem; 
+    margin-bottom: 1.5rem;
 }
-.resumo-card {
-    background: white; padding: 1.5rem; border-radius: 12px;
-    box-shadow: var(--card-shadow); display: flex; align-items: center;
-    gap: 1.5rem; transition: transform 0.2s ease, box-shadow 0.2s ease;
+.kpi-card-detailed {
+    background: white; 
+    padding: 1rem; 
+    border-radius: 10px;
+    box-shadow: var(--card-shadow); 
+    display: flex; 
+    gap: 1rem; 
+    align-items: center;
+    transition: transform 0.2s ease;
+    border-left: 5px solid var(--primary-color);
 }
-.resumo-card:hover { transform: translateY(-5px); box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1); }
-.resumo-icon {
-    width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center;
-    justify-content: center; font-size: 1.8rem; color: white; flex-shrink: 0;
+.kpi-card-detailed:hover { transform: translateY(-3px); }
+.kpi-icon-wrapper {
+    width: 40px; height: 40px; border-radius: 50%; display: flex; 
+    align-items: center; justify-content: center; font-size: 1.2rem; 
+    color: white; flex-shrink: 0;
 }
-.resumo-info h3 { margin: 0 0 0.25rem; font-size: 0.9rem; color: var(--text-color); text-transform: uppercase; }
-.resumo-info .valor { margin: 0; font-size: 2rem; font-weight: 700; color: var(--dark-color); }
+.kpi-faturamento .kpi-icon-wrapper { background-color: var(--secondary-color); }
+.kpi-liquido .kpi-icon-wrapper { background-color: var(--success-color); }
+.kpi-taxas .kpi-icon-wrapper { background-color: var(--danger-color); }
+.kpi-transacoes .kpi-icon-wrapper { background-color: var(--info-color); }
+.kpi-medio .kpi-icon-wrapper { background-color: orange; }
+.kpi-dia .kpi-icon-wrapper { background-color: #6f42c1; }
 
-.dashboard-layout { display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; margin-top: 2rem; }
-.main-column, .side-column { display: flex; flex-direction: column; gap: 1.5rem; }
-.dashboard-layout .grafico-card { flex-grow: 1; }
-.grafico-card { background: white; padding: 1.5rem; border-radius: 12px; box-shadow: var(--card-shadow); }
-.grafico-card h3 { margin: 0 0 1rem; font-size: 1.2rem; color: var(--dark-color); display: flex; align-items: center; gap: 0.5rem; }
-.grafico-container { height: 350px; position: relative; }
-.table-container { max-height: 400px; overflow-y: auto; }
+.kpi-data .kpi-label { margin: 0; font-size: 0.75rem; color: var(--text-color); text-transform: uppercase; }
+.kpi-data .kpi-value { margin: 0; font-size: 1.2rem; font-weight: 700; color: var(--dark-color); }
+
+
+/* Novo Layout de Gráficos e Tabela (2 colunas) */
+.dashboard-main-layout-v2 { 
+    display: grid; 
+    grid-template-columns: 3fr 1fr; /* Coluna Principal maior */
+    gap: 1.5rem; 
+    margin-top: 1.5rem; 
+}
+.col-main, .col-side { display: flex; flex-direction: column; gap: 1.5rem; }
+
+.grafico-card-v2 { 
+    background: white; 
+    padding: 1.5rem; 
+    border-radius: 12px; 
+    box-shadow: var(--card-shadow); 
+    flex-grow: 1;
+}
+.grafico-card-v2 h3 { margin: 0 0 1rem; font-size: 1.1rem; color: var(--dark-color); display: flex; align-items: center; gap: 0.5rem; }
+
+.grafico-container-v2 { position: relative; }
+
+/* Tabela de Vendas Recentes */
+.table-card { padding: 0; } /* Remove padding do card para a tabela preencher */
+.table-card h3 { padding: 1.5rem 1.5rem 0; }
+.table-container { max-height: 450px; overflow-y: auto; padding-bottom: 1.5rem; }
 .table-moderna { width: 100%; border-collapse: collapse; }
-.table-moderna th, .table-moderna td { padding: 1rem; text-align: left; border-bottom: 1px solid var(--border-color); }
-.table-moderna th { background-color: var(--light-color); font-weight: 600; font-size: 0.9rem; position: sticky; top: 0; }
+.table-moderna th, .table-moderna td { padding: 0.8rem 1.5rem; text-align: left; border-bottom: 1px solid var(--border-color); }
+.table-moderna th { background-color: var(--light-color); font-weight: 600; font-size: 0.85rem; position: sticky; top: 0; z-index: 5; }
 .table-moderna tbody tr:hover { background-color: #fcf4f8; }
 .badge-pagamento {
     padding: 0.25rem 0.6rem; border-radius: 12px; font-size: 0.8rem;
     background-color: #e9ecef; color: #495057; text-transform: capitalize;
 }
 
+/* Relatórios PDF e Configurações (Mantidos, mas com novo estilo de card) */
 .report-date-filter { padding: 1.5rem; margin-bottom: 1.5rem; border-radius: 12px; background-color: var(--light-color); }
 .report-date-filter h4 { margin-top: 0; margin-bottom: 1rem; color: var(--dark-color); }
-.report-date-filter-inputs { 
-    display: flex; 
-    flex-wrap: wrap; 
-    gap: 1.5rem; 
-    align-items: flex-end; 
-}
+.report-date-filter-inputs { display: flex; flex-wrap: wrap; gap: 1.5rem; align-items: flex-end; }
 .report-date-filter .filtro-item { min-width: 200px; }
 .filter-note { margin-top: 1rem; font-size: 0.85rem; color: var(--text-color); }
-.filter-note i { color: var(--secondary-color); margin-right: 0.5rem; }
 .report-options-grid {
-    display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 1.5rem; margin-top: 1.5rem;
 }
 .report-option-card {
@@ -126,53 +153,37 @@
 }
 .report-option-card:hover { transform: translateY(-5px); box-shadow: var(--card-shadow); border-color: var(--primary-color); }
 .report-icon { font-size: 2.5rem; color: var(--primary-color); margin-bottom: 1rem; }
-.report-option-card h3 { margin: 0 0 0.5rem 0; color: var(--dark-color); }
-.report-option-card p { margin: 0 0 1.5rem 0; font-size: 0.9rem; color: var(--text-color); min-height: 40px; flex-grow: 1; }
-
 .settings-container { padding: 2rem; }
-.settings-container h3 { margin-top: 0; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; }
 .settings-form { display: flex; flex-wrap: wrap; gap: 1.5rem; align-items: flex-end; }
 .settings-instructions {
     margin-top: 2rem; padding: 1rem; background-color: #e3f2fd;
     border-left: 4px solid #17a2b8; display: flex; align-items: center;
     gap: 1rem; color: #0c5460; font-size: 0.9rem; border-radius: 4px;
 }
-.settings-instructions i { font-size: 1.5rem; }
 
-/* REGRAS DE MOBILE ESPECÍFICAS PARA RELATÓRIOS */
+/* REGRAS DE MOBILE */
 @media (max-width: 992px) { 
-    .dashboard-layout { 
-        grid-template-columns: 1fr; /* Força gráficos e tabelas a empilhar */
+    .dashboard-main-layout-v2 { 
+        grid-template-columns: 1fr; /* Colunas empilham */
     } 
-    .resumo-grid {
-        /* Garante que os cards de resumo tenham espaço e quebrem */
-        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    .kpi-financial-grid {
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
     }
-}
-
-@media (max-width: 768px) {
-    /* CORREÇÃO PRINCIPAL: Garante que os blocos de filtros empilhem e não causem overflow */
-    .filtros-container {
-        flex-direction: column; 
-        align-items: stretch;
-        gap: 1.5rem;
-    }
-    
-    .filtros-avancados,
-    .settings-form {
+    .filtros-container-novo {
         flex-direction: column;
         align-items: stretch;
-        gap: 1rem;
     }
+    .filtros-data-personalizada {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.5rem;
+    }
+    .filtro-item input { width: 100%; }
 }
 
 @media (max-width: 500px) {
-    /* Força os inputs de data do gerador de PDF a empilhar em telas de celular */
-    .report-date-filter-inputs {
-        flex-direction: column;
-        align-items: stretch;
-    }
-    .report-date-filter .filtro-item {
-        min-width: unset; /* Remove o min-width para ocupar 100% */
+    .kpi-card-detailed {
+        flex-direction: row; /* Volta a ser lado a lado */
+        align-items: center;
     }
 }
