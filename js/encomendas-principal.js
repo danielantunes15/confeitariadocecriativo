@@ -482,6 +482,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
     
+    // ========= INÍCIO DA ALTERAÇÃO PARA IMPRESSORA TÉRMICA =========
+
     function imprimirCanhoto(encomendaId) {
         const encomenda = encomendas.find(enc => enc.id === encomendaId);
         if (!encomenda) return mostrarMensagem('Encomenda não encontrada.', 'error');
@@ -489,9 +491,10 @@ document.addEventListener('DOMContentLoaded', async function() {
         const valorPendente = (encomenda.valor_total - encomenda.sinal_pago).toFixed(2);
         const dataEntregaFormatada = new Date(encomenda.data_entrega + 'T03:00:00Z').toLocaleDateString('pt-BR');
         
+        // 1. Removemos o 'style' que definia largura e fonte fixa. Agora o CSS cuida disso.
         const canhotoContent = `
-            <div id="canhoto-impressao" style="font-family: Arial, sans-serif; width: 300px; padding: 15px;">
-                <h4 style="text-align: center; margin: 0;">Confeitaria Doces Criativos</h4>
+            <div id="canhoto-impressao">
+                <h4 style="text-align: center; margin: 0; font-size: 1.2em;">Confeitaria Doces Criativos</h4>
                 <hr>
                 <p><strong>Pedido:</strong> #${encomenda.id.substring(0, 8)}</p>
                 <p><strong>Cliente:</strong> ${encomenda.cliente?.nome || 'N/A'}</p>
@@ -500,16 +503,23 @@ document.addEventListener('DOMContentLoaded', async function() {
                 <hr>
                 <p><strong>Total:</strong> R$ ${encomenda.valor_total.toFixed(2)}</p>
                 <p><strong>Sinal:</strong> R$ ${encomenda.sinal_pago.toFixed(2)}</p>
-                <p style="font-weight: bold;"><strong>Pendente: R$ ${valorPendente}</strong></p>
+                <p style="font-weight: bold; font-size: 1.1em;"><strong>Pendente: R$ ${valorPendente}</strong></p>
             </div>`;
 
-        const printWindow = window.open('', '', 'height=600,width=400');
-        printWindow.document.write('<html><head><title>Canhoto do Pedido</title></head><body>');
+        const printWindow = window.open('', '_blank', 'height=600,width=800');
+        printWindow.document.write('<html>');
+        printWindow.document.write('<head><title>Canhoto do Pedido</title>');
+        // 2. Adicionamos o link para o nosso arquivo CSS. ISSO É ESSENCIAL!
+        printWindow.document.write('<link rel="stylesheet" href="css/encomendas.css">');
+        printWindow.document.write('</head><body>');
         printWindow.document.write(canhotoContent);
-        printWindow.document.write('<script>window.onload = function() { window.print(); window.onafterprint = function() { window.close(); }; }</script>');
+        // 3. O script agora espera o conteúdo carregar antes de imprimir.
+        printWindow.document.write('<script>window.onload = function() { setTimeout(function() { window.print(); window.onafterprint = function() { window.close(); }; }, 200); };</script>');
         printWindow.document.write('</body></html>');
         printWindow.document.close();
     }
     
+    // ========= FIM DA ALTERAÇÃO PARA IMPRESSORA TÉRMICA =========
+
     inicializarEncomendas();
 });

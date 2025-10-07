@@ -370,27 +370,54 @@
     color: #888;
 }
 
-/* Estilos para o Canhoto de Impressão */
+/* ========= INÍCIO DA ALTERAÇÃO PARA IMPRESSORA TÉRMICA ========= */
+
+/* Estilos para o Canhoto de Impressão (VERSÃO CORRIGIDA) */
 @media print {
+    /* Define o tamanho do papel. Use 80mm ou 58mm, dependendo da sua impressora. 
+       A altura 'auto' faz com que use apenas o espaço necessário. */
+    @page {
+        size: 80mm auto; /* Altere para 58mm se sua impressora for menor */
+        margin: 0;
+    }
+
+    /* Remove margens do corpo da página de impressão */
+    body {
+        margin: 0;
+        -webkit-print-color-adjust: exact; /* Garante que as cores sejam impressas no Chrome */
+        print-color-adjust: exact;
+    }
+
+    /* Esconde tudo da página, exceto o canhoto */
     body * {
         visibility: hidden;
     }
+    
     #canhoto-impressao, #canhoto-impressao * {
         visibility: visible;
     }
+
+    /* Formata o canhoto para ocupar o espaço exato, sem posicionamentos estranhos */
     #canhoto-impressao {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-        padding: 20px;
+        position: static;
+        display: block;
+        width: 100%; /* Ocupa 100% da largura definida no @page */
+        margin: 0;
+        padding: 3mm; /* Uma pequena margem interna para não cortar o texto */
+        box-sizing: border-box; /* Essencial para o padding não aumentar a largura total */
         font-family: 'Courier New', Courier, monospace;
-        font-size: 12px;
+        font-size: 10pt; /* Tamanho de fonte bom para leitura em recibos */
+        color: #000;
     }
+
+    /* Esconde qualquer elemento que não deva ser impresso */
     .no-print {
         display: none;
     }
 }
+
+/* ========= FIM DA ALTERAÇÃO PARA IMPRESSORA TÉRMICA ========= */
+
 
 .canhoto-pedido {
     width: 300px;
