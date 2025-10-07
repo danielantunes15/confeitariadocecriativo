@@ -482,8 +482,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
     
-    // ========= INÍCIO DA ALTERAÇÃO PARA IMPRESSORA TÉRMICA =========
-
+    // === FUNÇÃO CORRIGIDA PARA IMPRESSÃO EM TÉRMICA ===
     function imprimirCanhoto(encomendaId) {
         const encomenda = encomendas.find(enc => enc.id === encomendaId);
         if (!encomenda) return mostrarMensagem('Encomenda não encontrada.', 'error');
@@ -491,35 +490,68 @@ document.addEventListener('DOMContentLoaded', async function() {
         const valorPendente = (encomenda.valor_total - encomenda.sinal_pago).toFixed(2);
         const dataEntregaFormatada = new Date(encomenda.data_entrega + 'T03:00:00Z').toLocaleDateString('pt-BR');
         
-        // 1. Removemos o 'style' que definia largura e fonte fixa. Agora o CSS cuida disso.
+        // Adicionei estilos inline simples e otimizados para térmica (largura e fonte menor)
         const canhotoContent = `
-            <div id="canhoto-impressao">
-                <h4 style="text-align: center; margin: 0; font-size: 1.2em;">Confeitaria Doces Criativos</h4>
-                <hr>
-                <p><strong>Pedido:</strong> #${encomenda.id.substring(0, 8)}</p>
-                <p><strong>Cliente:</strong> ${encomenda.cliente?.nome || 'N/A'}</p>
-                <p><strong>Data Entrega:</strong> ${dataEntregaFormatada}</p>
-                <p><strong>Detalhes:</strong><br>${encomenda.detalhes.replace(/\n/g, '<br>')}</p>
-                <hr>
-                <p><strong>Total:</strong> R$ ${encomenda.valor_total.toFixed(2)}</p>
-                <p><strong>Sinal:</strong> R$ ${encomenda.sinal_pago.toFixed(2)}</p>
-                <p style="font-weight: bold; font-size: 1.1em;"><strong>Pendente: R$ ${valorPendente}</strong></p>
+            <div id="canhoto-impressao" style="font-family: Arial, sans-serif; width: 300px; padding: 5px;">
+                <h4 style="text-align: center; margin: 0; font-size: 14px;">Confeitaria Doces Criativos</h4>
+                <hr style="border: 0.5px dashed #000; margin: 5px 0;">
+                <p style="margin: 2px 0; font-size: 10px;"><strong>Pedido:</strong> #${encomenda.id.substring(0, 8)}</p>
+                <p style="margin: 2px 0; font-size: 10px;"><strong>Cliente:</strong> ${encomenda.cliente?.nome || 'N/A'}</p>
+                <p style="margin: 2px 0; font-size: 10px;"><strong>Data Entrega:</strong> ${dataEntregaFormatada}</p>
+                <p style="margin: 2px 0; font-size: 10px;"><strong>Detalhes:</strong><br>${encomenda.detalhes.replace(/\n/g, '<br>')}</p>
+                <hr style="border: 0.5px dashed #000; margin: 5px 0;">
+                <p style="margin: 2px 0; font-size: 10px;"><strong>Total:</strong> R$ ${encomenda.valor_total.toFixed(2)}</p>
+                <p style="margin: 2px 0; font-size: 10px;"><strong>Sinal:</strong> R$ ${encomenda.sinal_pago.toFixed(2)}</p>
+                <p style="font-weight: bold; margin: 5px 0; font-size: 12px;"><strong>Pendente: R$ ${valorPendente}</strong></p>
+                <p style="text-align: center; margin-top: 10px; font-size: 8px;">Obrigado pela preferência!</p>
             </div>`;
 
-        const printWindow = window.open('', '_blank', 'height=600,width=800');
-        printWindow.document.write('<html>');
-        printWindow.document.write('<head><title>Canhoto do Pedido</title>');
-        // 2. Adicionamos o link para o nosso arquivo CSS. ISSO É ESSENCIAL!
-        printWindow.document.write('<link rel="stylesheet" href="css/encomendas.css">');
-        printWindow.document.write('</head><body>');
+        const printWindow = window.open('', 'PrintCanhoto', 'height=600,width=400');
+        
+        // Define CSS otimizado para impressão térmica (ajusta a largura do corpo e remove margens)
+        const thermalCss = `
+            <style>
+                @media print {
+                    body {
+                        width: 58mm !important; 
+                        margin: 0;
+                        padding: 0;
+                        font-family: monospace;
+                        font-size: 9px;
+                    }
+                    #canhoto-impressao {
+                        width: 100%;
+                        padding: 0;
+                    }
+                    @page {
+                        margin: 0; /* Remove margens do spooler */
+                    }
+                }
+            </style>
+        `;
+
+        printWindow.document.write('<html><head><title>Canhoto do Pedido</title>' + thermalCss + '</head><body>');
         printWindow.document.write(canhotoContent);
-        // 3. O script agora espera o conteúdo carregar antes de imprimir.
-        printWindow.document.write('<script>window.onload = function() { setTimeout(function() { window.print(); window.onafterprint = function() { window.close(); }; }, 200); };</script>');
+        
+        // *** CORREÇÃO CRÍTICA (JavaScript): Remove onafterprint e usa setTimeout ***
+        const fixScript = `
+            <script>
+                window.onload = function() {
+                    window.print();
+                    // O atraso de 1 segundo garante que o spooler de impressão termine
+                    // antes de fechar a janela, prevenindo o loop de reimpressão.
+                    setTimeout(function() {
+                        window.close();
+                    }, 1000); 
+                };
+            </script>
+        `;
+
+        printWindow.document.write(fixScript);
         printWindow.document.write('</body></html>');
         printWindow.document.close();
     }
+    // === FIM DA FUNÇÃO CORRIGIDA ===
     
-    // ========= FIM DA ALTERAÇÃO PARA IMPRESSORA TÉRMICA =========
-
     inicializarEncomendas();
 });
