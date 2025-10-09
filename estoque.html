@@ -5,8 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestão de Estoque - Confeitaria Doces Criativos</title>
     <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/estoque.css"> <!-- ADICIONAR ESTE -->
-    <link rel="stylesheet" href="css/responsive.css"> 
+    <link rel="stylesheet" href="css/estoque.css"> <link rel="stylesheet" href="css/responsive.css"> 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -27,11 +26,15 @@
                         <i class="fas fa-cash-register"></i>
                         <span>Caixa</span>
                     </a>
-                    <a href="encomendas.html" class="nav-link active">
+                    <a href="encomendas.html" class="nav-link">
                         <i class="fas fa-receipt"></i>
                         <span>Encomendas</span>
                     </a>
-                    <a href="estoque.html" class="nav-link">
+                    <a href="producao.html" class="nav-link">
+                        <i class="fas fa-sitemap"></i>
+                        <span>Produção</span>
+                    </a>
+                    <a href="estoque.html" class="nav-link active">
                         <i class="fas fa-boxes"></i>
                         <span>Estoque</span>
                     </a>
@@ -42,7 +45,7 @@
                     <a href="administracao.html" class="nav-link">
                         <i class="fas fa-cog"></i>
                         <span>Administração</span>
-                    </a>
+                    </button>
                     <button id="logout-btn" class="btn-logout">
                         <i class="fas fa-sign-out-alt"></i>
                         <span>Sair</span>
@@ -71,7 +74,6 @@
                         <button class="tab-btn" data-tab="categorias">Categorias</button>
                     </div>
 
-                    <!-- Aba: Lista de Produtos -->
                     <div id="lista-produtos" class="tab-content active">
                         <div class="filtros">
                             <div class="form-group">
@@ -114,7 +116,6 @@
                         </div>
                     </div>
 
-                    <!-- Aba: Novo Produto -->
                     <div id="novo-produto" class="tab-content">
                         <form id="form-novo-produto" class="form">
                             <div class="form-row">
@@ -140,8 +141,7 @@
                                     <label for="produto-icone">Ícone do Produto *</label>
                                     <div class="icones-container">
                                         <div class="icones-grid" id="icones-grid">
-                                            <!-- Ícones serão carregados via JavaScript -->
-                                        </div>
+                                            </div>
                                         <input type="hidden" id="produto-icone" required />
                                     </div>
                                 </div>
@@ -177,7 +177,6 @@
                         </form>
                     </div>
 
-                    <!-- Aba: Categorias -->
                     <div id="categorias" class="tab-content">
                         <div class="categorias-header">
                             <h3>Gerenciar Categorias</h3>
@@ -213,7 +212,6 @@
         </div>
     </main>
 
-    <!-- Modal para editar produto -->
     <div id="modal-editar-produto" class="modal">
         <div class="modal-content">
             <span class="close">&times;</span>
@@ -242,8 +240,7 @@
                         <label for="editar-produto-icone">Ícone do Produto *</label>
                         <div class="icones-container">
                             <div class="icones-grid" id="editar-icones-grid">
-                                <!-- Ícones serão carregados via JavaScript -->
-                            </div>
+                                </div>
                             <input type="hidden" id="editar-produto-icone" required />
                         </div>
                     </div>
@@ -280,7 +277,6 @@
         </div>
     </div>
 
-    <!-- Modal para nova categoria -->
     <div id="modal-nova-categoria" class="modal">
         <div class="modal-content">
             <span class="close">&times;</span>
@@ -320,8 +316,7 @@
     <script src="js/auth.js"></script>
     <script src="js/estoque.js"></script>
 
-    <!-- Modal para editar categoria -->
-<div id="modal-editar-categoria" class="modal">
+    <div id="modal-editar-categoria" class="modal">
     <div class="modal-content">
         <span class="close">&times;</span>
         <h3>Editar Categoria</h3>
