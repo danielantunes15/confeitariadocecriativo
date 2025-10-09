@@ -8,14 +8,19 @@ document.addEventListener('DOMContentLoaded', async function () {
     const loadingElement = document.getElementById('loading');
     const contentElement = document.getElementById('content');
     const acessoNegadoElement = document.getElementById('acesso-negado');
-    const estoqueProducaoBody = document.getElementById('estoque-producao-body'); // NOVO
-    const alertaEstoqueProducao = document.getElementById('alerta-estoque-producao'); // NOVO
-    const recarregarEstoqueBtn = document.getElementById('recarregar-estoque-producao'); // NOVO
+    const estoqueProducaoBody = document.getElementById('estoque-producao-body');
+    const alertaEstoqueProducao = document.getElementById('alerta-estoque-producao');
+    const recarregarEstoqueBtn = document.getElementById('recarregar-estoque-producao');
+    
+    // ELEMENTOS DO MODAL (NOVO)
+    const modalEstoque = document.getElementById('modal-estoque-producao');
+    const formIngrediente = document.getElementById('form-ingrediente');
+    const modalTituloEstoque = document.getElementById('modal-titulo-estoque');
 
     let charts = {};
 
     let vendasDoDashboard = [];
-    let estoqueProducaoData = []; // NOVO
+    let estoqueProducaoData = [];
     let dataInicioDashboard, dataFimDashboard;
     let taxaDebitoAtual = 0;
     let taxaCreditoAtual = 0;
@@ -36,6 +41,17 @@ document.addEventListener('DOMContentLoaded', async function () {
         toggleDisplay(loadingElement, show);
         toggleDisplay(contentElement, !show);
     };
+    
+    // FUNÇÃO AUXILIAR GLOBAL
+    function fecharModalEstoque() {
+        if (modalEstoque) modalEstoque.style.display = 'none';
+        if (formIngrediente) formIngrediente.reset();
+        document.getElementById('ingrediente-id-edicao').value = '';
+        if (modalTituloEstoque) modalTituloEstoque.innerHTML = '<i class="fas fa-plus-circle"></i> Novo Ingrediente';
+    }
+    // Adicionar ao escopo global para o onclick no HTML
+    window.fecharModalEstoque = fecharModalEstoque;
+
 
     // --- AUTENTICAÇÃO ---
     if (!window.sistemaAuth?.verificarAutenticacao()) {
@@ -43,8 +59,9 @@ document.addEventListener('DOMContentLoaded', async function () {
         return;
     }
     const usuario = window.sistemaAuth.usuarioLogado;
-    // Permissão de acesso estendida para a nova aba
-    if (!['administrador', 'admin', 'gerente', 'supervisor'].includes(usuario.tipo?.toLowerCase())) {
+    const isAdminOrManager = ['administrador', 'admin', 'gerente', 'supervisor'].includes(usuario.tipo?.toLowerCase());
+    
+    if (!isAdminOrManager) {
         toggleDisplay(loadingElement, false);
         toggleDisplay(contentElement, false);
         toggleDisplay(acessoNegadoElement, true);
@@ -53,7 +70,6 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     // --- SUPABASE: TAXAS ---
     async function salvarTaxas() {
-        // ... (código existente para salvar taxas)
         const novaTaxaDebito = document.getElementById('taxa-debito').value;
         const novaTaxaCredito = document.getElementById('taxa-credito').value;
         
@@ -79,7 +95,6 @@ document.addEventListener('DOMContentLoaded', async function () {
     }
 
     async function buscarTaxasDoBanco() {
-        // ... (código existente para buscar taxas)
          try {
             const { data, error } = await supabase.from('configuracoes')
                 .select('taxa_debito, taxa_credito')
@@ -108,7 +123,6 @@ document.addEventListener('DOMContentLoaded', async function () {
         configurarFiltrosEEventos();
         await carregarDadosEAtualizarDashboard();
         
-        // NOVO: Carregar dados iniciais para a nova aba
         await carregarEstoqueProducao();
 
         toggleLoading(false);
@@ -118,10 +132,17 @@ document.addEventListener('DOMContentLoaded', async function () {
         document.getElementById('aplicar-filtro').addEventListener('click', carregarDadosEAtualizarDashboard);
         document.getElementById('salvar-taxas').addEventListener('click', salvarTaxas);
         
-        // NOVO EVENT LISTENER
         if (recarregarEstoqueBtn) {
             recarregarEstoqueBtn.addEventListener('click', carregarEstoqueProducao);
         }
+        
+        // NOVO EVENT LISTENER: Lógica do Formulário de Ingredientes
+        if (formIngrediente) {
+            formIngrediente.addEventListener('submit', salvarIngrediente);
+        }
+        
+        // NOVO EVENT LISTENER: Botão Abrir Modal (já configurado no HTML)
+        // document.getElementById('abrir-modal-ingrediente')?.addEventListener('click', ...);
 
 
         atualizarDatasPorPeriodo('hoje');
@@ -147,7 +168,6 @@ document.addEventListener('DOMContentLoaded', async function () {
                 const targetPane = document.getElementById(`tab-${button.dataset.tab}`);
                 if (targetPane) targetPane.classList.add('active');
                 
-                // NOVO: Recarregar dados se a aba de estoque de produção for ativada
                 if (button.dataset.tab === 'estoque-producao') {
                     carregarEstoqueProducao();
                 }
@@ -155,23 +175,19 @@ document.addEventListener('DOMContentLoaded', async function () {
         });
     }
 
-    // --- FUNÇÕES DE DATA CORRIGIDAS DEFINITIVAMENTE (FUSO HORÁRIO) ---
-    
+    // --- FUNÇÕES DE DATA ---
     const createLocalISO = (dateStr, endOfDay = false) => {
         const [year, month, day] = dateStr.split('-').map(Number);
         const localDate = new Date(year, month - 1, day);
         if (endOfDay) localDate.setHours(23, 59, 59, 999);
         else localDate.setHours(0, 0, 0, 0);
 
-        // ✅ CORREÇÃO: Usa formato local 'sv-SE' (ISO sem sufixo Z de UTC) para
-        // evitar o desvio de fuso horário na consulta ao Supabase.
         return localDate.toLocaleString('sv-SE').replace(' ', 'T');
     };
     
     const formatarParaInput = (date) => date.toISOString().split('T')[0];
 
     function atualizarDatasPorPeriodo(periodo) {
-        // 1. Cria uma data de referência para 'hoje' e zera o tempo.
         const hoje = new Date();
         hoje.setHours(0, 0, 0, 0); 
         
@@ -180,31 +196,23 @@ document.addEventListener('DOMContentLoaded', async function () {
         
         switch (periodo) {
             case 'ontem':
-                // Ontem: início e fim são o dia de ontem
                 inicio.setDate(hoje.getDate() - 1);
                 fim.setDate(hoje.getDate() - 1); 
                 break;
             case 'semana':
-                // Esta Semana: início é o Domingo (0)
                 inicio.setDate(hoje.getDate() - hoje.getDay()); 
-                // data-fim = Hoje
                 break;
             case 'mes':
-                // Este Mês: início é o dia 1 do mês atual
                 inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-                // data-fim = Hoje
                 break;
             case 'hoje':
             default:
-                // Hoje: início e fim são o dia de hoje.
                 break;
         }
 
-        // Atualiza os inputs de data do Dashboard
         document.getElementById('data-inicio').value = formatarParaInput(inicio);
         document.getElementById('data-fim').value = formatarParaInput(fim);
         
-        // Sincroniza o filtro de PDF com o filtro do Dashboard
         document.getElementById('pdf-data-inicio').value = formatarParaInput(inicio);
         document.getElementById('pdf-data-fim').value = formatarParaInput(fim);
     }
@@ -219,7 +227,6 @@ document.addEventListener('DOMContentLoaded', async function () {
             return;
         }
 
-        // CORREÇÃO: createLocalISO garantirá que as datas de início e fim estejam no fuso local.
         const dataInicioQuery = createLocalISO(dataInicioInput);
         const dataFimQuery = createLocalISO(dataFimInput, true); 
 
@@ -283,7 +290,6 @@ document.addEventListener('DOMContentLoaded', async function () {
         dataInicioObj.setHours(0, 0, 0, 0);
         dataFimObj.setHours(0, 0, 0, 0); 
         
-        // Correção para calcular o número de dias (incluindo o dia de hoje)
         const diffTime = Math.abs(dataFimObj.getTime() - dataInicioObj.getTime());
         const diffDays = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1); 
         
@@ -306,20 +312,19 @@ document.addEventListener('DOMContentLoaded', async function () {
     }
     
     // ----------------------------------------------------------------------
-    // --- NOVO MÓDULO: ESTOQUE DE PRODUÇÃO ---
+    // --- MÓDULO: ESTOQUE DE PRODUÇÃO (CRUD INCLUÍDO) ---
     // ----------------------------------------------------------------------
 
     async function carregarEstoqueProducao() {
         if (!estoqueProducaoBody) return;
         
-        estoqueProducaoBody.innerHTML = '<tr><td colspan="5" style="text-align:center;"><div class="spinner-moderno" style="width: 20px; height: 20px;"></div> Carregando estoque...</td></tr>';
-        alertaEstoqueProducao.innerHTML = ''; // Limpar alertas
+        estoqueProducaoBody.innerHTML = '<tr><td colspan="6" style="text-align:center;"><div class="spinner-moderno" style="width: 20px; height: 20px;"></div> Carregando estoque...</td></tr>';
+        alertaEstoqueProducao.innerHTML = '';
 
         try {
             const { data, error } = await supabase.from('estoque_producao')
                 .select('*')
-                .eq('ativo', true)
-                .order('nome');
+                .order('nome'); // Ordena por nome, incluindo inativos
 
             if (error) throw error;
             
@@ -334,7 +339,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         } catch (error) {
             console.error('❌ Erro ao carregar estoque de produção:', error);
             mostrarMensagem('Erro ao carregar o estoque de produção. Verifique se a tabela foi criada corretamente.', 'error');
-            estoqueProducaoBody.innerHTML = '<tr><td colspan="5" style="text-align:center; color: var(--danger-color);">Erro ao carregar estoque.</td></tr>';
+            estoqueProducaoBody.innerHTML = '<tr><td colspan="6" style="text-align:center; color: var(--danger-color);">Erro ao carregar estoque.</td></tr>';
             
             if (recarregarEstoqueBtn) {
                 recarregarEstoqueBtn.classList.add('btn-danger');
@@ -351,42 +356,53 @@ document.addEventListener('DOMContentLoaded', async function () {
         let itensParaComprar = [];
 
         if (dados.length === 0) {
-            estoqueProducaoBody.innerHTML = '<tr><td colspan="5" style="text-align:center; color: var(--text-color);">Nenhum ingrediente ativo cadastrado.</td></tr>';
+            estoqueProducaoBody.innerHTML = '<tr><td colspan="6" style="text-align:center; color: var(--text-color);">Nenhum ingrediente ativo cadastrado.</td></tr>';
             return;
         }
 
         dados.forEach(item => {
             const estoqueAtual = item.estoque_atual || 0;
             const estoqueMinimo = item.estoque_minimo || 0;
-            let statusText = 'Em Estoque';
-            let statusClass = 'success'; // Usa classes de cores existentes ou padrões
+            let statusText = item.ativo ? 'Em Estoque' : 'Inativo';
+            let statusClass = item.ativo ? 'success' : 'info';
+            const linhaClass = item.ativo ? '' : 'style="opacity: 0.6; font-style: italic;"';
 
-            if (estoqueAtual <= 0) {
-                statusText = 'ESGOTADO';
-                statusClass = 'danger';
-                // Armazena a diferença entre 0 e o mínimo para indicar o quanto PRECISA comprar (o mínimo)
-                itensParaComprar.push({ item: item.nome, status: statusText, falta: estoqueMinimo, unidade_medida: item.unidade_medida });
-            } else if (estoqueAtual <= estoqueMinimo) {
-                statusText = 'Estoque Baixo';
-                statusClass = 'warning';
-                itensParaComprar.push({ item: item.nome, status: statusText, falta: estoqueMinimo - estoqueAtual, unidade_medida: item.unidade_medida });
+            if (item.ativo) {
+                if (estoqueAtual <= 0) {
+                    statusText = 'ESGOTADO';
+                    statusClass = 'danger';
+                    itensParaComprar.push({ item: item.nome, status: statusText, falta: estoqueMinimo, unidade_medida: item.unidade_medida });
+                } else if (estoqueAtual <= estoqueMinimo) {
+                    statusText = 'Estoque Baixo';
+                    statusClass = 'warning';
+                    itensParaComprar.push({ item: item.nome, status: statusText, falta: estoqueMinimo - estoqueAtual, unidade_medida: item.unidade_medida });
+                }
             }
 
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td>${item.nome}</td>
-                <td>${item.unidade_medida}</td>
-                <td>${estoqueAtual.toFixed(2).replace('.', ',')}</td>
-                <td>${estoqueMinimo.toFixed(2).replace('.', ',')}</td>
+                <td ${linhaClass}>${item.nome}</td>
+                <td ${linhaClass}>${item.unidade_medida}</td>
+                <td ${linhaClass}>${estoqueAtual.toFixed(2).replace('.', ',')}</td>
+                <td ${linhaClass}>${estoqueMinimo.toFixed(2).replace('.', ',')}</td>
                 <td>
                     <span class="badge pdf-badge-${statusClass}" style="
                         ${statusClass === 'success' ? 'background: #d4edda; color: #155724;' : ''}
                         ${statusClass === 'warning' ? 'background: #fff3cd; color: #856404;' : ''}
                         ${statusClass === 'danger' ? 'background: #f8d7da; color: #721c24;' : ''}
+                        ${statusClass === 'info' ? 'background: #e3f2fd; color: #1565c0;' : ''}
                         padding: 4px 8px; border-radius: 12px; font-size: 0.8rem;
                     ">
                         ${statusText}
                     </span>
+                </td>
+                <td>
+                    <button class="btn btn-edit btn-sm" onclick="editarIngrediente('${item.id}')" title="Editar">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-danger btn-sm" onclick="excluirIngrediente('${item.id}', '${item.nome}')" title="Excluir">
+                        <i class="fas fa-trash"></i>
+                    </button>
                 </td>
             `;
             estoqueProducaoBody.appendChild(tr);
@@ -395,7 +411,6 @@ document.addEventListener('DOMContentLoaded', async function () {
         // Exibir alertas de compra
         if (itensParaComprar.length > 0) {
             const listaAlerta = document.createElement('div');
-            // Usando a classe 'card' para manter o estilo visual
             listaAlerta.className = 'card'
             listaAlerta.style.cssText = `background: #fff3cd; border-left: 4px solid #ff9800; padding: 15px; margin-bottom: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);`;
             
@@ -408,7 +423,6 @@ document.addEventListener('DOMContentLoaded', async function () {
                 
                 let mensagemFalta = '';
                 if (item.status === 'ESGOTADO') {
-                    // Se esgotado, a falta é o estoque mínimo (deve-se comprar pelo menos o mínimo)
                     mensagemFalta = `(Deveria ter pelo menos ${item.falta.toFixed(2).replace('.', ',')} ${item.unidade_medida})`
                 } else {
                     mensagemFalta = `(Faltam ${falta} ${item.unidade_medida} para atingir o estoque mínimo)`;
@@ -427,9 +441,116 @@ document.addEventListener('DOMContentLoaded', async function () {
             alertaEstoqueProducao.appendChild(listaAlerta);
         }
     }
+    
+    // --- CRUD FUNCTIONS ---
+    
+    async function salvarIngrediente(e) {
+        e.preventDefault();
+        
+        const isEdicao = !!document.getElementById('ingrediente-id-edicao').value;
+        const ingredienteId = document.getElementById('ingrediente-id-edicao').value;
+        
+        const nome = document.getElementById('ingrediente-nome').value.trim();
+        const unidade_medida = document.getElementById('ingrediente-unidade').value;
+        const estoque_atual = parseFloat(document.getElementById('ingrediente-atual').value);
+        const estoque_minimo = parseFloat(document.getElementById('ingrediente-minimo').value);
+        const ativo = document.getElementById('ingrediente-ativo').checked;
+        
+        if (!nome || !unidade_medida || isNaN(estoque_atual) || isNaN(estoque_minimo) || estoque_minimo < 0) {
+            mostrarMensagem('Preencha todos os campos corretamente.', 'error');
+            return;
+        }
+
+        const dadosIngrediente = {
+            nome,
+            unidade_medida,
+            estoque_atual,
+            estoque_minimo,
+            ativo
+        };
+        
+        try {
+            if (isEdicao) {
+                // Atualizar
+                const { error } = await supabase.from('estoque_producao')
+                    .update(dadosIngrediente)
+                    .eq('id', ingredienteId);
+                    
+                if (error) throw error;
+                mostrarMensagem('Ingrediente atualizado com sucesso!', 'success');
+            } else {
+                // Criar
+                const { error } = await supabase.from('estoque_producao')
+                    .insert([dadosIngrediente]);
+                    
+                if (error) throw error;
+                mostrarMensagem('Ingrediente cadastrado com sucesso!', 'success');
+            }
+            
+            fecharModalEstoque();
+            await carregarEstoqueProducao();
+
+        } catch (error) {
+            console.error('❌ Erro ao salvar ingrediente:', error);
+            let msg = 'Erro ao salvar ingrediente.';
+            if (error.code === '23505') {
+                msg = 'Erro: Já existe um ingrediente com este nome.';
+            } else if (error.message) {
+                msg += ' Detalhe: ' + error.message;
+            }
+            mostrarMensagem(msg, 'error');
+        }
+    }
+    
+    window.editarIngrediente = async function(ingredienteId) {
+        try {
+            const { data: ingrediente, error } = await supabase.from('estoque_producao')
+                .select('*')
+                .eq('id', ingredienteId)
+                .single();
+                
+            if (error) throw error;
+            
+            document.getElementById('ingrediente-id-edicao').value = ingrediente.id;
+            document.getElementById('ingrediente-nome').value = ingrediente.nome;
+            document.getElementById('ingrediente-unidade').value = ingrediente.unidade_medida;
+            // Garantir que os valores numéricos sejam formatados corretamente para o input
+            document.getElementById('ingrediente-atual').value = parseFloat(ingrediente.estoque_atual).toFixed(2);
+            document.getElementById('ingrediente-minimo').value = parseFloat(ingrediente.estoque_minimo).toFixed(2);
+            document.getElementById('ingrediente-ativo').checked = ingrediente.ativo;
+            
+            modalTituloEstoque.innerHTML = '<i class="fas fa-edit"></i> Editar Ingrediente';
+            modalEstoque.style.display = 'flex';
+            
+        } catch (error) {
+            console.error('❌ Erro ao carregar ingrediente para edição:', error);
+            mostrarMensagem('Erro ao carregar dados do ingrediente.', 'error');
+        }
+    }
+
+    window.excluirIngrediente = async function(ingredienteId, nomeIngrediente) {
+        if (!confirm(`Tem certeza que deseja excluir o ingrediente "${nomeIngrediente}"?\nEsta ação é irreversível!`)) {
+            return;
+        }
+
+        try {
+            const { error } = await supabase.from('estoque_producao')
+                .delete()
+                .eq('id', ingredienteId);
+                
+            if (error) throw error;
+            
+            mostrarMensagem(`Ingrediente "${nomeIngrediente}" excluído com sucesso!`, 'success');
+            await carregarEstoqueProducao();
+
+        } catch (error) {
+            console.error('❌ Erro ao excluir ingrediente:', error);
+            mostrarMensagem('Erro ao excluir ingrediente: ' + error.message, 'error');
+        }
+    }
 
     // ----------------------------------------------------------------------
-    // --- FUNÇÕES PDF CORRIGIDAS E MELHORADAS ---
+    // --- FUNÇÕES PDF, GRÁFICOS E OUTROS (MANTIDAS) ---
     // ----------------------------------------------------------------------
 
     const configPdf = {
@@ -490,22 +611,18 @@ document.addEventListener('DOMContentLoaded', async function () {
     };
 
     const getRelatorioBase = (dataInicioPDF, dataFimPDF) => {
-        // Usa os dados que já estão no dashboard, filtrando pelo período do PDF se diferente
         return vendasDoDashboard.filter(v => {
-            // Este filtro é menos preciso (apenas data), mas é um backup.
             const dataVenda = new Date(v.data_venda).toISOString().split('T')[0];
             return dataVenda >= dataInicioPDF && dataVenda <= dataFimPDF;
         });
     }
 
     async function gerarRelatorioPDF(tipoRelatorio) {
-        // Verificação robusta das dependências
         if (typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF === 'undefined') {
             mostrarMensagem('ERRO: Biblioteca jsPDF não carregada. Verifique a conexão com a internet.', 'error');
             return;
         }
 
-        // Pega as datas do filtro de PDF (que está sincronizado com o dashboard)
         let dataInicioPDF = document.getElementById('pdf-data-inicio').value || dataInicioDashboard;
         let dataFimPDF = document.getElementById('pdf-data-fim').value || dataFimDashboard;
         
@@ -529,7 +646,6 @@ document.addEventListener('DOMContentLoaded', async function () {
             
             let startY = setupDoc(doc, `Relatório de ${getTituloRelatorio(tipoRelatorio)}`, dataInicioPDF, dataFimPDF);
             
-            // Adicionar resumo executivo
             startY = adicionarResumoExecutivo(doc, dadosBase, startY);
             
             switch (tipoRelatorio) {
@@ -551,7 +667,6 @@ document.addEventListener('DOMContentLoaded', async function () {
 
             addFooter(doc, startY);
             
-            // Salvar o PDF
             doc.save(`Relatorio_${getTituloRelatorio(tipoRelatorio)}_${dataInicioPDF}_a_${dataFimPDF}.pdf`);
             mostrarMensagem(`Relatório de ${getTituloRelatorio(tipoRelatorio)} gerado com sucesso!`, 'success');
             
@@ -599,8 +714,6 @@ document.addEventListener('DOMContentLoaded', async function () {
         
         return startY + 10 + (resumoLines.length * 5) + 10;
     }
-
-    // --- IMPLEMENTAÇÃO DOS RELATÓRIOS ---
 
     function gerarRelatorioGeral(doc, dadosBase, startY) {
          const head = [["Data/Hora", "Vendedor", "Pagamento", "Bruto", "Taxa", "Líquido"]];
