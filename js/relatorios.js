@@ -8,9 +8,14 @@ document.addEventListener('DOMContentLoaded', async function () {
     const loadingElement = document.getElementById('loading');
     const contentElement = document.getElementById('content');
     const acessoNegadoElement = document.getElementById('acesso-negado');
+    const estoqueProducaoBody = document.getElementById('estoque-producao-body'); // NOVO
+    const alertaEstoqueProducao = document.getElementById('alerta-estoque-producao'); // NOVO
+    const recarregarEstoqueBtn = document.getElementById('recarregar-estoque-producao'); // NOVO
+
     let charts = {};
 
     let vendasDoDashboard = [];
+    let estoqueProducaoData = []; // NOVO
     let dataInicioDashboard, dataFimDashboard;
     let taxaDebitoAtual = 0;
     let taxaCreditoAtual = 0;
@@ -21,7 +26,9 @@ document.addEventListener('DOMContentLoaded', async function () {
         const container = document.getElementById('alert-container');
         if (!container) return;
         const alertDiv = document.createElement('div');
-        alertDiv.className = `alert alert-${tipo}`;
+        // Usar as classes de alerta do style.css ou customizadas no relatorios.css
+        alertDiv.className = `alert alert-${tipo}`; 
+        alertDiv.innerHTML = `<span>${mensagem}</span><button class="alert-close" onclick="this.parentElement.remove()">&times;</button>`;
         container.appendChild(alertDiv);
         setTimeout(() => { if (alertDiv.parentNode) alertDiv.remove(); }, 5000);
     };
@@ -36,7 +43,8 @@ document.addEventListener('DOMContentLoaded', async function () {
         return;
     }
     const usuario = window.sistemaAuth.usuarioLogado;
-    if (!['administrador', 'admin', 'gerente'].includes(usuario.tipo?.toLowerCase())) {
+    // Permissão de acesso estendida para a nova aba
+    if (!['administrador', 'admin', 'gerente', 'supervisor'].includes(usuario.tipo?.toLowerCase())) {
         toggleDisplay(loadingElement, false);
         toggleDisplay(contentElement, false);
         toggleDisplay(acessoNegadoElement, true);
@@ -45,6 +53,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     // --- SUPABASE: TAXAS ---
     async function salvarTaxas() {
+        // ... (código existente para salvar taxas)
         const novaTaxaDebito = document.getElementById('taxa-debito').value;
         const novaTaxaCredito = document.getElementById('taxa-credito').value;
         
@@ -70,7 +79,8 @@ document.addEventListener('DOMContentLoaded', async function () {
     }
 
     async function buscarTaxasDoBanco() {
-        try {
+        // ... (código existente para buscar taxas)
+         try {
             const { data, error } = await supabase.from('configuracoes')
                 .select('taxa_debito, taxa_credito')
                 .limit(1)
@@ -97,12 +107,22 @@ document.addEventListener('DOMContentLoaded', async function () {
         await buscarTaxasDoBanco();
         configurarFiltrosEEventos();
         await carregarDadosEAtualizarDashboard();
+        
+        // NOVO: Carregar dados iniciais para a nova aba
+        await carregarEstoqueProducao();
+
         toggleLoading(false);
     }
 
     function configurarFiltrosEEventos() {
         document.getElementById('aplicar-filtro').addEventListener('click', carregarDadosEAtualizarDashboard);
         document.getElementById('salvar-taxas').addEventListener('click', salvarTaxas);
+        
+        // NOVO EVENT LISTENER
+        if (recarregarEstoqueBtn) {
+            recarregarEstoqueBtn.addEventListener('click', carregarEstoqueProducao);
+        }
+
 
         atualizarDatasPorPeriodo('hoje');
 
@@ -126,6 +146,11 @@ document.addEventListener('DOMContentLoaded', async function () {
                 button.classList.add('active');
                 const targetPane = document.getElementById(`tab-${button.dataset.tab}`);
                 if (targetPane) targetPane.classList.add('active');
+                
+                // NOVO: Recarregar dados se a aba de estoque de produção for ativada
+                if (button.dataset.tab === 'estoque-producao') {
+                    carregarEstoqueProducao();
+                }
             });
         });
     }
@@ -183,10 +208,10 @@ document.addEventListener('DOMContentLoaded', async function () {
         document.getElementById('pdf-data-inicio').value = formatarParaInput(inicio);
         document.getElementById('pdf-data-fim').value = formatarParaInput(fim);
     }
-
-    // --- CARREGAMENTO DE DADOS ---
+    
+    // --- CARREGAMENTO DE DADOS (VENDAS) ---
     async function carregarDadosEAtualizarDashboard() {
-        let dataInicioInput = document.getElementById('data-inicio').value;
+         let dataInicioInput = document.getElementById('data-inicio').value;
         let dataFimInput = document.getElementById('data-fim').value;
 
         if (!dataInicioInput || !dataFimInput) {
@@ -236,8 +261,9 @@ document.addEventListener('DOMContentLoaded', async function () {
             }
         }
     }
-
-    // --- DASHBOARD PRINCIPAL ---
+    
+    // --- DASHBOARD PRINCIPAL (KPIs e Gráficos) ---
+    
     function calcularTaxaVenda(venda) {
         if (venda.forma_pagamento === 'cartao_debito') return venda.total * (taxaDebitoAtual / 100);
         if (venda.forma_pagamento === 'cartao_credito') return venda.total * (taxaCreditoAtual / 100);
@@ -279,6 +305,129 @@ document.addEventListener('DOMContentLoaded', async function () {
         atualizarTabelaVendasRecentes(dados);
     }
     
+    // ----------------------------------------------------------------------
+    // --- NOVO MÓDULO: ESTOQUE DE PRODUÇÃO ---
+    // ----------------------------------------------------------------------
+
+    async function carregarEstoqueProducao() {
+        if (!estoqueProducaoBody) return;
+        
+        estoqueProducaoBody.innerHTML = '<tr><td colspan="5" style="text-align:center;"><div class="spinner-moderno" style="width: 20px; height: 20px;"></div> Carregando estoque...</td></tr>';
+        alertaEstoqueProducao.innerHTML = ''; // Limpar alertas
+
+        try {
+            const { data, error } = await supabase.from('estoque_producao')
+                .select('*')
+                .eq('ativo', true)
+                .order('nome');
+
+            if (error) throw error;
+            
+            estoqueProducaoData = data || [];
+            exibirEstoqueProducao(estoqueProducaoData);
+            
+            if (recarregarEstoqueBtn) {
+                recarregarEstoqueBtn.classList.remove('btn-danger');
+                recarregarEstoqueBtn.classList.add('btn-secondary');
+            }
+            
+        } catch (error) {
+            console.error('❌ Erro ao carregar estoque de produção:', error);
+            mostrarMensagem('Erro ao carregar o estoque de produção. Verifique se a tabela foi criada corretamente.', 'error');
+            estoqueProducaoBody.innerHTML = '<tr><td colspan="5" style="text-align:center; color: var(--danger-color);">Erro ao carregar estoque.</td></tr>';
+            
+            if (recarregarEstoqueBtn) {
+                recarregarEstoqueBtn.classList.add('btn-danger');
+                recarregarEstoqueBtn.classList.remove('btn-secondary');
+            }
+        }
+    }
+
+    function exibirEstoqueProducao(dados) {
+        if (!estoqueProducaoBody) return;
+
+        estoqueProducaoBody.innerHTML = '';
+        alertaEstoqueProducao.innerHTML = '';
+        let itensParaComprar = [];
+
+        if (dados.length === 0) {
+            estoqueProducaoBody.innerHTML = '<tr><td colspan="5" style="text-align:center; color: var(--text-color);">Nenhum ingrediente ativo cadastrado.</td></tr>';
+            return;
+        }
+
+        dados.forEach(item => {
+            const estoqueAtual = item.estoque_atual || 0;
+            const estoqueMinimo = item.estoque_minimo || 0;
+            let statusText = 'Em Estoque';
+            let statusClass = 'success'; // Usa classes de cores existentes ou padrões
+
+            if (estoqueAtual <= 0) {
+                statusText = 'ESGOTADO';
+                statusClass = 'danger';
+                // Armazena a diferença entre 0 e o mínimo para indicar o quanto PRECISA comprar (o mínimo)
+                itensParaComprar.push({ item: item.nome, status: statusText, falta: estoqueMinimo, unidade_medida: item.unidade_medida });
+            } else if (estoqueAtual <= estoqueMinimo) {
+                statusText = 'Estoque Baixo';
+                statusClass = 'warning';
+                itensParaComprar.push({ item: item.nome, status: statusText, falta: estoqueMinimo - estoqueAtual, unidade_medida: item.unidade_medida });
+            }
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${item.nome}</td>
+                <td>${item.unidade_medida}</td>
+                <td>${estoqueAtual.toFixed(2).replace('.', ',')}</td>
+                <td>${estoqueMinimo.toFixed(2).replace('.', ',')}</td>
+                <td>
+                    <span class="badge pdf-badge-${statusClass}" style="
+                        ${statusClass === 'success' ? 'background: #d4edda; color: #155724;' : ''}
+                        ${statusClass === 'warning' ? 'background: #fff3cd; color: #856404;' : ''}
+                        ${statusClass === 'danger' ? 'background: #f8d7da; color: #721c24;' : ''}
+                        padding: 4px 8px; border-radius: 12px; font-size: 0.8rem;
+                    ">
+                        ${statusText}
+                    </span>
+                </td>
+            `;
+            estoqueProducaoBody.appendChild(tr);
+        });
+        
+        // Exibir alertas de compra
+        if (itensParaComprar.length > 0) {
+            const listaAlerta = document.createElement('div');
+            // Usando a classe 'card' para manter o estilo visual
+            listaAlerta.className = 'card'
+            listaAlerta.style.cssText = `background: #fff3cd; border-left: 4px solid #ff9800; padding: 15px; margin-bottom: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);`;
+            
+            let htmlAlerta = '<p style="font-weight: bold; color: #856404; margin-bottom: 10px;">🚨 ITENS A SEREM COMPRADOS IMEDIATAMENTE:</p>';
+            htmlAlerta += '<ul style="margin-left: 20px; color: #856404; font-size: 0.9rem; list-style-type: disc;">';
+            
+            itensParaComprar.forEach(item => {
+                const acao = item.status === 'ESGOTADO' ? 'COMPRAR JÁ' : 'Comprar para reposição';
+                const falta = item.falta > 0 ? item.falta.toFixed(2).replace('.', ',') : '0,00';
+                
+                let mensagemFalta = '';
+                if (item.status === 'ESGOTADO') {
+                    // Se esgotado, a falta é o estoque mínimo (deve-se comprar pelo menos o mínimo)
+                    mensagemFalta = `(Deveria ter pelo menos ${item.falta.toFixed(2).replace('.', ',')} ${item.unidade_medida})`
+                } else {
+                    mensagemFalta = `(Faltam ${falta} ${item.unidade_medida} para atingir o estoque mínimo)`;
+                }
+                
+                htmlAlerta += `<li style="margin-bottom: 5px;">
+                    <strong>${item.item}:</strong> ${item.status}. 
+                    ${mensagemFalta}
+                    <span style="font-weight: bold; color: ${item.status === 'ESGOTADO' ? 'var(--danger-color)' : 'orange'}; margin-left: 10px;">[${acao}]</span>
+                </li>`;
+            });
+            
+            htmlAlerta += '</ul>';
+            
+            listaAlerta.innerHTML = htmlAlerta;
+            alertaEstoqueProducao.appendChild(listaAlerta);
+        }
+    }
+
     // ----------------------------------------------------------------------
     // --- FUNÇÕES PDF CORRIGIDAS E MELHORADAS ---
     // ----------------------------------------------------------------------
@@ -349,7 +498,6 @@ document.addEventListener('DOMContentLoaded', async function () {
         });
     }
 
-    // --- GERAÇÃO DE PDF CORRIGIDA ---
     async function gerarRelatorioPDF(tipoRelatorio) {
         // Verificação robusta das dependências
         if (typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF === 'undefined') {
@@ -455,7 +603,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     // --- IMPLEMENTAÇÃO DOS RELATÓRIOS ---
 
     function gerarRelatorioGeral(doc, dadosBase, startY) {
-        const head = [["Data/Hora", "Vendedor", "Pagamento", "Bruto", "Taxa", "Líquido"]];
+         const head = [["Data/Hora", "Vendedor", "Pagamento", "Bruto", "Taxa", "Líquido"]];
         const body = dadosBase.map(v => {
             const taxa = calcularTaxaVenda(v);
             const liquido = v.total - taxa;
@@ -507,7 +655,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     }
 
     function gerarRelatorioPagamento(doc, dadosBase, startY) {
-        const agrupado = dadosBase.reduce((acc, v) => {
+         const agrupado = dadosBase.reduce((acc, v) => {
             const forma = v.forma_pagamento || 'dinheiro';
             acc[forma] = acc[forma] || { bruto: 0, taxas: 0, liquido: 0, transacoes: 0 };
             const taxa = calcularTaxaVenda(v);
@@ -608,7 +756,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     }
 
     function gerarRelatorioProduto(doc, dadosBase, startY) {
-        const produtos = {};
+         const produtos = {};
         dadosBase.forEach(venda => {
             (venda.itens || []).forEach(item => {
                 const nome = item.produto?.nome || 'Produto Removido';
