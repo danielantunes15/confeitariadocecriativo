@@ -45,6 +45,83 @@ document.addEventListener('DOMContentLoaded', async function() {
     let clientes = [];
     let encomendas = [];
 
+    // Elementos e funções auxiliares para o novo modal de pagamento
+    const modalPagamento = document.getElementById('modal-pagamento-encomenda');
+    const formPagamento = document.getElementById('form-pagamento-encomenda');
+    const pagamentoValorPendente = document.getElementById('pagamento-valor-pendente');
+    const pagamentoForma = document.getElementById('pagamento-forma');
+    const pagamentoEncomendaId = document.getElementById('pagamento-encomenda-id');
+    
+    window.fecharModalPagamento = () => {
+        if (modalPagamento) modalPagamento.style.display = 'none';
+        if (formPagamento) formPagamento.reset();
+    };
+    
+    window.abrirModalPagamento = (encomendaId) => {
+        const encomenda = encomendas.find(enc => enc.id === encomendaId);
+        if (!encomenda) {
+            mostrarMensagem('Encomenda não encontrada.', 'error');
+            return;
+        }
+
+        const valorPendente = (encomenda.valor_total - encomenda.sinal_pago);
+        if (valorPendente <= 0) {
+             mostrarMensagem('O saldo desta encomenda já está zerado. Marque como concluída diretamente.', 'info');
+             marcarEncomendaComoConcluida(encomendaId);
+             return;
+        }
+
+        pagamentoEncomendaId.value = encomenda.id;
+        pagamentoValorPendente.textContent = `R$ ${valorPendente.toFixed(2).replace('.', ',')}`;
+        if (modalPagamento) modalPagamento.style.display = 'flex';
+    };
+    
+    async function confirmarPagamentoSaldo(event) {
+        event.preventDefault();
+
+        const encomendaId = pagamentoEncomendaId.value;
+        const formaPagamentoSaldo = pagamentoForma.value;
+        
+        const encomenda = encomendas.find(enc => enc.id === encomendaId);
+        if (!encomenda) return mostrarMensagem('Erro: Encomenda não encontrada.', 'error');
+
+        const valorPendente = (encomenda.valor_total - encomenda.sinal_pago);
+        
+        try {
+            // 1. Registrar o pagamento final como Venda (APENAS se houver valor pendente)
+            if (valorPendente > 0) {
+                const vendaData = {
+                    data_venda: new Date().toISOString().split('T')[0],
+                    cliente: encomenda.cliente?.nome || 'Cliente não identificado',
+                    cliente_id: encomenda.cliente_id, 
+                    total: valorPendente,
+                    forma_pagamento: formaPagamentoSaldo, // USAR FORMA DE PAGAMENTO DO MODAL
+                    observacoes: `Pagamento Saldo ref. Encomenda #${encomenda.id}`, 
+                    usuario_id: usuario.id
+                };
+
+                if (window.vendasSupabase) {
+                    // Criei uma venda para que o valor entre no Caixa e Relatórios corretamente
+                    await window.vendasSupabase.criarVenda(vendaData);
+                    mostrarMensagem(`Saldo de R$ ${valorPendente.toFixed(2)} registrado como Venda (${formaPagamentoSaldo})!`, 'info');
+                } else {
+                    console.error('Módulo VendasSupabase não encontrado. Registro de caixa falhou.');
+                }
+            }
+
+            // 2. Atualizar o status da encomenda para "paga"
+            await window.encomendasSupabase.atualizarStatusEncomenda(encomendaId, 'paga');
+
+            mostrarMensagem('Encomenda marcada como paga e saldo registrado com sucesso!', 'success');
+            window.fecharModalPagamento();
+            await carregarEncomendas();
+    
+        } catch (error) {
+            console.error('❌ ERRO AO REGISTRAR PAGAMENTO FINAL:', error);
+            mostrarMensagem('Erro ao registrar pagamento final: ' + error.message, 'error');
+        }
+    }
+
     // Funções auxiliares de UI
     const mostrarMensagem = (mensagem, tipo = 'info') => {
         const alertContainer = document.getElementById('alert-container');
@@ -194,7 +271,10 @@ document.addEventListener('DOMContentLoaded', async function() {
         `;
         container.appendChild(tabela);
 
-        tabela.querySelectorAll('.btn-acao.pago').forEach(btn => btn.addEventListener('click', () => marcarEncomendaComoPaga(btn.dataset.id)));
+        tabela.querySelectorAll('.btn-acao.pago').forEach(btn => btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            window.abrirModalPagamento(btn.dataset.id);
+        }));
         tabela.querySelectorAll('.btn-acao.concluido').forEach(btn => btn.addEventListener('click', () => marcarEncomendaComoConcluida(btn.dataset.id)));
         tabela.querySelectorAll('.btn-acao.editar').forEach(btn => btn.addEventListener('click', () => editarEncomenda(btn.dataset.id)));
         tabela.querySelectorAll('.btn-acao.excluir').forEach(btn => btn.addEventListener('click', () => excluirEncomenda(btn.dataset.id)));
@@ -250,6 +330,11 @@ document.addEventListener('DOMContentLoaded', async function() {
                 if (event.target === modalEdicaoEncomenda) modalEdicaoEncomenda.style.display = 'none';
             });
         }
+        
+        // NOVO: Listener para o formulário de pagamento
+        if (formPagamento) {
+            formPagamento.addEventListener('submit', confirmarPagamentoSaldo);
+        }
 
         editTipoEntrega.addEventListener('change', () => {
             editEnderecoEntregaGroup.style.display = editTipoEntrega.value === 'entrega' ? 'block' : 'none';
@@ -260,6 +345,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     async function criarEncomenda(event) {
         event.preventDefault();
         const sinalEncomenda = parseFloat(sinalEncomendaInput.value) || 0;
+        // NOVO: Capturar a forma de pagamento do sinal
+        const formaPagamentoSinal = document.getElementById('forma-pagamento-sinal').value;
         
         const encomendaData = {
             cliente_id: clienteEncomendaId.value,
@@ -280,20 +367,26 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         try {
             // 1. Criar a encomenda
-            await window.encomendasSupabase.criarEncomenda(encomendaData);
+            const novaEncomenda = await window.encomendasSupabase.criarEncomenda(encomendaData);
 
-            // 2. Registrar o sinal no caixa (APENAS se houver sinal)
+            // 2. Registrar o sinal como Venda (APENAS se houver sinal) para aparecer no Resumo do Caixa/Relatórios.
             if (sinalEncomenda > 0) {
-                const movimentacaoData = {
-                    data_caixa: new Date().toISOString().split('T')[0],
-                    tipo: 'entrada',
-                    valor: sinalEncomenda,
-                    descricao: `Adiantamento de encomenda (${clienteEncomendaSearch.value})`,
+                const vendaData = {
+                    data_venda: new Date().toISOString().split('T')[0],
+                    cliente: clienteEncomendaSearch.value,
+                    cliente_id: encomendaData.cliente_id, 
+                    total: sinalEncomenda,
+                    forma_pagamento: formaPagamentoSinal, // USAR FORMA DE PAGAMENTO DO CAMPO
+                    observacoes: `Adiantamento ref. Encomenda #${novaEncomenda.id}`, // REFERENCIAR ENCOMENDA
                     usuario_id: usuario.id
                 };
-                
-                console.log('DEBUG: Preparando para registrar ADIANTAMENTO no caixa:', movimentacaoData);
-                await window.encomendasSupabase.registrarMovimentacao(movimentacaoData);
+
+                if (window.vendasSupabase) {
+                    await window.vendasSupabase.criarVenda(vendaData);
+                    mostrarMensagem(`Sinal de R$ ${sinalEncomenda.toFixed(2)} registrado como Venda (${formaPagamentoSinal})!`, 'info');
+                } else {
+                    console.error('Módulo VendasSupabase não encontrado. Registro de venda falhou.');
+                }
             }
 
             mostrarMensagem(`Encomenda para ${clienteEncomendaSearch.value} criada com sucesso!`, 'success');
@@ -309,38 +402,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
     
     async function marcarEncomendaComoPaga(encomendaId) {
-        if (!confirm('Tem certeza que deseja marcar esta encomenda como paga? O pagamento será registrado no caixa.')) return;
-    
-        try {
-            const encomenda = encomendas.find(enc => enc.id === encomendaId);
-            if (!encomenda) throw new Error('Encomenda não encontrada.');
-    
-            const valorPendente = (encomenda.valor_total - encomenda.sinal_pago);
-    
-            // 1. Registrar o pagamento final no caixa (APENAS se houver valor pendente)
-            if (valorPendente > 0) {
-                const movimentacaoData = {
-                    data_caixa: new Date().toISOString().split('T')[0],
-                    tipo: 'entrada',
-                    valor: valorPendente,
-                    descricao: `Pagamento final da encomenda ${encomenda.cliente?.nome || 'Cliente não identificado'}`,
-                    usuario_id: window.sistemaAuth.usuarioLogado.id
-                };
-    
-                console.log('DEBUG: Preparando para registrar PAGAMENTO FINAL no caixa:', movimentacaoData);
-                await window.encomendasSupabase.registrarMovimentacao(movimentacaoData);
-            }
-    
-            // 2. Atualizar o status da encomenda para "paga"
-            await window.encomendasSupabase.atualizarStatusEncomenda(encomendaId, 'paga');
-    
-            mostrarMensagem('Encomenda marcada como paga e pagamento registrado com sucesso!', 'success');
-            await carregarEncomendas();
-    
-        } catch (error) {
-            console.error('❌ ERRO AO MARCAR ENCOMENDA COMO PAGA:', error);
-            mostrarMensagem('Erro ao marcar encomenda como paga: ' + error.message, 'error');
-        }
+        // Esta função agora apenas abrirá o modal de pagamento, 
+        // pois a lógica de registro foi movida para confirmarPagamentoSaldo()
+        window.abrirModalPagamento(encomendaId);
     }
 
     async function marcarEncomendaComoConcluida(encomendaId) {
