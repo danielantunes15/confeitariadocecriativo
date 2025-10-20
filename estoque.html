@@ -45,7 +45,7 @@
                     <a href="administracao.html" class="nav-link">
                         <i class="fas fa-cog"></i>
                         <span>Administração</span>
-                    </button>
+                    </a>
                     <button id="logout-btn" class="btn-logout">
                         <i class="fas fa-sign-out-alt"></i>
                         <span>Sair</span>
@@ -214,8 +214,10 @@
 
     <div id="modal-editar-produto" class="modal">
         <div class="modal-content">
-            <span class="close">&times;</span>
-            <h3>Editar Produto</h3>
+            <div class="modal-header">
+                <h3>Editar Produto</h3>
+                <span class="close">&times;</span>
+            </div>
             <form id="form-editar-produto">
                 <input type="hidden" id="editar-produto-id" />
                 <div class="form-row">
@@ -279,8 +281,10 @@
 
     <div id="modal-nova-categoria" class="modal">
         <div class="modal-content">
-            <span class="close">&times;</span>
-            <h3>Nova Categoria</h3>
+            <div class="modal-header">
+                <h3>Nova Categoria</h3>
+                <span class="close">&times;</span>
+            </div>
             <form id="form-nova-categoria">
                 <div class="form-group">
                     <label for="categoria-nome">Nome da Categoria *</label>
@@ -318,8 +322,10 @@
 
     <div id="modal-editar-categoria" class="modal">
     <div class="modal-content">
-        <span class="close">&times;</span>
-        <h3>Editar Categoria</h3>
+        <div class="modal-header">
+            <h3>Editar Categoria</h3>
+            <span class="close">&times;</span>
+        </div>
         <form id="form-editar-categoria">
             <input type="hidden" id="editar-categoria-id" />
             <div class="form-group">
