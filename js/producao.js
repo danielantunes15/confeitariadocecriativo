@@ -43,7 +43,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         return;
     }
     const usuario = window.sistemaAuth.usuarioLogado;
-    const isAdminOrManager = ['administrador', 'admin', 'gerente', 'supervisor'].includes(usuario.tipo?.toLowerCase());
+    const isAdminOrManager = ['usuario','administrador', 'admin', 'gerente', 'supervisor'].includes(usuario.tipo?.toLowerCase());
     
     async function inicializar() {
         toggleDisplay(loadingElement, true);
