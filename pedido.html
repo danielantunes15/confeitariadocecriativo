@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Faça seu Pedido - Confeitaria Doces Criativos</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/vendas.css">
+    <link rel="stylesheet" href="css/responsive.css">
+    <link rel="stylesheet" href="css/pedido.css">
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="pedido-body">
+    <header class="header">
+        <div class="container">
+            <div class="header-content-publico">
+                <h1 class="logo">Doce Criativo</h1>
+                <p class="slogan-publico">Seu cardápio digital</p>
+            </div>
+        </div>
+    </header>
+
+    <main class="main">
+        <div class="container">
+            <div id="alert-container"></div>
+
+            <section class="categorias">
+                <h2>Categorias</h2>
+                <div class="categorias-botoes" id="categorias-container">
+                    <div class="loading-container"><div class="spinner"></div></div>
+                </div>
+            </section>
+
+            <section class="produtos">
+                <h2>Cardápio</h2>
+                <div class="produtos-grid" id="produtos-container">
+                    <div class="loading-container"><div class="spinner"></div></div>
+                </div>
+            </section>
+
+            <section class="carrinho">
+                <h2><i class="fas fa-shopping-bag"></i> Minha Sacola</h2>
+                <div class="carrinho-itens" id="carrinho-itens">
+                    <p style="text-align: center; color: #666;">Sua sacola está vazia.</p>
+                </div>
+                <div class="carrinho-total">
+                    <strong>Total: R$ <span id="total-carrinho">0,00</span></strong>
+                </div>
+            </section>
+
+            <section class="card-pedido">
+                <h2><i class="fas fa-user-alt"></i> 1. Seus Dados</h2>
+                <form id="form-cliente">
+                    <div class="form-group">
+                        <label for="cliente-nome">Seu Nome *</label>
+                        <input type="text" id="cliente-nome" placeholder="Digite seu nome" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="cliente-telefone">Seu WhatsApp *</label>
+                        <input type="tel" id="cliente-telefone" placeholder="(99) 99999-9999" required>
+                    </div>
+                </form>
+            </section>
+
+            <section class="card-pedido">
+                <h2><i class="fas fa-map-marker-alt"></i> 2. Endereço de Entrega</h2>
+                <form id="form-entrega">
+                    <div class="form-group">
+                        <label for="cliente-endereco">Endereço Completo *</label>
+                        <textarea id="cliente-endereco" rows="3" placeholder="Ex: Rua das Flores, 123, Bairro, Cidade (Ponto de referência)" required></textarea>
+                    </div>
+                </form>
+            </section>
+
+            <section class="pagamento">
+                <h2><i class="fas fa-money-check-alt"></i> 3. Forma de Pagamento</h2>
+                <div class="opcoes-pagamento">
+                    <label class="pagamento-opcao">
+                        <input type="radio" name="pagamento" value="Dinheiro" checked>
+                        <span class="pagamento-icone">💵</span>
+                        <span class="pagamento-texto">
+                            <span class="pagamento-titulo">Dinheiro</span>
+                            <span class="pagamento-descricao">Pagar na entrega</span>
+                        </span>
+                    </label>
+                    <label class="pagamento-opcao">
+                        <input type="radio" name="pagamento" value="PIX">
+                        <span class="pagamento-icone">📱</span>
+                        <span class="pagamento-texto">
+                            <span class="pagamento-titulo">PIX</span>
+                            <span class="pagamento-descricao">Pagar na entrega</span>
+                        </span>
+                    </label>
+                    <label class="pagamento-opcao">
+                        <input type="radio" name="pagamento" value="Cartão (Maquininha)">
+                        <span class="pagamento-icone">💳</span>
+                        <span class="pagamento-texto">
+                            <span class="pagamento-titulo">Cartão (Maquininha)</span>
+                            <span class="pagamento-descricao">Débito ou Crédito na entrega</span>
+                        </span>
+                    </label>
+                </div>
+            </section>
+
+            <section class="finalizar">
+                <button id="enviar-pedido-whatsapp" class="btn-whatsapp">
+                    <i class="fab fa-whatsapp"></i> Enviar Pedido pelo WhatsApp
+                </button>
+            </section>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>Confeitaria Doces Criativos - © 2025</p>
+        </div>
+    </footer>
+    
+    <script>
+        // Configuração do Supabase (A mesma do seu index.html)
+        const SUPABASE_URL = 'https://jdfijbhlujoiuraoxivb.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpkZmlqYmhsdWpvaXVyYW94aXZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg4NDE3MzgsImV4cCI6MjA3NDQxNzczOH0.yEMThoZdXPx1aNCO1a6wO-FPoMU-gTgxJlsW883rKvc';
+        window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    </script>
+
+    <script src="js/supabase-vendas.js"></script>
+    <script src="js/pedido.js"></script>
+
+</body>
+</html>
