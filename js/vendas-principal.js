@@ -23,14 +23,24 @@ document.addEventListener('DOMContentLoaded', async function() {
     const saldoPendenteMisto = document.getElementById('saldo-pendente-misto');
     const mensagemPagamentosIniciais = document.getElementById('mensagem-pagamentos-iniciais');
     
+    // Elementos de Desconto/Acréscimo (NOVOS)
+    const tipoAjusteSelect = document.getElementById('tipo-ajuste');
+    const valorAjusteInput = document.getElementById('valor-ajuste');
+    const aplicarAjusteBtn = document.getElementById('aplicar-ajuste-btn');
+    const totalAjustadoSpan = document.getElementById('valor-total-ajustado');
+    
     // Variáveis globais
     let categorias = [];
     let produtos = [];
     let clientes = [];
     let carrinho = [];
-    let pagamentos = []; // NOVO: Array para armazenar múltiplos pagamentos
+    let pagamentos = []; 
     let categoriaSelecionada = 'todos';
     
+    // NOVO ESTADO GLOBAL DE AJUSTE
+    let ajusteTipo = 'desconto'; // 'desconto' ou 'acrescimo'
+    let ajustePercentual = 0;
+
     // Funções auxiliares globais
     const formatarMoeda = (valor) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor || 0);
 
@@ -40,44 +50,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             'cartao_debito': 'Cartão Débito',
             'cartao_credito': 'Cartão Crédito',
             'pix': 'PIX',
+            'crediario': 'Crediário', // NOVO: Crediario
             'misto': 'Misto'
         };
         return formas[forma] || forma;
-    };
-
-    const mostrarMensagem = (mensagem, tipo = 'info') => {
-        const alertContainer = document.getElementById('alert-container');
-        if (!alertContainer) {
-            console.error('Container de alertas não encontrado');
-            return;
-        }
-        // ... (restante da função mostrarMensagem)
-        const alertDiv = document.createElement('div');
-        alertDiv.className = `alert alert-${tipo}`;
-        const cores = {
-            success: { bg: '#e8f5e9', color: '#2e7d32', border: '#c8e6c9' },
-            error: { bg: '#ffebee', color: '#c62828', border: '#ffcdd2' },
-            warning: { bg: '#fff3e0', color: '#ef6c00', border: '#ffe0b2' },
-            info: { bg: '#e3f2fd', color: '#1565c0', border: '#bbdefb' }
-        };
-        const cor = cores[tipo] || cores.info;
-        alertDiv.style.backgroundColor = cor.bg;
-        alertDiv.style.color = cor.color;
-        alertDiv.style.border = `1px solid ${cor.border}`;
-        alertDiv.innerHTML = `
-            <div class="alert-content" style="flex: 1; display: flex; align-items: center; gap: 0.5rem;">
-                <i class="fas ${tipo === 'success' ? 'fa-check-circle' : tipo === 'error' ? 'fa-exclamation-circle' : tipo === 'warning' ? 'fa-exclamation-triangle' : 'fa-info-circle'}"></i>
-                <span>${mensagem}</span>
-            </div>
-            <button class="alert-close" style="background: none; border: none; font-size: 1.2rem; cursor: pointer; color: inherit; padding: 0; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;">&times;</button>
-        `;
-        alertContainer.appendChild(alertDiv);
-        setTimeout(() => {
-            if (alertDiv.parentNode) {
-                alertDiv.remove();
-            }
-        }, 5000);
-        alertDiv.querySelector('.alert-close').addEventListener('click', () => alertDiv.remove());
     };
 
     const adicionarAoCarrinho = (produto) => {
@@ -101,9 +77,24 @@ document.addEventListener('DOMContentLoaded', async function() {
         mostrarMensagem(`${produto.nome} adicionado ao carrinho!`, 'success');
     };
     
-    // Calcula o total do carrinho
-    const getCartTotal = () => {
+    // NOVO: Calcula o total BRUTO do carrinho
+    const getGrossTotal = () => {
         return carrinho.reduce((sum, item) => sum + (item.produto.preco_venda * item.quantidade), 0);
+    };
+    
+    // NOVO: Calcula o total AJUSTADO (final)
+    const getAdjustedTotal = () => {
+        const grossTotal = getGrossTotal();
+        const percentual = ajustePercentual / 100;
+        let finalTotal = grossTotal;
+
+        if (ajusteTipo === 'desconto') {
+            finalTotal = grossTotal * (1 - percentual);
+        } else if (ajusteTipo === 'acrescimo') {
+            finalTotal = grossTotal * (1 + percentual);
+        }
+
+        return parseFloat(Math.max(0, finalTotal).toFixed(2)); // Garante que o total não seja negativo e tenha 2 casas decimais
     };
     
     // Calcula o total já pago
@@ -112,7 +103,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     };
 
     const atualizarCarrinho = () => {
-        const total = getCartTotal();
+        const grossTotal = getGrossTotal();
+        const adjustedTotal = getAdjustedTotal();
 
         if (carrinho.length === 0) {
             carrinhoItens.innerHTML = `
@@ -122,6 +114,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 </div>
             `;
             totalCarrinho.textContent = '0,00';
+            totalAjustadoSpan.textContent = 'R$ 0,00';
             finalizarPedidoBtn.disabled = true;
         } else {
             carrinhoItens.innerHTML = '';
@@ -149,7 +142,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 `;
                 carrinhoItens.appendChild(itemElement);
             });
-            totalCarrinho.textContent = total.toFixed(2);
+            totalCarrinho.textContent = grossTotal.toFixed(2);
             finalizarPedidoBtn.disabled = false;
             document.querySelectorAll('.btn-remover').forEach(btn => btn.addEventListener('click', function() {
                 const index = parseInt(this.getAttribute('data-index'));
@@ -159,6 +152,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const index = parseInt(this.getAttribute('data-index'));
                 aumentarQuantidade(index);
             }));
+
+            // NOVO: Atualiza o total ajustado
+            totalAjustadoSpan.textContent = formatarMoeda(adjustedTotal);
         }
         
         // NOVO: Atualiza a seção de pagamentos
@@ -172,6 +168,13 @@ document.addEventListener('DOMContentLoaded', async function() {
         } else {
             carrinho.splice(index, 1);
         }
+        // Limpar pagamentos e resetar ajuste se o total mudar
+        pagamentos = [];
+        ajustePercentual = 0;
+        valorAjusteInput.value = 0;
+        ajusteTipo = 'desconto';
+        tipoAjusteSelect.value = 'desconto';
+        
         atualizarCarrinho();
         mostrarMensagem(`${produtoNome} removido do carrinho.`, 'info');
     };
@@ -185,15 +188,46 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     };
 
-    // --- NOVO: FUNÇÕES DE PAGAMENTO MISTO ---
+    // --- NOVO: FUNÇÕES DE AJUSTE (DESCONTO/ACRÉSCIMO) ---
+    
+    function aplicarAjuste() {
+        const valor = parseFloat(valorAjusteInput.value) || 0;
+        const tipo = tipoAjusteSelect.value;
+        const grossTotal = getGrossTotal();
+
+        if (valor < 0 || valor > 100) {
+            mostrarMensagem('O percentual deve ser entre 0 e 100.', 'error');
+            return;
+        }
+        
+        if (grossTotal === 0 && valor > 0) {
+             mostrarMensagem('Adicione produtos ao carrinho antes de aplicar ajustes.', 'error');
+            return;
+        }
+
+        ajusteTipo = tipo;
+        ajustePercentual = valor;
+        
+        // Limpar pagamentos, pois o total mudou
+        pagamentos = []; 
+
+        const adjustedTotal = getAdjustedTotal();
+        const diff = adjustedTotal - grossTotal;
+
+        mostrarMensagem(`${tipo === 'desconto' ? 'Desconto' : 'Acréscimo'} de ${valor}% aplicado. Ajuste: ${formatarMoeda(diff)}`, 'success');
+        
+        atualizarCarrinho();
+    }
+    
+    // --- FUNÇÕES DE PAGAMENTO MISTO ---
     
     function atualizarPagamentosMistos() {
-        const total = getCartTotal();
+        const total = getAdjustedTotal(); // Usa o total AJUSTADO
         const pago = getPaidTotal();
-        const saldo = total - pago;
+        const saldo = parseFloat((total - pago).toFixed(2));
         
         saldoPendenteMisto.textContent = `Saldo a Pagar: ${formatarMoeda(saldo)}`;
-        saldoPendenteMisto.classList.toggle('saldo-ok', saldo <= 0);
+        saldoPendenteMisto.classList.toggle('saldo-ok', saldo === 0);
         
         pagamentosAdicionadosContainer.innerHTML = '';
         
@@ -232,9 +266,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
     
     function adicionarPagamento() {
-        const total = getCartTotal();
+        const total = getAdjustedTotal();
         const pago = getPaidTotal();
-        const saldo = total - pago;
+        const saldo = parseFloat((total - pago).toFixed(2));
         
         if (total === 0) {
             mostrarMensagem('O carrinho está vazio. Adicione produtos antes de adicionar o pagamento.', 'error');
@@ -249,9 +283,17 @@ document.addEventListener('DOMContentLoaded', async function() {
             return;
         }
         
-        if (pago + valor > total) {
-            mostrarMensagem(`O valor excede o total do pedido. Saldo restante: ${formatarMoeda(saldo)}.`, 'error');
-            return;
+        const novoTotalPago = parseFloat((pago + valor).toFixed(2));
+
+        if (tipo === 'crediario' && novoTotalPago > total) {
+             // Crediário DEVE ser o valor exato (ou menor, mas nunca mais para não gerar troco)
+             mostrarMensagem(`O Crediário deve ser pago no valor exato do saldo pendente: ${formatarMoeda(saldo)}.`, 'error');
+             return;
+        }
+
+        if (novoTotalPago > total + 0.01 && tipo !== 'crediario') { 
+            // Permite pagar um pouco a mais (0.01) para troco em dinheiro/pix, se não for crediário
+            mostrarMensagem(`Aviso: O valor excede o total do pedido. Será calculado o troco.`, 'warning');
         }
 
         pagamentos.push({ tipo, valor });
@@ -267,9 +309,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
     
-    // --- FUNÇÕES DE CARREGAMENTO (inalteradas) ---
-    // ... (carregarCategorias, exibirCategorias, selecionarCategoria, carregarProdutos, exibirProdutos, carregarClientes, exibirClientesNaLista)
-    
+    // ... (carregarCategorias, exibirCategorias, selecionarCategoria, carregarProdutos, exibirProdutos, carregarClientes, exibirClientesNaLista inalteradas)
+
     const carregarCategorias = async () => {
         try {
             categorias = await window.vendasSupabase.buscarCategorias();
@@ -403,8 +444,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     };
 
     const finalizarPedido = async () => {
-        const total = getCartTotal();
+        const total = getAdjustedTotal();
         const pago = getPaidTotal();
+        const grossTotal = getGrossTotal();
 
         if (carrinho.length === 0) {
             mostrarMensagem('Adicione produtos ao carrinho antes de finalizar o pedido.', 'error');
@@ -413,6 +455,13 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         if (pagamentos.length === 0) {
              mostrarMensagem('Adicione pelo menos uma forma de pagamento.', 'error');
+            return;
+        }
+        
+        // Verifica se há crediário sem pagamento total
+        const hasCrediario = pagamentos.some(p => p.tipo === 'crediario');
+        if (hasCrediario && pago > 0.01) {
+            mostrarMensagem('Não é possível registrar pagamento misto junto com Crediário. Use Crediário como pagamento único ou zere o pagamento.', 'error');
             return;
         }
 
@@ -425,8 +474,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         const clienteNome = clienteSelect.options[clienteSelect.selectedIndex].dataset.nome;
         
         const formaPagamento = pagamentos.length > 1 ? 'misto' : pagamentos[0].tipo;
+        const troco = Math.max(0, pago - total);
 
-        if (!confirm(`Deseja finalizar o pedido com ${carrinho.length} item(s)?\n\nCliente: ${clienteNome}\nForma de pagamento: ${formaPagamento.toUpperCase()}\n\nTotal: ${formatarMoeda(total)}`)) {
+        if (!confirm(`Deseja finalizar o pedido com ${carrinho.length} item(s)?\n\nCliente: ${clienteNome}\nForma de pagamento: ${formaPagamento.toUpperCase()}\nTotal Final: ${formatarMoeda(total)}\nTroco: ${formatarMoeda(troco)}`)) {
             return;
         }
         
@@ -449,22 +499,38 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             const usuarioAtual = window.sistemaAuth.usuarioLogado;
             
-            // NOVO: Criar observação detalhada do pagamento misto
-            let observacoesPagamento = pagamentos.length > 1 ? 'Pagamento MISTO DETALHES:\n' : '';
-            pagamentos.forEach(p => {
-                observacoesPagamento += `• ${formatarFormaPagamento(p.tipo)}: ${formatarMoeda(p.valor)}\n`;
-            });
-            if (pago > total) {
-                 observacoesPagamento += `\nTROCO: ${formatarMoeda(pago - total)}`;
+            // NOVO: Criar observação detalhada do ajuste e pagamento
+            let observacoesVenda = '';
+            
+            if (ajustePercentual > 0) {
+                 observacoesVenda += `AJUSTE: ${ajusteTipo === 'desconto' ? 'Desconto' : 'Acréscimo'} de ${ajustePercentual}% (${formatarMoeda(total - grossTotal)}) \n`;
+                 observacoesVenda += `Total Bruto: ${formatarMoeda(grossTotal)}\n`;
+                 observacoesVenda += `Total Ajustado: ${formatarMoeda(total)}\n`;
             }
+            
+            if (pagamentos.length > 1 || troco > 0) {
+                 observacoesVenda += `\nPAGAMENTO DETALHADO:\n`;
+                 pagamentos.forEach(p => {
+                    observacoesVenda += `• ${formatarFormaPagamento(p.tipo)}: ${formatarMoeda(p.valor)}\n`;
+                 });
+                 if (troco > 0) {
+                     observacoesVenda += `\nTROCO DEVIDO: ${formatarMoeda(troco)}`;
+                 }
+            }
+            
+            // Crediário não deve registrar valor no caixa imediatamente
+            const valorTotalParaCaixa = pagamentos.filter(p => p.tipo !== 'crediario').reduce((sum, p) => sum + p.valor, 0) - troco;
+            
+            // Se for crediário, o total da venda deve ser 0 para o caixa, ou o valor pago se houver troco
+            const totalParaRegistroCaixa = formaPagamento === 'crediario' ? 0.00 : total; 
 
             const vendaData = {
                 data_venda: new Date().toISOString().split('T')[0],
                 cliente: clienteNome,
                 cliente_id: clienteId, 
-                total: total,
-                forma_pagamento: formaPagamento, // 'dinheiro', 'pix', 'misto', etc.
-                observacoes: observacoesPagamento,
+                total: totalParaRegistroCaixa, // Total para fins de CAIXA
+                forma_pagamento: formaPagamento, 
+                observacoes: observacoesVenda,
                 usuario_id: usuarioAtual.id
             };
 
@@ -490,15 +556,23 @@ document.addEventListener('DOMContentLoaded', async function() {
             let mensagem = `✅ Pedido finalizado com sucesso!\n\n`;
             mensagem += `📋 Número do Pedido: ${venda.id}\n`;
             mensagem += `👤 Cliente: ${clienteNome}\n`;
-            mensagem += `💳 Pagamento: ${formaPagamento.toUpperCase()}\n`;
-            mensagem += observacoesPagamento;
-            mensagem += `\n💰 Total: ${formatarMoeda(total)}`;
+            mensagem += `💰 Total Final: ${formatarMoeda(total)}\n`;
+            if (ajustePercentual > 0) {
+                 mensagem += `\n(${ajusteTipo === 'desconto' ? 'Desconto' : 'Acréscimo'} de ${ajustePercentual}%)`;
+            }
+            mensagem += `\nDetalhes de Pagamento:\n${observacoesVenda}`;
+            
             alert(mensagem);
             mostrarMensagem('✅ Pedido finalizado com sucesso!', 'success');
             
             // Resetar
             carrinho = [];
-            pagamentos = []; // Resetar pagamentos
+            pagamentos = []; 
+            ajustePercentual = 0;
+            valorAjusteInput.value = 0;
+            ajusteTipo = 'desconto';
+            tipoAjusteSelect.value = 'desconto';
+
             atualizarCarrinho();
             clienteSelect.value = '';
             
@@ -528,8 +602,14 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (finalizarPedidoBtn) finalizarPedidoBtn.addEventListener('click', finalizarPedido);
         document.getElementById('logout-btn')?.addEventListener('click', () => window.sistemaAuth.fazerLogout());
         
-        // NOVO: Evento para adicionar pagamento
+        // Evento para aplicar Desconto/Acréscimo
+        if (aplicarAjusteBtn) aplicarAjusteBtn.addEventListener('click', aplicarAjuste);
+        
+        // Evento para adicionar pagamento
         if (adicionarPagamentoBtn) adicionarPagamentoBtn.addEventListener('click', adicionarPagamento);
+        
+        // Atualiza ajusteTipo ao trocar o select
+        if (tipoAjusteSelect) tipoAjusteSelect.addEventListener('change', () => { ajusteTipo = tipoAjusteSelect.value; atualizarCarrinho(); });
     };
 
     // Função de inicialização

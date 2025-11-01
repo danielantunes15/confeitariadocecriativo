@@ -512,3 +512,33 @@ footer {
         margin-top: 0.5rem;
     }
 }
+
+
+/* ADDED FOR DESCONTO/ACRÉSCIMO SUPPORT */
+.desconto-acrescimo .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 1rem;
+    align-items: flex-end;
+}
+.desconto-acrescimo .form-control {
+    width: 100%;
+}
+.desconto-acrescimo .btn {
+    width: 100%;
+    padding: 12px 1rem;
+    font-size: 1rem;
+}
+@media (max-width: 600px) {
+    .desconto-acrescimo .form-row {
+        grid-template-columns: 1fr;
+    }
+}
+/* Reusing general section card style for consistency */
+section.desconto-acrescimo {
+    background-color: var(--branco);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
