@@ -67,13 +67,24 @@
 
             <header class="card">
                 <h2><i class="fas fa-motorcycle"></i> Painel de Pedidos Online</h2>
-                <div class="header-actions">
-                    <button id="recarregar-pedidos" class="btn btn-secondary">
-                        <i class="fas fa-sync-alt"></i> Recarregar
-                    </button>
-                    <a href="pedido.html" target="_blank" class="btn btn-primary">
-                        <i class="fas fa-external-link-alt"></i> Ver Cardápio Público
-                    </a>
+                
+                <div class="header-filters">
+                    <div class="filter-group">
+                        <label for="filtro-data">Filtrar por Data:</label>
+                        <input type="date" id="filtro-data">
+                    </div>
+                    <div class="search-group">
+                        <label for="filtro-busca">Buscar:</label>
+                        <input type="text" id="filtro-busca" placeholder="ID ou Nome do Cliente">
+                    </div>
+                    <div class="header-actions">
+                        <button id="recarregar-pedidos" class="btn btn-secondary">
+                            <i class="fas fa-sync-alt"></i> Recarregar
+                        </button>
+                        <a href="pedido.html" target="_blank" class="btn btn-primary">
+                            <i class="fas fa-external-link-alt"></i> Ver Cardápio Público
+                        </a>
+                    </div>
                 </div>
             </header>
             
@@ -97,6 +108,10 @@
                 </div>
                 <div id="col-entregue" class="delivery-column">
                     <h3><i class="fas fa-check-circle"></i> Entregue/Finalizado (0)</h3>
+                    <div class="card-list"></div>
+                </div>
+                <div id="col-cancelado" class="delivery-column" style="display: none;">
+                    <h3><i class="fas fa-times-circle"></i> Cancelado (0)</h3>
                     <div class="card-list"></div>
                 </div>
             </div>
@@ -131,6 +146,12 @@
         const SUPABASE_URL = 'https://jdfijbhlujoiuraoxivb.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpkZmlqYmhsdWpvaXVyYW94aXZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg4NDE3MzgsImV4cCI6MjA3NDQxNzczOH0.yEMThoZdXPx1aNCO1a6wO-FPoMU-gTgxJlsW883rKvc';
         window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        // Novo: Definir data atual para o filtro ao carregar
+        document.addEventListener('DOMContentLoaded', function() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('filtro-data').value = today;
+        });
     </script>
     <script src="js/auth.js"></script>
     <script src="js/supabase-vendas.js"></script>

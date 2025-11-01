@@ -1,4 +1,4 @@
-// js/pedido.js - Lógica para a página pública de pedidos via WhatsApp
+// js/pedido.js - Lógica para a página pública de pedidos via WhatsApp - ATUALIZADO
 
 document.addEventListener('DOMContentLoaded', async function() {
     
@@ -13,6 +13,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     const carrinhoItens = document.getElementById('carrinho-itens');
     const totalCarrinho = document.getElementById('total-carrinho');
     const enviarPedidoBtn = document.getElementById('enviar-pedido-whatsapp');
+    // NOVO
+    const finalizarDiretoBtn = document.getElementById('finalizar-pedido-direto');
     const pagamentoOpcoes = document.querySelectorAll('.pagamento-opcao');
 
     // Elementos dos Formulários
@@ -63,6 +65,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             carrinhoItens.innerHTML = `<p style="text-align: center; color: #666;">Sua sacola está vazia.</p>`;
             totalCarrinho.textContent = '0,00';
             enviarPedidoBtn.disabled = true;
+            if (finalizarDiretoBtn) finalizarDiretoBtn.disabled = true; 
         } else {
             carrinhoItens.innerHTML = '';
             let total = 0;
@@ -89,6 +92,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
             totalCarrinho.textContent = total.toFixed(2).replace('.', ',');
             enviarPedidoBtn.disabled = false;
+            if (finalizarDiretoBtn) finalizarDiretoBtn.disabled = false; 
             
             // Re-vincular eventos aos botões do carrinho
             document.querySelectorAll('.btn-remover').forEach(btn => btn.addEventListener('click', function() {
@@ -218,17 +222,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     };
 
-    // --- NOVA LÓGICA: Enviar Pedido via WhatsApp ---
-
-    const enviarPedidoWhatsapp = () => {
-        
-        if (NUMERO_WHATSAPP === 'SEU_NUMERO_DE_WHATSAPP') {
-            mostrarMensagem('O sistema ainda não está configurado para enviar pedidos. Avise o administrador.', 'error');
-            alert('ERRO: O número do WhatsApp não foi configurado no arquivo js/pedido.js');
-            return;
-        }
-
-        // 1. Validar Formulários
+    // --- LÓGICA DE VALIDAÇÃO COMUM ---
+    const validarDados = () => {
         const nome = inputNome.value.trim();
         const telefone = inputTelefone.value.trim();
         const endereco = inputEndereco.value.trim();
@@ -236,21 +231,55 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         if (carrinho.length === 0) {
             mostrarMensagem('Sua sacola está vazia!', 'error');
-            return;
+            return null;
         }
         if (!nome || !telefone || !endereco) {
             mostrarMensagem('Por favor, preencha todos os seus dados e o endereço.', 'error');
-            return;
+            return null;
         }
         if (!formaPagamentoEl) {
             mostrarMensagem('Por favor, escolha uma forma de pagamento.', 'error');
-            return;
+            return null;
+        }
+        
+        // Montar a lista de itens e o total
+        let total = 0;
+        let listaItens = "Itens:\n";
+        carrinho.forEach(item => {
+            const subtotal = item.produto.preco_venda * item.quantidade;
+            total += subtotal;
+            listaItens += `* ${item.quantidade}x ${item.produto.nome} (R$ ${item.produto.preco_venda.toFixed(2)})\n`;
+        });
+        
+        return {
+            nome: nome,
+            telefone: telefone,
+            endereco: endereco,
+            formaPagamento: formaPagamentoEl.value,
+            total: total,
+            observacoes: listaItens + `\nTotal: R$ ${total.toFixed(2)}`
+        };
+    }
+
+
+    // --- AÇÃO 1: Enviar Pedido via WhatsApp (EXISTENTE) ---
+
+    const enviarPedidoWhatsapp = () => {
+        
+        const dados = validarDados();
+        if (!dados) return;
+
+        if (NUMERO_WHATSAPP === '5573991964394' || NUMERO_WHATSAPP === 'SEU_NUMERO_DE_WHATSAPP') {
+             mostrarMensagem('O número do WhatsApp não foi configurado. Avise o administrador.', 'error');
+             alert('ERRO: O número do WhatsApp não foi configurado no arquivo js/pedido.js');
+             return;
         }
 
-        enviarPedidoBtn.disabled = true;
-        enviarPedidoBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gerando pedido...';
 
-        // 2. Montar a Mensagem
+        enviarPedidoBtn.disabled = true;
+        enviarPedidoBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gerando link...';
+
+        // 2. Montar a Mensagem (versão para WhatsApp)
         let mensagem = `Olá, Confeitaria Doce Criativo! 🎂\n\n`;
         mensagem += `Gostaria de fazer o seguinte pedido:\n\n`;
         
@@ -265,10 +294,10 @@ document.addEventListener('DOMContentLoaded', async function() {
         mensagem += `*Total do Pedido: R$ ${total.toFixed(2).replace('.', ',')}*\n`;
         mensagem += `-----------------------------------\n`;
         mensagem += `*DADOS PARA ENTREGA:*\n`;
-        mensagem += `*Nome:* ${nome}\n`;
-        mensagem += `*WhatsApp:* ${telefone}\n`;
-        mensagem += `*Endereço:* ${endereco}\n\n`;
-        mensagem += `*Forma de Pagamento:* ${formaPagamentoEl.value}\n\n`;
+        mensagem += `*Nome:* ${dados.nome}\n`;
+        mensagem += `*WhatsApp:* ${dados.telefone}\n`;
+        mensagem += `*Endereço:* ${dados.endereco}\n\n`;
+        mensagem += `*Forma de Pagamento:* ${dados.formaPagamento}\n\n`;
         mensagem += `Aguardo a confirmação do meu pedido! Obrigado(a).`;
 
         // 3. Codificar e Abrir URL do WhatsApp
@@ -280,13 +309,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             window.open(urlWhatsapp, '_blank');
             
             // Limpa o carrinho e formulários
-            carrinho = [];
-            atualizarCarrinho();
-            inputNome.value = '';
-            inputTelefone.value = '';
-            inputEndereco.value = '';
+            limparFormularioECarrinho();
             
-            mostrarMensagem('Pedido enviado! Você foi redirecionado para o WhatsApp.', 'success');
+            mostrarMensagem('Pedido enviado! Você foi redirecionado para o WhatsApp. Aguarde a confirmação!', 'success');
 
         } catch (error) {
             console.error('Erro ao gerar link do WhatsApp:', error);
@@ -296,12 +321,72 @@ document.addEventListener('DOMContentLoaded', async function() {
             enviarPedidoBtn.innerHTML = '<i class="fab fa-whatsapp"></i> Enviar Pedido pelo WhatsApp';
         }
     };
-
-    // --- Configuração de Eventos ---
     
+    // --- AÇÃO 2: Finalizar Pedido Direto (NOVO) ---
+    
+    const finalizarPedidoDireto = async () => {
+        const dados = validarDados();
+        if (!dados) return;
+        
+        if (!confirm(`Deseja SALVAR o pedido de R$ ${dados.total.toFixed(2).replace('.', ',')} diretamente no sistema?\n\nEle aparecerá como "Novo" no Painel Delivery.`)) {
+            return;
+        }
+        
+        finalizarDiretoBtn.disabled = true;
+        finalizarDiretoBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
+        
+        try {
+            // 1. Montar a Estrutura de Dados
+            const pedidoData = {
+                nome_cliente: dados.nome,
+                telefone_cliente: dados.telefone,
+                endereco_entrega: dados.endereco,
+                // Normalizar a forma de pagamento para o formato do banco (Ex: "Cartão (Maquininha)" -> "cartao_(maquininha)")
+                forma_pagamento: dados.formaPagamento.toLowerCase().replace(/[^a-z0-9]/g, '_'), 
+                total: dados.total,
+                observacoes: dados.observacoes, // Contém a lista de itens
+                status: 'novo' // Inicia no status "novo"
+                // created_at é gerenciado pelo Supabase
+            };
+            
+            // 2. Salvar na tabela 'pedidos_online'
+            const { data, error } = await supabase.from('pedidos_online').insert([pedidoData]).select().single();
+            
+            if (error) throw error;
+            
+            mostrarMensagem(`✅ Pedido #${data.id} salvo com sucesso! Acompanhe o status no Painel Delivery da loja.`, 'success');
+            limparFormularioECarrinho();
+            
+        } catch (error) {
+            console.error('❌ Erro ao salvar pedido direto:', error);
+            mostrarMensagem('Erro ao salvar pedido no sistema. Tente novamente mais tarde.', 'error');
+        } finally {
+            finalizarDiretoBtn.disabled = false;
+            finalizarDiretoBtn.innerHTML = '<i class="fas fa-check-circle"></i> Salvar no Sistema';
+        }
+    }
+    
+    // --- LÓGICA DE LIMPEZA E EVENTOS ---
+    
+    const limparFormularioECarrinho = () => { // CORRIGIDO
+        carrinho = [];
+        atualizarCarrinho();
+        inputNome.value = '';
+        inputTelefone.value = '';
+        inputEndereco.value = '';
+        document.querySelector('input[name="pagamento"]').checked = true;
+        pagamentoOpcoes.forEach(op => op.classList.remove('selected'));
+        pagamentoOpcoes[0].classList.add('selected');
+    }
+
     const configurarEventListeners = () => {
         if (enviarPedidoBtn) {
             enviarPedidoBtn.addEventListener('click', enviarPedidoWhatsapp);
+        }
+        
+        // NOVO: Event listener para o botão "Salvar no Sistema"
+        if (finalizarDiretoBtn) {
+            finalizarDiretoBtn.addEventListener('click', finalizarPedidoDireto);
         }
         
         // Adiciona evento de seleção visual nos botões de pagamento
@@ -312,13 +397,18 @@ document.addEventListener('DOMContentLoaded', async function() {
                 opcao.querySelector('input[type="radio"]').checked = true;
             });
         });
+        
+        // Seleção inicial
+        if (pagamentoOpcoes.length > 0) pagamentoOpcoes[0].classList.add('selected');
     };
 
     // --- Inicialização da Página ---
     
     (async function() {
         try {
-            // Não precisamos de login, mas testamos a conexão
+            if (!window.vendasSupabase) {
+                 throw new Error('Módulo de vendas (supabase-vendas.js) não carregado.');
+            }
             const conexaoOk = await window.vendasSupabase.testarConexao();
             if (!conexaoOk) {
                 throw new Error('Não foi possível conectar ao cardápio');
@@ -327,7 +417,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             await carregarCategorias();
             await carregarProdutos();
             configurarEventListeners();
-            atualizarCarrinho(); // Inicia com carrinho vazio e botão desabilitado
+            atualizarCarrinho(); 
 
             console.log('✅ Página de pedido público inicializada!');
 

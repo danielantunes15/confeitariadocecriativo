@@ -1,10 +1,41 @@
 /* css/delivery.css */
+.header-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 1rem;
+    align-items: flex-end;
+    width: 100%;
+    border-top: 1px solid var(--border-color);
+    padding-top: 1rem;
+}
+
+.filter-group, .search-group {
+    display: flex;
+    flex-direction: column;
+    min-width: 180px;
+}
+
+.filter-group label, .search-group label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 5px;
+    color: var(--text-color);
+}
+
+.filter-group input, .search-group input {
+    padding: 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+}
+
 .header-actions {
     display: flex;
     gap: 1rem;
     flex-wrap: wrap;
-    margin-top: 1rem;
     justify-content: flex-end;
+    margin-left: auto; /* Alinha à direita */
 }
 
 .delivery-board {
@@ -38,6 +69,7 @@
 #col-preparando h3 { color: var(--warning-color); border-bottom-color: var(--warning-color); }
 #col-pronto h3 { color: var(--info-color); border-bottom-color: var(--info-color); }
 #col-entregue h3 { color: var(--success-color); border-bottom-color: var(--success-color); }
+#col-cancelado h3 { color: var(--error-color); border-bottom-color: var(--error-color); }
 
 .card-list {
     display: flex;
@@ -53,6 +85,13 @@
     cursor: pointer;
     transition: all 0.2s ease;
     border-left: 5px solid transparent;
+    position: relative;
+    animation: fadeIn 0.3s ease-out; /* Para pedidos em tempo real */
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 
 .pedido-card:hover {
@@ -64,7 +103,7 @@
 .pedido-card.status-preparando { border-left-color: var(--warning-color); }
 .pedido-card.status-pronto { border-left-color: var(--info-color); }
 .pedido-card.status-entregue { border-left-color: var(--success-color); }
-.pedido-card.status-cancelado { border-left-color: var(--error-color); opacity: 0.5; }
+.pedido-card.status-cancelado { border-left-color: var(--error-color); opacity: 0.7; }
 
 .pedido-header {
     display: flex;
@@ -83,6 +122,7 @@
     font-size: 0.85rem;
     color: var(--text-light);
     line-height: 1.4;
+    margin-bottom: 0.5rem; 
 }
 
 .pedido-info .valor {
@@ -116,8 +156,75 @@
 .badge-entregue { background-color: var(--success-color); }
 .badge-cancelado { background-color: var(--error-color); }
 
+/* NOVO: Indicador de Tempo no Status */
+.time-indicator {
+    font-size: 0.75rem;
+    color: #6c757d;
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.time-indicator.overdue {
+    color: var(--error-color);
+    font-weight: bold;
+}
+
+/* NOVO: Ações Rápidas no Card */
+.quick-action-btn {
+    background-color: var(--secondary-color);
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.quick-action-btn:hover {
+    background-color: #6f42c1; /* Cor escura do secondary */
+    transform: translateY(-1px);
+}
+
+.quick-action-btn:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+/* NOVO: Ícone de Entrega/Retirada */
+.delivery-type-icon {
+    font-size: 1.1rem;
+    color: var(--secondary-color);
+    margin-left: 5px;
+}
+
 @media (max-width: 768px) {
     .delivery-board {
         grid-template-columns: 1fr;
+    }
+
+    .header-filters {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .filter-group, .search-group {
+        min-width: 100%;
+    }
+    
+    .header-actions {
+        margin-left: 0;
+        justify-content: space-between;
+    }
+    
+    .header-actions .btn {
+        flex-grow: 1;
     }
 }
