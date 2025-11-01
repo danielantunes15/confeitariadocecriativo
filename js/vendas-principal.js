@@ -13,23 +13,45 @@ document.addEventListener('DOMContentLoaded', async function() {
     const carrinhoItens = document.getElementById('carrinho-itens');
     const totalCarrinho = document.getElementById('total-carrinho');
     const finalizarPedidoBtn = document.getElementById('finalizar-pedido');
-    const clienteSelect = document.getElementById('cliente-select'); // Novo elemento de seleção
-    const pagamentoOpcoes = document.querySelectorAll('.pagamento-opcao');
+    const clienteSelect = document.getElementById('cliente-select'); 
+    
+    // Elementos do novo pagamento
+    const adicionarPagamentoBtn = document.getElementById('adicionar-pagamento-btn');
+    const tipoPagamentoMisto = document.getElementById('tipo-pagamento-misto');
+    const valorPagamentoMisto = document.getElementById('valor-pagamento-misto');
+    const pagamentosAdicionadosContainer = document.getElementById('pagamentos-adicionados-container');
+    const saldoPendenteMisto = document.getElementById('saldo-pendente-misto');
+    const mensagemPagamentosIniciais = document.getElementById('mensagem-pagamentos-iniciais');
     
     // Variáveis globais
     let categorias = [];
     let produtos = [];
     let clientes = [];
     let carrinho = [];
+    let pagamentos = []; // NOVO: Array para armazenar múltiplos pagamentos
     let categoriaSelecionada = 'todos';
-
+    
     // Funções auxiliares globais
+    const formatarMoeda = (valor) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor || 0);
+
+    const formatarFormaPagamento = (forma) => {
+        const formas = {
+            'dinheiro': 'Dinheiro',
+            'cartao_debito': 'Cartão Débito',
+            'cartao_credito': 'Cartão Crédito',
+            'pix': 'PIX',
+            'misto': 'Misto'
+        };
+        return formas[forma] || forma;
+    };
+
     const mostrarMensagem = (mensagem, tipo = 'info') => {
         const alertContainer = document.getElementById('alert-container');
         if (!alertContainer) {
             console.error('Container de alertas não encontrado');
             return;
         }
+        // ... (restante da função mostrarMensagem)
         const alertDiv = document.createElement('div');
         alertDiv.className = `alert alert-${tipo}`;
         const cores = {
@@ -78,8 +100,20 @@ document.addEventListener('DOMContentLoaded', async function() {
         atualizarCarrinho();
         mostrarMensagem(`${produto.nome} adicionado ao carrinho!`, 'success');
     };
+    
+    // Calcula o total do carrinho
+    const getCartTotal = () => {
+        return carrinho.reduce((sum, item) => sum + (item.produto.preco_venda * item.quantidade), 0);
+    };
+    
+    // Calcula o total já pago
+    const getPaidTotal = () => {
+        return pagamentos.reduce((sum, p) => sum + p.valor, 0);
+    };
 
     const atualizarCarrinho = () => {
+        const total = getCartTotal();
+
         if (carrinho.length === 0) {
             carrinhoItens.innerHTML = `
                 <div style="text-align: center; padding: 2rem; color: #666;">
@@ -91,10 +125,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             finalizarPedidoBtn.disabled = true;
         } else {
             carrinhoItens.innerHTML = '';
-            let total = 0;
             carrinho.forEach((item, index) => {
                 const itemSubtotal = item.produto.preco_venda * item.quantidade;
-                total += itemSubtotal;
                 const itemElement = document.createElement('div');
                 itemElement.className = 'carrinho-item';
                 itemElement.innerHTML = `
@@ -128,6 +160,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                 aumentarQuantidade(index);
             }));
         }
+        
+        // NOVO: Atualiza a seção de pagamentos
+        atualizarPagamentosMistos();
     };
 
     const removerDoCarrinho = (index) => {
@@ -150,6 +185,91 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     };
 
+    // --- NOVO: FUNÇÕES DE PAGAMENTO MISTO ---
+    
+    function atualizarPagamentosMistos() {
+        const total = getCartTotal();
+        const pago = getPaidTotal();
+        const saldo = total - pago;
+        
+        saldoPendenteMisto.textContent = `Saldo a Pagar: ${formatarMoeda(saldo)}`;
+        saldoPendenteMisto.classList.toggle('saldo-ok', saldo <= 0);
+        
+        pagamentosAdicionadosContainer.innerHTML = '';
+        
+        if (pagamentos.length === 0) {
+            pagamentosAdicionadosContainer.innerHTML = `<p style="text-align: center; color: var(--text-light);" id="mensagem-pagamentos-iniciais">Use a seção abaixo para adicionar uma ou mais formas de pagamento.</p>`;
+        } else {
+            pagamentos.forEach((p, index) => {
+                const item = document.createElement('div');
+                item.className = 'pagamento-detalhe-item';
+                item.innerHTML = `
+                    <span>${formatarFormaPagamento(p.tipo)}</span>
+                    <span class="valor">${formatarMoeda(p.valor)}</span>
+                    <button class="btn-remover-pagamento" data-index="${index}" title="Remover">
+                        <i class="fas fa-times-circle"></i>
+                    </button>
+                `;
+                pagamentosAdicionadosContainer.appendChild(item);
+            });
+            
+            // Adiciona evento de remoção
+            document.querySelectorAll('.btn-remover-pagamento').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    removerPagamento(parseInt(this.getAttribute('data-index')));
+                });
+            });
+        }
+        
+        // Pré-preenche o campo de valor com o saldo pendente (ou zero)
+        valorPagamentoMisto.value = Math.max(0, saldo).toFixed(2);
+        
+        // Habilita/Desabilita o botão finalizar
+        finalizarPedidoBtn.disabled = saldo !== 0 || total === 0;
+        
+        // Se o total for zero, desabilita a adição de pagamentos
+        adicionarPagamentoBtn.disabled = total === 0;
+    }
+    
+    function adicionarPagamento() {
+        const total = getCartTotal();
+        const pago = getPaidTotal();
+        const saldo = total - pago;
+        
+        if (total === 0) {
+            mostrarMensagem('O carrinho está vazio. Adicione produtos antes de adicionar o pagamento.', 'error');
+            return;
+        }
+
+        const tipo = tipoPagamentoMisto.value;
+        const valor = parseFloat(valorPagamentoMisto.value);
+
+        if (isNaN(valor) || valor <= 0) {
+            mostrarMensagem('Insira um valor de pagamento válido.', 'error');
+            return;
+        }
+        
+        if (pago + valor > total) {
+            mostrarMensagem(`O valor excede o total do pedido. Saldo restante: ${formatarMoeda(saldo)}.`, 'error');
+            return;
+        }
+
+        pagamentos.push({ tipo, valor });
+        atualizarCarrinho(); // Chama a atualização do UI e saldo
+        mostrarMensagem(`${formatarMoeda(valor)} em ${formatarFormaPagamento(tipo)} adicionado.`, 'success');
+    }
+    
+    function removerPagamento(index) {
+        if (index >= 0 && index < pagamentos.length) {
+            const pagamentoRemovido = pagamentos.splice(index, 1)[0];
+            mostrarMensagem(`${formatarMoeda(pagamentoRemovido.valor)} em ${formatarFormaPagamento(pagamentoRemovido.tipo)} removido.`, 'info');
+            atualizarCarrinho();
+        }
+    }
+    
+    // --- FUNÇÕES DE CARREGAMENTO (inalteradas) ---
+    // ... (carregarCategorias, exibirCategorias, selecionarCategoria, carregarProdutos, exibirProdutos, carregarClientes, exibirClientesNaLista)
+    
     const carregarCategorias = async () => {
         try {
             categorias = await window.vendasSupabase.buscarCategorias();
@@ -263,7 +383,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     };
     
-    // LÓGICA CORRIGIDA para exibir clientes na lista de seleção
     const exibirClientesNaLista = () => {
         if (!clienteSelect) return;
         
@@ -284,22 +403,30 @@ document.addEventListener('DOMContentLoaded', async function() {
     };
 
     const finalizarPedido = async () => {
+        const total = getCartTotal();
+        const pago = getPaidTotal();
+
         if (carrinho.length === 0) {
             mostrarMensagem('Adicione produtos ao carrinho antes de finalizar o pedido.', 'error');
             return;
         }
         
-        const formaPagamento = document.querySelector('input[name="pagamento"]:checked');
-        if (!formaPagamento) {
-            mostrarMensagem('Por favor, selecione uma forma de pagamento.', 'error');
+        if (pagamentos.length === 0) {
+             mostrarMensagem('Adicione pelo menos uma forma de pagamento.', 'error');
+            return;
+        }
+
+        if (pago < total) {
+             mostrarMensagem(`O valor pago (${formatarMoeda(pago)}) é menor que o total do pedido (${formatarMoeda(total)}). Ajuste o pagamento.`, 'error');
             return;
         }
         
         const clienteId = clienteSelect.value || null;
         const clienteNome = clienteSelect.options[clienteSelect.selectedIndex].dataset.nome;
-        const total = carrinho.reduce((sum, item) => sum + (item.produto.preco_venda * item.quantidade), 0);
+        
+        const formaPagamento = pagamentos.length > 1 ? 'misto' : pagamentos[0].tipo;
 
-        if (!confirm(`Deseja finalizar o pedido com ${carrinho.length} item(s)?\n\nCliente: ${clienteNome}\nForma de pagamento: ${formaPagamento.value}\n\nTotal: R$ ${total.toFixed(2)}`)) {
+        if (!confirm(`Deseja finalizar o pedido com ${carrinho.length} item(s)?\n\nCliente: ${clienteNome}\nForma de pagamento: ${formaPagamento.toUpperCase()}\n\nTotal: ${formatarMoeda(total)}`)) {
             return;
         }
         
@@ -321,13 +448,23 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
 
             const usuarioAtual = window.sistemaAuth.usuarioLogado;
+            
+            // NOVO: Criar observação detalhada do pagamento misto
+            let observacoesPagamento = pagamentos.length > 1 ? 'Pagamento MISTO DETALHES:\n' : '';
+            pagamentos.forEach(p => {
+                observacoesPagamento += `• ${formatarFormaPagamento(p.tipo)}: ${formatarMoeda(p.valor)}\n`;
+            });
+            if (pago > total) {
+                 observacoesPagamento += `\nTROCO: ${formatarMoeda(pago - total)}`;
+            }
+
             const vendaData = {
                 data_venda: new Date().toISOString().split('T')[0],
                 cliente: clienteNome,
                 cliente_id: clienteId, 
                 total: total,
-                forma_pagamento: formaPagamento.value,
-                observacoes: '',
+                forma_pagamento: formaPagamento, // 'dinheiro', 'pix', 'misto', etc.
+                observacoes: observacoesPagamento,
                 usuario_id: usuarioAtual.id
             };
 
@@ -353,22 +490,17 @@ document.addEventListener('DOMContentLoaded', async function() {
             let mensagem = `✅ Pedido finalizado com sucesso!\n\n`;
             mensagem += `📋 Número do Pedido: ${venda.id}\n`;
             mensagem += `👤 Cliente: ${clienteNome}\n`;
-            mensagem += `💳 Forma de pagamento: ${formaPagamento.value}\n`;
-            mensagem += `👨‍💼 Vendedor: ${usuarioAtual.nome}\n\n`;
-            mensagem += `🛍️ Itens do pedido:\n`;
-            
-            carrinho.forEach(item => {
-                mensagem += `• ${item.produto.nome} (x${item.quantidade}) - R$ ${(item.produto.preco_venda * item.quantidade).toFixed(2)}\n`;
-            });
-            
-            mensagem += `\n💰 Total: R$ ${total.toFixed(2)}`;
+            mensagem += `💳 Pagamento: ${formaPagamento.toUpperCase()}\n`;
+            mensagem += observacoesPagamento;
+            mensagem += `\n💰 Total: ${formatarMoeda(total)}`;
             alert(mensagem);
             mostrarMensagem('✅ Pedido finalizado com sucesso!', 'success');
             
+            // Resetar
             carrinho = [];
+            pagamentos = []; // Resetar pagamentos
             atualizarCarrinho();
             clienteSelect.value = '';
-            document.querySelectorAll('input[name="pagamento"]').forEach(radio => radio.checked = false);
             
             await carregarProdutos();
             
@@ -395,13 +527,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     const configurarEventListeners = () => {
         if (finalizarPedidoBtn) finalizarPedidoBtn.addEventListener('click', finalizarPedido);
         document.getElementById('logout-btn')?.addEventListener('click', () => window.sistemaAuth.fazerLogout());
-        pagamentoOpcoes.forEach(opcao => {
-            opcao.addEventListener('click', () => {
-                pagamentoOpcoes.forEach(op => op.classList.remove('selected'));
-                opcao.classList.add('selected');
-                opcao.querySelector('input[type="radio"]').checked = true;
-            });
-        });
+        
+        // NOVO: Evento para adicionar pagamento
+        if (adicionarPagamentoBtn) adicionarPagamentoBtn.addEventListener('click', adicionarPagamento);
     };
 
     // Função de inicialização

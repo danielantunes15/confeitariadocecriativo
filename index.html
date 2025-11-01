@@ -86,43 +86,35 @@
             </section>
 
             <section class="pagamento">
-                <h2>Forma de Pagamento</h2>
-                <div class="opcoes-pagamento">
-                    <label class="pagamento-opcao">
-                        <input type="radio" name="pagamento" value="dinheiro" checked>
-                        <span class="pagamento-icone">💵</span>
-                        <span class="pagamento-texto">
-                            <span class="pagamento-titulo">Dinheiro</span>
-                            <span class="pagamento-descricao">Pagamento em espécie</span>
-                        </span>
-                    </label>
-                    
-                    <label class="pagamento-opcao">
-                        <input type="radio" name="pagamento" value="cartao_credito">
-                        <span class="pagamento-icone">💳</span>
-                        <span class="pagamento-texto">
-                            <span class="pagamento-titulo">Cartão de Crédito</span>
-                            <span class="pagamento-descricao">Transação na maquininha</span>
-                        </span>
-                    </label>
+                <h2>Pagamento</h2>
+                
+                <div id="pagamentos-adicionados-container" class="pagamentos-adicionados">
+                    <p style="text-align: center; color: var(--text-light);" id="mensagem-pagamentos-iniciais">Use a seção abaixo para adicionar uma ou mais formas de pagamento.</p>
+                </div>
 
-                    <label class="pagamento-opcao">
-                        <input type="radio" name="pagamento" value="cartao_debito">
-                        <span class="pagamento-icone">💳</span>
-                        <span class="pagamento-texto">
-                            <span class="pagamento-titulo">Cartão de Débito</span>
-                            <span class="pagamento-descricao">Transação na maquininha</span>
-                        </span>
-                    </label>
-                    
-                    <label class="pagamento-opcao">
-                        <input type="radio" name="pagamento" value="pix">
-                        <span class="pagamento-icone">📱</span>
-                        <span class="pagamento-texto">
-                            <span class="pagamento-titulo">PIX</span>
-                            <span class="pagamento-descricao">Pagamento instantâneo</span>
-                        </span>
-                    </label>
+                <div class="card-pagamento-misto">
+                    <h3>Adicionar Pagamento</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="tipo-pagamento-misto">Forma</label>
+                            <select id="tipo-pagamento-misto" class="form-control">
+                                <option value="dinheiro">Dinheiro</option>
+                                <option value="cartao_credito">Cartão de Crédito</option>
+                                <option value="cartao_debito">Cartão de Débito</option>
+                                <option value="pix">PIX</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="valor-pagamento-misto">Valor (R$)</label>
+                            <input type="number" id="valor-pagamento-misto" step="0.01" min="0" placeholder="0.00" class="form-control">
+                        </div>
+                        <div class="form-group" style="align-self: flex-end;">
+                            <button id="adicionar-pagamento-btn" class="btn btn-primary">
+                                <i class="fas fa-plus-circle"></i> Adicionar
+                            </button>
+                        </div>
+                    </div>
+                    <p id="saldo-pendente-misto" class="saldo-pendente" style="font-weight: bold; color: var(--primary-dark); margin-top: 10px;">Saldo a Pagar: R$ 0,00</p>
                 </div>
             </section>
 
@@ -136,7 +128,7 @@
             </section>
 
             <section class="finalizar">
-                <button id="finalizar-pedido" class="btn-finalizar">Finalizar Pedido</button>
+                <button id="finalizar-pedido" class="btn-finalizar" disabled>Finalizar Pedido</button>
             </section>
         </div>
     </main>
