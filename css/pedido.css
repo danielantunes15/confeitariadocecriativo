@@ -300,9 +300,14 @@
     display: flex;
     flex-wrap: nowrap; /* Impede a quebra de linha */
     overflow-x: auto; /* Permite a rolagem horizontal */
-    padding-bottom: 10px; /* Garante que a barra de rolagem fique visível (opcional) */
     gap: 0.5rem; /* Reduz o espaçamento entre botões */
     -webkit-overflow-scrolling: touch; /* Melhoria de performance em iOS */
+    
+    /* === CORREÇÃO PARA RESOLVER O CORTE NO MOBILE === */
+    /* A padding de 15px do .card-app estava cortando a rolagem. Compensamos essa padding com margem negativa */
+    margin: 0 -15px; /* Compensa a padding de 15px do .card-app (pai) */
+    padding: 0 15px 10px 15px; /* Re-aplica a padding horizontal e a padding-bottom para a barra */
+    /* === FIM DA CORREÇÃO === */
 }
 
 #view-cardapio .categoria-btn {

@@ -786,7 +786,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         const opcoesPagamentoOriginal = document.querySelector('.pagamento .opcoes-pagamento');
         if (pagamentoOpcoesContainer.children.length === 0 && opcoesPagamentoOriginal) {
-            pagamentoOpcoesContainer.innerHTML = opcoesPagamentoOriginal.innerHTML;
+            pagamentoOpcoesContainer.innerHTML = opcoesPagcoesPagamentoOriginal.innerHTML;
         }
     }
 
