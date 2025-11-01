@@ -17,10 +17,11 @@
     top: 0;
     left: 0;
     width: 100%;
-    min-height: 100vh; /* Para garantir que o conteúdo preencha */
+    min-height: 100vh; 
     padding-top: 50px; /* Espaço para o header */
+    padding-bottom: 65px; /* Espaço para o menu inferior */
     box-sizing: border-box;
-    overflow-y: hidden; /* O conteúdo rolável estará dentro de .app-content-scroll */
+    overflow-y: hidden; 
     display: none;
 }
 
@@ -50,11 +51,11 @@
 }
 
 .app-content-scroll {
-    height: calc(100vh - 50px - 70px); /* Altura total - Header - Footer Nav */
+    height: 100%; /* Permite o scroll na view inteira */
     overflow-y: auto;
     padding: 15px;
     box-sizing: border-box;
-    -webkit-overflow-scrolling: touch; /* Melhora a rolagem em iOS */
+    -webkit-overflow-scrolling: touch; 
 }
 
 .card-app {
@@ -154,6 +155,15 @@
     margin-top: 1rem;
 }
 
+/* --- ESTILOS DE ENDEREÇO E CEP (NOVO) --- */
+.form-row-cadastro {
+    display: flex;
+    gap: 1rem;
+}
+.form-row-cadastro .form-group {
+    flex: 1;
+}
+
 /* --- HEADER DE PERFIL NO TOP --- */
 #profile-display {
     display: flex;
@@ -178,7 +188,7 @@
 
 .finalizar-app {
     position: fixed;
-    bottom: 65px; /* Acima da barra de navegação */
+    bottom: 65px; 
     left: 0;
     width: 100%;
     padding: 10px 15px;
