@@ -480,7 +480,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         authScreen.classList.remove('active');
         mobileNav.style.display = 'flex';
-        alternarView('view-cardapio'); // PONTO DE AJUSTE
+        alternarView('view-cardapio');
         atualizarPerfilUI();
     }
     
@@ -554,8 +554,68 @@ document.addEventListener('DOMContentLoaded', async function() {
         atualizarCarrinho();
     }
     
-    async function finalizarPedidoDireto() { /* ... (Mantida) ... */ }
-    async function enviarPedidoWhatsapp() { /* ... (Mantida) ... */ }
+    async function finalizarPedidoDireto() { 
+        const dados = validarDados();
+
+        if (!dados) return;
+
+        mostrarMensagem('Processando pedido...', 'info');
+        finalizarDiretoBtn.disabled = true;
+
+        try {
+            // 1. Criar o pedido_online
+            const { error } = await supabase.from('pedidos_online').insert({
+                nome_cliente: dados.nome,
+                telefone_cliente: dados.telefone,
+                endereco_entrega: dados.endereco,
+                forma_pagamento: dados.formaPagamento,
+                total: dados.total,
+                status: 'novo',
+                observacoes: dados.observacoes
+            });
+
+            if (error) throw error;
+            
+            // 2. Atualizar estoque
+            for (const item of carrinho) {
+                const produtoId = item.produto.id;
+                const quantidade = item.quantidade;
+                const novoEstoque = item.produto.estoque_atual - quantidade;
+
+                await supabase.from('produtos').update({ estoque_atual: novoEstoque }).eq('id', produtoId);
+            }
+
+            mostrarMensagem('✅ Pedido enviado e registrado com sucesso!', 'success');
+            limparFormularioECarrinho();
+            alternarView('view-inicio');
+            carregarStatusUltimoPedido();
+
+        } catch (error) {
+            console.error("Erro ao finalizar pedido direto:", error);
+            mostrarMensagem(`Erro ao enviar pedido: ${error.message}`, 'error');
+        } finally {
+            finalizarDiretoBtn.disabled = false;
+        }
+    }
+    
+    async function enviarPedidoWhatsapp() { 
+        const dados = validarDados();
+
+        if (!dados) return;
+
+        let mensagem = `*PEDIDO ONLINE - DOCE CRIATIVO*\n\n`;
+        mensagem += `*Cliente:* ${dados.nome}\n`;
+        mensagem += `*Telefone:* ${dados.telefone}\n`;
+        mensagem += `*Endereço:* ${dados.endereco}\n`;
+        mensagem += `*Pagamento:* ${dados.formaPagamento}\n\n`;
+        mensagem += `*TOTAL:* ${formatarMoeda(dados.total)}\n\n`;
+        mensagem += dados.observacoes;
+
+        const url = `https://wa.me/${NUMERO_WHATSAPP}?text=${encodeURIComponent(mensagem)}`;
+        window.open(url, '_blank');
+        
+        mostrarMensagem('Mensagem do pedido enviada! Aguarde a confirmação via WhatsApp.', 'info');
+    }
 
     // --- FUNÇÕES DE EVENTOS ---
 
