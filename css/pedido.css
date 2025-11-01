@@ -50,25 +50,6 @@
     margin: 0;
 }
 
-.app-header .logo-app .header-brand {
-    font-size: 1.2rem;
-    font-weight: 800;
-    color: white; 
-}
-
-.app-header .logo-app .header-menu-title {
-    font-size: 1rem;
-    font-weight: 500;
-    padding-left: 8px;
-    /* Separador vertical moderno */
-    border-left: 2px solid rgba(255, 255, 255, 0.5); 
-    color: #fff;
-}
-/* Revert the default logo-app font size in the boas-vindas section body, since it has the new header */
-#view-boas-vindas .app-content-scroll .logo-app {
-    font-size: 2.5rem !important;
-}
-
 .app-content-scroll {
     height: 100%; /* Permite o scroll na view inteira */
     overflow-y: auto;

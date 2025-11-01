@@ -87,7 +87,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     const mostrarMensagem = (mensagem, tipo = 'info') => {
         const alertContainer = document.getElementById('alert-container');
-        if (!container) return;
+        if (!alertContainer) return; // CORRIGIDO: 'container' foi trocado para 'alertContainer'
         const alertDiv = document.createElement('div');
         alertDiv.className = `alert alert-${tipo}`;
         alertDiv.innerHTML = `<span>${mensagem}</span><button class="alert-close" onclick="this.parentElement.remove()">&times;</button>`;
@@ -95,7 +95,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         setTimeout(() => { if (alertDiv.parentNode) alertDiv.remove(); }, 5000);
     };
     
-    function alternarView(viewId) {
+    // CORREÇÃO DE ESCOPO: Função alternarView exposta globalmente
+    window.alternarView = function(viewId) {
         document.querySelectorAll('.app-view').forEach(view => view.classList.remove('active'));
         document.getElementById(viewId).classList.add('active');
         
@@ -422,7 +423,7 @@ document.addEventListener('DOMContentLoaded', async function() {
              const telefone = clientePerfil.telefone;
              
              if (!telefone) {
-                alternarView('auth-screen');
+                window.alternarView('auth-screen');
                 mostrarMensagem('Sua sessão expirou. Por favor, faça login novamente.', 'error');
                 return null;
              }
@@ -436,7 +437,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                  observacoes: observacoes
              };
         } else {
-             alternarView('auth-screen');
+             window.alternarView('auth-screen');
              mostrarMensagem('🚨 Você precisa estar logado para enviar o pedido. Faça login ou cadastre-se!', 'error');
              return null;
         }
@@ -548,7 +549,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             
             if (carrinho.length > 0) {
                 atualizarCarrinho();
-                alternarView('view-carrinho');
+                window.alternarView('view-carrinho');
                 mostrarMensagem('Itens da última compra adicionados ao carrinho!', 'success');
             } else {
                  mostrarMensagem('Nenhum item da última compra pôde ser adicionado (sem estoque).', 'error');
@@ -679,7 +680,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         authScreen.classList.remove('active');
         mobileNav.style.display = 'flex';
         
-        alternarView('view-cardapio');
+        window.alternarView('view-cardapio');
         
         document.querySelector('.nav-item-app[data-view="view-inicio"]')?.classList.remove('active');
         document.querySelector('.nav-item-app[data-view="view-cardapio"]')?.classList.add('active');
@@ -698,7 +699,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         document.getElementById('login-form-group').style.display = 'block';
 
         mostrarMensagem('Sessão encerrada.', 'info');
-        alternarView('auth-screen');
+        window.alternarView('auth-screen');
     }
 
     async function carregarStatusUltimoPedido() {
@@ -798,7 +799,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     function abrirModalEditarEndereco() {
         if (!clienteLogado) {
-             alternarView('auth-screen');
+             window.alternarView('auth-screen');
              mostrarMensagem('Faça login para editar seu endereço.', 'error');
              return;
         }
@@ -888,7 +889,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             mostrarMensagem('✅ Pedido enviado e registrado com sucesso!', 'success');
             limparFormularioECarrinho();
-            alternarView('view-inicio');
+            window.alternarView('view-inicio');
             carregarStatusUltimoPedido();
 
         } catch (error) {
@@ -937,7 +938,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         navItems.forEach(item => {
             item.addEventListener('click', (e) => {
                 e.preventDefault();
-                alternarView(item.getAttribute('data-view'));
+                window.alternarView(item.getAttribute('data-view'));
             });
         });
         
@@ -993,9 +994,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             mobileNav.style.display = 'flex';
             
             if (clienteEncontrado) {
-                 alternarView('view-cardapio');
+                 window.alternarView('view-cardapio');
             } else {
-                 alternarView('view-boas-vindas');
+                 window.alternarView('view-boas-vindas');
             }
             
             // 3. Carrega os dados para renderizar
