@@ -106,22 +106,19 @@ class VendasSupabase {
             // Garantir que o total seja número
             vendaData.total = parseFloat(vendaData.total) || 0;
             
-            // --- CORREÇÃO APLICADA AQUI ---
-            // Permite total ser 0.00, que é o valor correto para vendas integrais a prazo (crediário).
             if (vendaData.total < 0) { 
                 throw new Error('Total da venda não pode ser negativo.');
             }
-            // --- FIM DA CORREÇÃO ---
-
+            
             // Preparar dados para inserção (apenas campos necessários)
             const dadosVenda = {
                 data_venda: vendaData.data_venda,
                 cliente: vendaData.cliente || 'Cliente não identificado',
+                cliente_id: vendaData.cliente_id, // <<<< LINHA ADICIONADA/CORRIGIDA
                 total: vendaData.total,
                 forma_pagamento: vendaData.forma_pagamento,
                 observacoes: vendaData.observacoes || '',
                 usuario_id: vendaData.usuario_id
-                // Não incluir created_at/updated_at - deixar o Supabase gerenciar
             };
 
             console.log('📦 Dados da venda para inserção:', dadosVenda);
@@ -135,10 +132,9 @@ class VendasSupabase {
             if (error) {
                 console.error('❌ Erro detalhado ao criar venda:', error);
                 
-                // Tratamento específico para erro 409
-                if (error.code === '23505') { // Violação de chave única
+                if (error.code === '23505') { 
                     throw new Error('Já existe uma venda com esses dados. Tente novamente.');
-                } else if (error.code === '42501') { // Permissão negada
+                } else if (error.code === '42501') { 
                     throw new Error('Sem permissão para criar vendas. Verifique suas credenciais.');
                 } else {
                     throw error;
@@ -197,7 +193,7 @@ class VendasSupabase {
     }
 
     // Atualizar estoque - CORRIGIDO
-    async atualizarEstoque(produtoId, novoEstoque) {
+    async actualizarEstoque(produtoId, novoEstoque) {
         try {
             console.log('📊 Atualizando estoque do produto:', produtoId, 'para:', novoEstoque);
 

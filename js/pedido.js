@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     // --- CONFIGURAÇÕES E VARIÁVEIS ---
     const NUMERO_WHATSAPP = '5573991964394'; 
+    const AREA_COBERTURA_INICIAL = ['45', '46']; // Exemplo: Apenas para CEPs que começam com 45 ou 46 (Bahia)
     
     let clienteLogado = null;
     let clientePerfil = { nome: null, telefone: null, endereco: null }; 
@@ -14,8 +15,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     const mobileNav = document.getElementById('mobile-bottom-nav');
     const navItems = document.querySelectorAll('.nav-item-app');
     
-    // NOVO: Elemento do Badge
+    // Elementos de Pesquisa e Carrinho
     const carrinhoBadge = document.getElementById('carrinho-badge'); 
+    const filtroBuscaProdutos = document.getElementById('filtro-busca-produtos'); 
+    const pedidoObservacoes = document.getElementById('pedido-observacoes'); 
+    const trocoParaInput = document.getElementById('troco-para'); 
     
     // Elementos de Login/Cadastro
     const authTelefoneInput = document.getElementById('auth-telefone');
@@ -61,6 +65,17 @@ document.addEventListener('DOMContentLoaded', async function() {
     const modalRuaInput = document.getElementById('modal-rua');
     const modalNumeroInput = document.getElementById('modal-numero');
     const modalBairroInput = document.getElementById('modal-bairro');
+    
+    // Elementos do Modal de Detalhes (NOVOS)
+    const modalDetalhesProduto = document.getElementById('modal-detalhes-produto');
+    const detalhesTitulo = document.getElementById('detalhes-titulo');
+    const detalhesProdutoContent = document.getElementById('detalhes-produto-content');
+    const detalhesPrecoModal = document.getElementById('detalhes-preco-modal');
+    const btnAdicionarModal = document.getElementById('btn-adicionar-modal');
+    
+    // Elementos de Repetição de Compra (NOVOS)
+    const repetirCompraContainer = document.getElementById('repetir-compra-container');
+    const btnRepetirCompra = document.getElementById('btn-repetir-compra');
 
     let categorias = [];
     let produtos = [];
@@ -72,7 +87,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     const mostrarMensagem = (mensagem, tipo = 'info') => {
         const alertContainer = document.getElementById('alert-container');
-        if (!alertContainer) return;
+        if (!container) return;
         const alertDiv = document.createElement('div');
         alertDiv.className = `alert alert-${tipo}`;
         alertDiv.innerHTML = `<span>${mensagem}</span><button class="alert-close" onclick="this.parentElement.remove()">&times;</button>`;
@@ -101,14 +116,25 @@ document.addEventListener('DOMContentLoaded', async function() {
         return digitos.length >= 12 ? digitos : '55' + digitos;
     }
 
+    // --- FUNÇÃO DE VALIDAÇÃO DE ÁREA ---
+    function validarAreaEntrega(cep) {
+        if (!cep) return false;
+        const prefixo = cep.substring(0, 2);
+        return AREA_COBERTURA_INICIAL.includes(prefixo);
+    }
+    
     // --- FUNÇÃO DE BUSCA POR CEP (Para Cadastro e Modal de Edição) ---
-    // É mais seguro deixar a função no escopo global para o `onblur` do HTML funcionar
     window.buscarCep = async function(cep) {
         const cepLimpo = cep.replace(/\D/g, ''); 
         
         if (cepLimpo.length !== 8) return;
 
         mostrarMensagem('Buscando endereço...', 'info');
+
+        if (!validarAreaEntrega(cepLimpo)) {
+            mostrarMensagem('❌ Não entregamos nesse CEP. Por favor, verifique a área de cobertura.', 'error');
+            return;
+        }
 
         try {
             const response = await fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`);
@@ -119,16 +145,13 @@ document.addEventListener('DOMContentLoaded', async function() {
                 return;
             }
             
-            // Lógica para preencher os campos corretos (Cadastro ou Modal)
             if (document.getElementById('cadastro-form').style.display === 'block') {
-                 // Preenchimento da tela de cadastro
                 cadastroRuaInput.value = data.logradouro || '';
                 cadastroBairroInput.value = data.bairro || '';
                 cadastroCidadeInput.value = data.localidade || '';
                 cadastroEstadoInput.value = data.uf || '';
                 cadastroNumeroInput.focus();
             } else if (modalEditarEndereco.style.display === 'flex') {
-                 // Preenchimento do modal de edição
                 modalRuaInput.value = data.logradouro || '';
                 modalBairroInput.value = data.bairro || '';
                 modalNumeroInput.focus();
@@ -137,7 +160,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             mostrarMensagem('Endereço preenchido automaticamente.', 'success');
 
         } catch (error) {
-            console.error('Erro na API ViaCEP:', error);
             mostrarMensagem('Erro ao buscar o CEP. Preencha manualmente.', 'error');
         }
     }
@@ -191,9 +213,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             totalCarrinho.textContent = '0,00';
             enviarPedidoBtn.disabled = true;
             if (finalizarDiretoBtn) finalizarDiretoBtn.disabled = true; 
-            if (carrinhoBadge) { 
-                carrinhoBadge.style.display = 'none';
-            }
+            if (carrinhoBadge) carrinhoBadge.style.display = 'none';
         } else {
             carrinhoItens.innerHTML = '';
             let total = 0;
@@ -250,6 +270,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         document.querySelectorAll('.opcoes-pagamento input[name="pagamento"]').checked = true;
         document.querySelectorAll('.opcoes-pagamento .pagamento-opcao').forEach(op => op.classList.remove('selected'));
         if (document.querySelector('.opcoes-pagamento .pagamento-opcao')) document.querySelector('.opcoes-pagamento .pagamento-opcao').classList.add('selected');
+        
+        pedidoObservacoes.value = ''; 
+        trocoParaInput.value = ''; 
     }
 
     async function carregarCategorias() {
@@ -263,7 +286,15 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     async function carregarProdutos() {
         try {
-            produtos = await window.vendasSupabase.buscarProdutos();
+            // Consulta de produtos completa
+            const { data: produtosData, error } = await supabase
+                .from('produtos')
+                .select('*, categoria:categorias(nome)')
+                .order('nome');
+
+            if (error) throw error;
+            
+            produtos = produtosData || [];
             exibirProdutos();
         } catch (error) {
             mostrarMensagem('Erro ao carregar produtos.', 'error');
@@ -296,13 +327,48 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
         exibirProdutos();
     }
+    
+    // Abre o modal de detalhes do produto
+    function abrirModalDetalhesProduto(produto) {
+        detalhesTitulo.textContent = produto.nome;
+        detalhesPrecoModal.textContent = formatarMoeda(produto.preco_venda);
+        
+        let estoqueStatus = '';
+        if (produto.estoque_atual <= 0) {
+            estoqueStatus = '<span style="color: var(--error-color); font-weight: bold;">ESGOTADO</span>';
+        } else if (produto.estoque_atual <= produto.estoque_minimo) {
+            estoqueStatus = `<span style="color: var(--warning-color); font-weight: bold;">ÚLTIMAS UNID. (${produto.estoque_atual})</span>`;
+        } else {
+             estoqueStatus = `<span style="color: var(--success-color); font-weight: bold;">Em Estoque</span>`;
+        }
+
+        detalhesProdutoContent.innerHTML = `
+            <p>${produto.descricao || 'Nenhuma descrição disponível.'}</p>
+            <p><strong>Preço:</strong> ${formatarMoeda(produto.preco_venda)}</p>
+            <p><strong>Disponibilidade:</strong> ${estoqueStatus}</p>
+        `;
+        
+        btnAdicionarModal.disabled = produto.estoque_atual <= 0;
+        btnAdicionarModal.onclick = () => {
+            adicionarAoCarrinho(produto);
+            modalDetalhesProduto.style.display = 'none';
+        };
+        
+        modalDetalhesProduto.style.display = 'flex';
+    }
+
 
     function exibirProdutos() {
         produtosContainer.innerHTML = ''; 
         let produtosParaExibir = produtos.filter(p => p.ativo); 
+        const termoBusca = filtroBuscaProdutos.value.toLowerCase().trim();
 
         if (categoriaSelecionada !== 'todos') {
             produtosParaExibir = produtosParaExibir.filter(p => p.categoria_id === categoriaSelecionada);
+        }
+        
+        if (termoBusca) {
+             produtosParaExibir = produtosParaExibir.filter(p => p.nome.toLowerCase().includes(termoBusca));
         }
 
         if (produtosParaExibir.length === 0) {
@@ -330,9 +396,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                 </div>
             `;
             
+            // Altera o comportamento do clique no Card para abrir o modal
             produtoCard.addEventListener('click', (e) => {
                 if (!e.target.closest('.btn-adicionar')) {
-                    adicionarAoCarrinho(produto);
+                    abrirModalDetalhesProduto(produto);
                 }
             });
             
@@ -347,6 +414,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     function obterDadosCliente() {
         const endereco = carrinhoEnderecoInput.value.trim();
+        const trocoPara = parseFloat(trocoParaInput.value) || 0; 
+        const observacoes = pedidoObservacoes.value.trim(); 
+
         if (clienteLogado) {
              const nome = clientePerfil.nome;
              const telefone = clientePerfil.telefone;
@@ -361,10 +431,11 @@ document.addEventListener('DOMContentLoaded', async function() {
                  nome: nome,
                  telefone: telefone,
                  endereco: endereco,
-                 authId: clienteLogado.id
+                 authId: clienteLogado.id,
+                 trocoPara: trocoPara,
+                 observacoes: observacoes
              };
         } else {
-             // Força a transição para a tela de autenticação
              alternarView('auth-screen');
              mostrarMensagem('🚨 Você precisa estar logado para enviar o pedido. Faça login ou cadastre-se!', 'error');
              return null;
@@ -380,7 +451,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             return null;
         }
         
-        // Se obterDadosCliente já falhou, ele já redirecionou, então paramos a validação
         if (!dadosCliente) {
              return null;
         }
@@ -389,30 +459,115 @@ document.addEventListener('DOMContentLoaded', async function() {
             mostrarMensagem('Dados do cliente ou endereço incompletos. Verifique o Login/Cadastro.', 'error');
             return null;
         }
+        
+        const totalPedido = carrinho.reduce((sum, item) => sum + (item.produto.preco_venda * item.quantidade), 0);
+        
+        if (formaPagamentoEl.value === 'Dinheiro' && dadosCliente.trocoPara > 0 && dadosCliente.trocoPara < totalPedido) {
+             mostrarMensagem('O valor do troco deve ser igual ou maior que o total do pedido. Ajuste o campo "Troco Para".', 'error');
+             trocoParaInput.focus();
+             return null;
+        }
+        if (formaPagamentoEl.value !== 'Dinheiro' && dadosCliente.trocoPara > 0) {
+             mostrarMensagem('Atenção: Troco só é permitido para pagamento em Dinheiro.', 'warning');
+             trocoParaInput.value = 0;
+        }
+        
         if (!formaPagamentoEl) {
             mostrarMensagem('Por favor, escolha uma forma de pagamento.', 'error');
             return null;
         }
         
-        let total = 0;
         let listaItens = "Itens:\n";
         carrinho.forEach(item => {
-            const subtotal = item.produto.preco_venda * item.quantidade;
-            total += subtotal;
             listaItens += `* ${item.quantidade}x ${item.produto.nome} (R$ ${item.produto.preco_venda.toFixed(2)})\n`;
         });
         
+        let obsCompleta = dadosCliente.observacoes;
+        if (dadosCliente.trocoPara > 0) {
+             obsCompleta += `\nTROCO NECESSÁRIO: Sim, para ${formatarMoeda(dadosCliente.trocoPara)}`;
+        } else if (formaPagamentoEl.value === 'Dinheiro') {
+             obsCompleta += `\nTROCO NECESSÁRIO: Não`;
+        }
+        obsCompleta = listaItens + `\nTotal: R$ ${totalPedido.toFixed(2)}\n\nOBSERVAÇÕES ADICIONAIS:\n` + obsCompleta;
+
+
         return {
             ...dadosCliente,
             formaPagamento: formaPagamentoEl.value,
-            total: total,
-            observacoes: listaItens + `\nTotal: R$ ${total.toFixed(2)}`
+            total: totalPedido,
+            observacoes: obsCompleta
         };
     }
+
+    // --- LÓGICA DE REPETIÇÃO DE COMPRA ---
+    async function repetirUltimaCompra(e) {
+        e.preventDefault();
+        
+        if (!clienteLogado) return;
+        if (!confirm('Deseja limpar o carrinho atual e adicionar os itens da sua última compra?')) return;
+        
+        btnRepetirCompra.disabled = true;
+        btnRepetirCompra.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adicionando...';
+
+        try {
+            // 1. Buscar a última venda com os itens
+            const { data, error } = await supabase.from('vendas')
+                .select(`id, itens:vendas_itens(produto_id, quantidade)`)
+                .eq('cliente_id', clientePerfil.telefone) // CORRIGIDO: Usa o telefone do cliente
+                .order('created_at', { ascending: false })
+                .limit(1); 
+            
+            if (error || !data || data.length === 0) {
+                mostrarMensagem('Não foi possível encontrar a última compra.', 'error');
+                return;
+            }
+
+            const itensUltimaVenda = data[0].itens;
+            
+            if (!itensUltimaVenda || itensUltimaVenda.length === 0) {
+                mostrarMensagem('A última compra não continha itens válidos.', 'error');
+                return;
+            }
+
+            // 2. Limpar o carrinho atual
+            carrinho = [];
+
+            // 3. Adicionar itens ao carrinho (Verificando estoque)
+            for (const item of itensUltimaVenda) {
+                const produtoCompleto = produtos.find(p => p.id === item.produto_id);
+                
+                if (produtoCompleto && produtoCompleto.estoque_atual >= item.quantidade) {
+                    carrinho.push({
+                        produto: produtoCompleto,
+                        quantidade: item.quantidade
+                    });
+                } else if (produtoCompleto) {
+                     mostrarMensagem(`⚠️ ${produtoCompleto.nome} não foi adicionado: estoque insuficiente.`, 'warning');
+                }
+            }
+            
+            if (carrinho.length > 0) {
+                atualizarCarrinho();
+                alternarView('view-carrinho');
+                mostrarMensagem('Itens da última compra adicionados ao carrinho!', 'success');
+            } else {
+                 mostrarMensagem('Nenhum item da última compra pôde ser adicionado (sem estoque).', 'error');
+            }
+
+        } catch (error) {
+            console.error('Erro ao repetir compra:', error);
+            mostrarMensagem('Erro ao tentar repetir a compra.', 'error');
+        } finally {
+             btnRepetirCompra.disabled = false;
+             btnRepetirCompra.innerHTML = '<i class="fas fa-redo"></i> Repetir Última Compra';
+        }
+    }
+
 
     // --- FUNÇÕES DE AUTHENTICAÇÃO E CADASTRO ---
 
     async function buscarClientePorTelefone(telefone) {
+        // ... (mantido o código de busca)
         try {
             const { data, error } = await supabase.from('clientes_delivery')
                 .select('*')
@@ -479,6 +634,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             return mostrarMensagem('Preencha o Nome e todos os campos de Endereço corretamente.', 'error');
         }
         
+        if (!validarAreaEntrega(cep)) {
+            return mostrarMensagem('❌ Não entregamos no CEP fornecido. Favor verificar a área de cobertura.', 'error');
+        }
+        
         btnFinalizarCadastro.disabled = true;
         btnFinalizarCadastro.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Finalizando...';
 
@@ -520,10 +679,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         authScreen.classList.remove('active');
         mobileNav.style.display = 'flex';
         
-        // Redireciona para o cardápio após o login
         alternarView('view-cardapio');
         
-        // Garante que o Cardápio está ativo no menu inferior
         document.querySelector('.nav-item-app[data-view="view-inicio"]')?.classList.remove('active');
         document.querySelector('.nav-item-app[data-view="view-cardapio"]')?.classList.add('active');
 
@@ -541,23 +698,23 @@ document.addEventListener('DOMContentLoaded', async function() {
         document.getElementById('login-form-group').style.display = 'block';
 
         mostrarMensagem('Sessão encerrada.', 'info');
-        // Após logout, volta para a tela de autenticação
         alternarView('auth-screen');
     }
 
     async function carregarStatusUltimoPedido() {
-        statusUltimoPedido.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Buscando...';
+        statusUltimoPedido.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Buscando histórico...';
         
         if (!clienteLogado || !clientePerfil.telefone) {
             statusUltimoPedido.innerHTML = '<p>Faça login para ver o status e o histórico de pedidos.</p>';
+            repetirCompraContainer.style.display = 'none';
             return;
         }
 
         try {
-            // Consulta para buscar os últimos 3 pedidos
-            const { data, error } = await supabase.from('pedidos_online')
-                .select('*')
-                .eq('telefone_cliente', clientePerfil.telefone)
+            // CORREÇÃO CRÍTICA: Filtra por cliente_id (telefone) em vez do nome.
+            const { data, error } = await supabase.from('vendas')
+                .select(`id, created_at, total, forma_pagamento, status_pedido, itens:vendas_itens(produto_id, quantidade)`)
+                .eq('cliente_id', clientePerfil.telefone) 
                 .order('created_at', { ascending: false })
                 .limit(3); 
                 
@@ -569,14 +726,31 @@ document.addEventListener('DOMContentLoaded', async function() {
             
             if (pedidos.length > 0) {
                  htmlHistorico += '<h4>Últimos Pedidos:</h4>';
+                 
+                 if (pedidos[0].itens && pedidos[0].itens.length > 0) {
+                     repetirCompraContainer.style.display = 'block';
+                 } else {
+                     repetirCompraContainer.style.display = 'none';
+                 }
+                 
                  pedidos.forEach((p, index) => {
                      const dataPedido = new Date(p.created_at).toLocaleDateString('pt-BR');
+                     
+                     let listaItens = '';
+                     if (p.itens && p.itens.length > 0) {
+                        listaItens = p.itens.map(item => {
+                            const produto = produtos.find(prod => prod.id === item.produto_id);
+                            return `${item.quantidade}x ${produto ? produto.nome : 'Produto Removido'}`;
+                        }).join(', ');
+                     }
+                     
                      htmlHistorico += `
                          <div class="card-pedido-historico" style="padding: 10px; border-bottom: 1px dashed #ccc; margin-bottom: 5px;">
                              <p style="font-weight: bold; margin: 0;">Pedido #${p.id} - ${dataPedido}</p>
+                             <p style="font-size: 0.9rem; margin: 0;">Itens: ${listaItens}</p>
                              <p style="font-size: 0.9rem; margin: 0;">Status: 
-                                 <span class="status-badge-history status-${p.status}">
-                                     ${p.status.toUpperCase()}
+                                 <span class="status-badge-history status-${p.status_pedido || 'NOVO'}">
+                                     ${(p.status_pedido || 'NOVO').toUpperCase()}
                                  </span>
                                  | Total: ${formatarMoeda(p.total)}
                              </p>
@@ -585,13 +759,14 @@ document.addEventListener('DOMContentLoaded', async function() {
                  });
             } else {
                  htmlHistorico = 'Você ainda não fez nenhum pedido conosco!';
+                 repetirCompraContainer.style.display = 'none';
             }
             
             homeEndereco.innerHTML = `<strong>Endereço Atual:</strong><br>${clientePerfil.endereco || 'Endereço não cadastrado.'}`;
             statusUltimoPedido.innerHTML = htmlHistorico;
             
         } catch (error) {
-            statusUltimoPedido.innerHTML = 'Erro ao carregar status.';
+            statusUltimoPedido.innerHTML = 'Erro ao carregar histórico.';
             console.error('Erro ao carregar status do pedido:', error);
         }
     }
@@ -628,11 +803,9 @@ document.addEventListener('DOMContentLoaded', async function() {
              return;
         }
         
-        // Pré-preenche o CEP se estiver disponível
         const cepMatch = clientePerfil.endereco ? clientePerfil.endereco.match(/\(CEP:\s?(\d{5}-\d{3})\)/) : null;
         modalCepInput.value = cepMatch ? cepMatch[1] : '';
 
-        // Limpa campos de rua/num/bairro para o ViaCEP preencher
         modalRuaInput.value = '';
         modalNumeroInput.value = '';
         modalBairroInput.value = '';
@@ -653,19 +826,20 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (!rua || !numero || !bairro || !cep) {
             return mostrarMensagem('Preencha a Rua, Número, Bairro e CEP.', 'error');
         }
+        
+        if (!validarAreaEntrega(cep)) {
+            return mostrarMensagem('❌ Não entregamos no novo CEP fornecido.', 'error');
+        }
 
-        // Simulação de Cidade/Estado, pois não temos inputs no modal
         const enderecoCompleto = `${rua}, ${numero}, ${bairro} (CEP: ${cep})`;
 
         try {
-            // 1. Atualizar o cliente_delivery no Supabase
             const { error } = await supabase.from('clientes_delivery')
                 .update({ endereco: enderecoCompleto })
                 .eq('telefone', telefone);
 
             if (error) throw error;
             
-            // 2. Atualizar o estado local do perfil
             clientePerfil.endereco = enderecoCompleto;
 
             mostrarMensagem('✅ Endereço atualizado com sucesso!', 'success');
@@ -734,8 +908,10 @@ document.addEventListener('DOMContentLoaded', async function() {
         mensagem += `*Cliente:* ${dados.nome}\n`;
         mensagem += `*Telefone:* ${dados.telefone}\n`;
         mensagem += `*Endereço:* ${dados.endereco}\n`;
-        mensagem += `*Pagamento:* ${dados.formaPagamento}\n\n`;
+        mensagem += `*Pagamento:* ${dados.formaPagamento}\n`;
         mensagem += `*TOTAL:* ${formatarMoeda(dados.total)}\n\n`;
+        
+        mensagem += `--- DETALHES ---\n`;
         mensagem += dados.observacoes;
 
         const url = `https://wa.me/${NUMERO_WHATSAPP}?text=${encodeURIComponent(mensagem)}`;
@@ -752,7 +928,10 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (logoutBtnApp) logoutBtnApp.addEventListener('click', fazerLogoutApp);
         if (formEditarEndereco) formEditarEndereco.addEventListener('submit', salvarEdicaoEndereco); 
         
-        // Listener para abrir modal de endereço
+        if (filtroBuscaProdutos) filtroBuscaProdutos.addEventListener('input', exibirProdutos);
+        
+        if (btnRepetirCompra) btnRepetirCompra.addEventListener('click', repetirUltimaCompra);
+        
         document.getElementById('abrir-modal-editar-endereco')?.addEventListener('click', abrirModalEditarEndereco);
         
         navItems.forEach(item => {
@@ -813,27 +992,28 @@ document.addEventListener('DOMContentLoaded', async function() {
             authScreen.classList.remove('active');
             mobileNav.style.display = 'flex';
             
-            // Define o Cardápio como a view inicial ativa
-            alternarView('view-cardapio');
-            
-            // Se o cliente foi encontrado e logado, atualiza o perfil.
             if (clienteEncontrado) {
-                atualizarPerfilUI();
+                 alternarView('view-cardapio');
             } else {
-                // Se não foi encontrado, mas estamos exibindo o cardápio, exibe a mensagem de login
-                 mostrarMensagem('Faça login para salvar seu pedido e ver o histórico.', 'info');
+                 alternarView('view-boas-vindas');
             }
             
             // 3. Carrega os dados para renderizar
             await carregarCategorias(); 
             await carregarProdutos();
+            
+            // 4. Finaliza a configuração
+            if (clienteEncontrado) {
+                atualizarPerfilUI();
+            } else {
+                 mostrarMensagem('Faça login para salvar seu pedido e ver o histórico.', 'info');
+            }
             configurarEventListeners();
             atualizarCarrinho();
 
         } catch (error) {
             console.error('❌ Erro na inicialização:', error);
             mostrarMensagem('Erro ao carregar o app: ' + error.message, 'error');
-            // Em caso de erro crítico de conexão, volta para a tela de autenticação
             document.getElementById('auth-screen').classList.add('active');
         }
     })();

@@ -10,6 +10,40 @@
     <link rel="stylesheet" href="css/pedido.css">
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        .badge-app-count {
+            background: var(--error-color); 
+            color: white;
+            border-radius: 50%;
+            padding: 1px 6px;
+            font-size: 0.75rem;
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            line-height: 1.2;
+        }
+        .search-input-container {
+            margin-bottom: 1.5rem;
+        }
+        .search-input-container input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+        }
+        .modal-detalhes-produto-body {
+            padding: 1.5rem;
+        }
+        .modal-detalhes-produto-body h4 {
+            color: var(--primary-dark);
+            margin-top: 1rem;
+        }
+        .modal-detalhes-produto-body p {
+            font-size: 0.9rem;
+            color: var(--text-light);
+        }
+    </style>
 </head>
 <body class="app-body">
     
@@ -80,6 +114,29 @@
 
             </div>
         </div>
+        
+        <div id="view-boas-vindas" class="app-view">
+             <header class="app-header">
+                <h1 class="logo-app">Doce Criativo</h1>
+                <div id="profile-display">
+                    <span id="profile-name">Visitante</span>
+                    <button id="logout-btn-app" class="btn-icon"><i class="fas fa-sign-in-alt"></i></button>
+                </div>
+            </header>
+            <div class="app-content-scroll">
+                 <section class="card-app" style="text-align: center; padding: 2rem;">
+                    <i class="fas fa-birthday-cake" style="font-size: 3rem; color: var(--rosa-principal); margin-bottom: 1rem;"></i>
+                    <h2>Seja Bem-Vindo(a) à</h2>
+                    <h1 class="logo-app" style="font-size: 2.5rem; color: var(--rosa-escuro);">Doce Criativo!</h1>
+                    <p style="margin-top: 1rem;">
+                        Use o menu abaixo para navegar pelo nosso delicioso cardápio e fazer seu pedido.
+                    </p>
+                    <button class="btn-login-app" onclick="alternarView('view-cardapio')">
+                        <i class="fas fa-utensils"></i> Ver Cardápio
+                    </button>
+                </section>
+            </div>
+        </div>
 
         <div id="view-inicio" class="app-view">
              <header class="app-header">
@@ -92,12 +149,21 @@
             <div class="app-content-scroll">
                 <section class="card-app">
                     <h2>👋 Olá, <span id="home-cliente-nome">Cliente</span>!</h2>
-                    <p>Seu app de pedidos oficial da **Doce Criativo**.</p>
+                    <p>Gerencie seus dados e pedidos anteriores.</p>
                 </section>
-                <section class="card-app">
-                    <h2><i class="fas fa-history"></i> Histórico de Pedidos</h2>
-                    <div id="status-ultimo-pedido">Nenhum pedido recente.</div>
+                
+                <section class="card-app" id="historico-pedidos-section">
+                    <h2><i class="fas fa-history"></i> Meu Histórico de Pedidos</h2>
+                    <div id="status-ultimo-pedido">
+                        </div>
+                    
+                    <div id="repetir-compra-container" style="margin-top: 15px; text-align: center; display: none;">
+                        <button id="btn-repetir-compra" class="btn-login-app" style="background: var(--success-color); margin: 0;">
+                            <i class="fas fa-redo"></i> Repetir Última Compra
+                        </button>
+                    </div>
                 </section>
+
                 
                 <section class="card-app">
                     <h2><i class="fas fa-map-marker-alt"></i> Endereço de Entrega</h2>
@@ -118,11 +184,16 @@
                 <h1 class="logo-app">Cardápio</h1>
             </header>
             <div class="app-content-scroll">
-                <section class="categorias">
+                
+                <section class="card-app search-input-container">
+                    <input type="text" id="filtro-busca-produtos" placeholder="🔎 Buscar produtos por nome...">
+                </section>
+
+                <section class="categorias card-app">
                     <h2>Categorias</h2>
                     <div class="categorias-botoes" id="categorias-container"></div>
                 </section>
-                <section class="produtos">
+                <section class="produtos card-app">
                     <h2>Produtos</h2>
                     <div class="produtos-grid" id="produtos-container"></div>
                 </section>
@@ -134,9 +205,12 @@
                 <h1 class="logo-app">Promoções</h1>
             </header>
             <div class="app-content-scroll">
-                 <section class="card-app">
-                    <p>Aqui apareceriam seus produtos em destaque ou cupons de desconto.</p>
-                    <p>*(Funcionalidade a ser implementada no futuro, mas a estrutura está pronta!)*</p>
+                 <section class="card-app" id="promocoes-list">
+                    <h2>🔥 Ofertas do Dia</h2>
+                    <p>Esta seção será populada com produtos em promoção do seu banco de dados (recurso avançado).</p>
+                    <div id="promocoes-grid">
+                        <p style="text-align: center; color: #666;">Nenhuma promoção definida.</p>
+                    </div>
                  </section>
             </div>
         </div>
@@ -193,6 +267,17 @@
                             </label>
                         </div>
                     </div>
+                    
+                    <div class="form-group" style="margin-top: 1.5rem;">
+                        <label for="pedido-observacoes">Observações do Pedido (Opcional)</label>
+                        <textarea id="pedido-observacoes" rows="2" placeholder="Ex: Entregar para o porteiro..."></textarea>
+                    </div>
+                    
+                    <div class="form-group" id="troco-group">
+                        <label for="troco-para">Precisa de Troco? (Para Pagamentos em Dinheiro)</label>
+                        <input type="number" id="troco-para" step="0.01" min="0" placeholder="Ex: 50.00 (Troco para R$50)">
+                    </div>
+
                 </section>
             </div>
             
@@ -266,6 +351,23 @@
                 </div>
                 <button type="submit" class="btn-login-app">Salvar Novo Endereço</button>
             </form>
+        </div>
+    </div>
+    
+    <div id="modal-detalhes-produto" class="modal">
+        <div class="modal-content" style="max-width: 400px; margin-top: 10vh;">
+            <div class="modal-header">
+                <h3 id="detalhes-titulo"></h3>
+                <span class="close" onclick="document.getElementById('modal-detalhes-produto').style.display='none';">&times;</span>
+            </div>
+            <div id="detalhes-produto-content" class="modal-detalhes-produto-body">
+                </div>
+            <div class="modal-footer" style="justify-content: space-between;">
+                <p style="font-size: 1.2rem; font-weight: bold; color: var(--rosa-principal);" id="detalhes-preco-modal">R$ 0,00</p>
+                <button id="btn-adicionar-modal" class="btn-login-app" style="width: auto; padding: 8px 15px;">
+                    <i class="fas fa-cart-plus"></i> Adicionar
+                </button>
+            </div>
         </div>
     </div>
     

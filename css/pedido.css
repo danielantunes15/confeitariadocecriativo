@@ -96,6 +96,7 @@
     padding: 5px 0;
     cursor: pointer;
     transition: color 0.3s ease;
+    position: relative; /* Para posicionar o badge */
 }
 
 .nav-item-app i {
@@ -105,6 +106,19 @@
 
 .nav-item-app.active {
     color: var(--rosa-principal);
+}
+
+/* NOVO: Estilo para o badge de contador */
+.badge-app-count {
+    background: var(--error-color); /* Vermelho */
+    color: white;
+    border-radius: 50%;
+    padding: 1px 6px;
+    font-size: 0.75rem;
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    line-height: 1.2;
 }
 
 /* --- AUTENTICAÇÃO E LOGIN --- */
@@ -155,7 +169,7 @@
     margin-top: 1rem;
 }
 
-/* --- ESTILOS DE ENDEREÇO E CEP (NOVO) --- */
+/* --- ESTILOS DE ENDEREÇO E CEP --- */
 .form-row-cadastro {
     display: flex;
     gap: 1rem;
@@ -215,4 +229,37 @@
     border-radius: 10px;
     font-weight: bold;
     cursor: pointer;
+}
+
+/* NOVO: Estilo para a barra de busca no Cardápio */
+.search-input-container {
+    margin-bottom: 1.5rem;
+    padding: 0; /* Removido padding extra pois já tem padding no card-app */
+}
+.search-input-container input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: none;
+}
+
+/* NOVO: Estilo para Modais de Detalhes de Produto */
+.modal-detalhes-produto-body {
+    padding: 1.5rem;
+}
+
+.modal-detalhes-produto-body h4 {
+    color: var(--primary-dark);
+    margin-top: 1rem;
+}
+
+.modal-detalhes-produto-body p {
+    font-size: 0.9rem;
+    color: var(--text-light);
+}
+
+/* NOVO: Estilo para a seção de Troco/Observações */
+#troco-group input {
+    margin-top: 5px;
 }
