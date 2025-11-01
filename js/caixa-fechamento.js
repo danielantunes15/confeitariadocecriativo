@@ -53,7 +53,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         alert.className = `alert alert-${tipo}`;
         alert.innerHTML = `
             <span>${mensagem}</span>
-            <button onclick="this.parentElement.remove()">&times;</button>
+            <button onclick="this.parentElement.remove()">&times;
         `;
         alertContainer.appendChild(alert);
         setTimeout(() => {
@@ -157,6 +157,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
         try {
             document.body.classList.add('loading-instant');
+            // O Promise.all aqui será EXTREMAMENTE RÁPIDO AGORA
             await Promise.all([
                 carregarVendas(dataSelecionada),
                 carregarMovimentacoes(dataSelecionada),
@@ -253,31 +254,32 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
 
+    // FUNÇÃO OTIMIZADA (Correção de Performance)
     async function carregarVendas(data) {
         try {
             vendasBody.innerHTML = ''; 
             const dataInicio = new Date(data + 'T00:00:00').toISOString();
             const dataFim = new Date(data + 'T23:59:59').toISOString();
+            
+            // NOVO: Consulta única com JOINs aninhados para buscar VENDAS, USUÁRIOS, ITENS e PRODUTOS.
             const { data: vendas, error } = await supabase
                 .from('vendas')
-                .select('*, usuario:sistema_usuarios(nome)')
+                .select(`
+                    *, 
+                    usuario:sistema_usuarios(nome), 
+                    itens:vendas_itens(*, produto:produtos(nome, icone))
+                `) 
                 .gte('created_at', dataInicio)
                 .lte('created_at', dataFim)
                 .order('created_at', { ascending: false });
+
             if (error) throw error;
-            window.vendasDoDia = vendas || [];
-            for (let venda of window.vendasDoDia) {
-                const { data: itens, error: errorItens } = await supabase
-                    .from('vendas_itens')
-                    .select('*, produto:produtos(nome, icone)')
-                    .eq('venda_id', venda.id);
-                if (!errorItens && itens) {
-                    venda.itens = itens;
-                } else {
-                    console.warn(`Nenhum item encontrado para a venda ${venda.id}`);
-                    venda.itens = [];
-                }
-            }
+            
+            // A resposta já vem com a estrutura completa e aninhada
+            window.vendasDoDia = vendas || []; 
+            
+            // O loop N+1 FOI ELIMINADO.
+
             exibirVendas(window.vendasDoDia);
         } catch (error) {
             console.error('Erro ao carregar vendas:', error);
@@ -310,8 +312,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                 .select('valor')
                 .eq('tipo', 'abertura')
                 .eq('data_caixa', data)
-                .single();
-            if (error && error.code !== 'PGRST116') {
+                .order('created_at', { ascending: true }) // CORREÇÃO: Pega o mais antigo primeiro
+                .limit(1) // CORREÇÃO: Limita o resultado a 1 linha
+                .maybeSingle(); 
+            if (error) {
                 throw error;
             }
             window.valorAbertura = abertura ? abertura.valor : 0;
@@ -691,6 +695,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                 
                 <h4>Itens da Venda:</h4>
         `;
+        if (venda.observacoes && venda.observacoes.includes('Pagamento MISTO DETALHES:')) {
+             html += `<p style="white-space: pre-wrap;">${venda.observacoes}</p>`;
+        }
+        
         if (venda.itens && venda.itens.length > 0) {
             venda.itens.forEach(item => {
                 let valorItemExibido = ((item.preco_unitario || 0) * (item.quantidade || 0)).toFixed(2);
@@ -726,7 +734,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     </div>
                 </div>
                 
-                ${venda.observacoes ? `
+                ${venda.observacoes && !venda.observacoes.includes('Pagamento MISTO DETALHES:') ? `
                     <div class="info-item">
                         <span><strong>Observações:</strong></span>
                         <span>${venda.observacoes}</span>

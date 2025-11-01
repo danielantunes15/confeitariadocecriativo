@@ -65,6 +65,29 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     window.fecharModalContas = fecharModalContas;
     
+    // --- LÓGICA DE TROCA DE ABAS PADRONIZADA ---
+    function switchTab(tabId) {
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        tabBtns.forEach(btn => btn.classList.remove('active'));
+        tabContents.forEach(content => content.classList.remove('active'));
+
+        const activeBtn = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
+        const activeContent = document.getElementById(tabId);
+        
+        if (activeBtn) activeBtn.classList.add('active');
+        if (activeContent) activeContent.classList.add('active');
+
+        // Garante que o conteúdo seja recarregado ao mudar para o Receber ou Pagar
+        if (tabId === 'contas-a-receber') {
+            carregarContasAReceber();
+        }
+        if (tabId === 'contas-pendentes' || tabId === 'historico') {
+            carregarContasAPagar();
+        }
+    }
+
     // --- INICIALIZAÇÃO ---
     async function inicializarContas() {
         toggleLoading(true);
@@ -93,11 +116,21 @@ document.addEventListener('DOMContentLoaded', function() {
             if (errorElement) errorElement.style.display = 'block';
         }
         toggleLoading(false);
-        if (document.getElementById('contas-pendentes')) document.getElementById('contas-pendentes').classList.add('active');
+        // Garante que a primeira aba visível seja ativada corretamente
+        switchTab('contas-pendentes');
     }
 
     // --- EVENT LISTENERS ---
     function configurarEventListeners() {
+        // Lógica de Tabs
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tabId = btn.getAttribute('data-tab');
+                switchTab(tabId);
+            });
+        });
+        
         if (formNovaConta) formNovaConta.addEventListener('submit', criarConta);
         if (formEditarConta) formEditarConta.addEventListener('submit', salvarEdicaoConta);
         document.getElementById('aplicar-filtro')?.addEventListener('click', carregarContasAPagar);
@@ -343,7 +376,7 @@ document.addEventListener('DOMContentLoaded', function() {
             recorrenciaSelect.value = 'unica';
             document.getElementById('duracao-recorrencia-group').style.display = 'none';
             await carregarContasAPagar();
-            document.querySelector('.tab-btn[data-tab="contas-pendentes"]').click(); 
+            switchTab('contas-pendentes'); 
             
         } catch (error) {
             console.error('❌ Erro ao criar conta:', error);
@@ -472,7 +505,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             mostrarMensagem('Conta marcada como paga e movida para o histórico!', 'success');
             await carregarContasAPagar();
-            document.querySelector('.tab-btn[data-tab="historico"]').click();
+            switchTab('historico');
         } catch (error) {
             console.error('❌ Erro ao marcar como paga:', error);
             mostrarMensagem('Erro ao registrar pagamento: ' + error.message, 'error');
@@ -494,7 +527,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             mostrarMensagem('Pagamento revertido! Conta retornou para a lista de pendentes.', 'info');
             await carregarContasAPagar();
-            document.querySelector('.tab-btn[data-tab="contas-pendentes"]').click();
+            switchTab('contas-pendentes');
         } catch (error) {
             console.error('❌ Erro ao reverter pagamento:', error);
             mostrarMensagem('Erro ao reverter pagamento: ' + error.message, 'error');
