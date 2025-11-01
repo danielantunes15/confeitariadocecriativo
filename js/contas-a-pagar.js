@@ -680,10 +680,11 @@ document.addEventListener('DOMContentLoaded', function() {
         
         try {
             // **BUSCAR APENAS OS DADOS DIRETOS DA TABELA VENDAS**
+            // CORREÇÃO: Filtra apenas por 'crediario', que agora deve incluir todas as vendas a prazo
             const { data: vendasData, error } = await supabase
                 .from('vendas')
                 .select('id, data_venda, total, created_at, cliente, usuario_id, forma_pagamento, observacoes')
-                .in('forma_pagamento', ['crediario', 'misto']) // CORREÇÃO: Incluir pagamentos 'misto' que podem ter dívida pendente
+                .eq('forma_pagamento', 'crediario') // Filtra APENAS por 'crediario'
                 .neq('total', 0.00)
                 .order('data_venda', { ascending: true });
             
