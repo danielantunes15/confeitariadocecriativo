@@ -307,7 +307,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         const categoriaTodos = document.createElement('button');
         categoriaTodos.className = `categoria-btn active`;
         categoriaTodos.setAttribute('data-categoria', 'todos');
-        categoriaTodos.innerHTML = `<i class="fas fa-th-large"></i><span>Todos</span>`;
+        categoriaTodos.innerHTML = `<span>Todos</span>`; // <--- MODIFICADO (sem ícone)
         categoriaTodos.addEventListener('click', () => selecionarCategoria('todos'));
         categoriasContainer.appendChild(categoriaTodos);
 
@@ -315,7 +315,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             const categoriaBtn = document.createElement('button');
             categoriaBtn.className = `categoria-btn`;
             categoriaBtn.setAttribute('data-categoria', categoria.id);
-            categoriaBtn.innerHTML = `<i class="fas ${categoria.icone || 'fa-tag'}"></i><span>${categoria.nome}</span>`;
+            categoriaBtn.innerHTML = `<span>${categoria.nome}</span>`; // <--- MODIFICADO (sem ícone)
             categoriaBtn.addEventListener('click', () => selecionarCategoria(categoria.id));
             categoriasContainer.appendChild(categoriaBtn);
         });

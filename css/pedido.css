@@ -293,3 +293,37 @@
 #view-boas-vindas .app-content-scroll .logo-app {
     font-size: 2.5rem !important;
 }
+
+/* --- NOVAS REGRAS PARA CATEGORIAS (ROLAGEM HORIZONTAL E SEM ÍCONES) --- */
+
+#view-cardapio .categorias-botoes {
+    display: flex;
+    flex-wrap: nowrap; /* Impede a quebra de linha */
+    overflow-x: auto; /* Permite a rolagem horizontal */
+    padding-bottom: 10px; /* Garante que a barra de rolagem fique visível (opcional) */
+    gap: 0.5rem; /* Reduz o espaçamento entre botões */
+    -webkit-overflow-scrolling: touch; /* Melhoria de performance em iOS */
+}
+
+#view-cardapio .categoria-btn {
+    flex-shrink: 0; /* Impede o encolhimento dos botões */
+    white-space: nowrap; /* Mantém o texto em uma linha */
+    padding: 0.75rem 1.2rem;
+}
+
+#view-cardapio .categoria-btn i {
+    display: none !important; /* Esconde os ícones */
+}
+
+#view-cardapio .categoria-btn span {
+    margin: 0 !important; /* Remove margens que podem ter sido definidas para o ícone */
+}
+
+/* Esconde a barra de rolagem (opcional, para um visual mais limpo) */
+#view-cardapio .categorias-botoes::-webkit-scrollbar {
+    display: none;
+}
+#view-cardapio .categorias-botoes {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+}
