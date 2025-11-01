@@ -418,7 +418,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         const novoTotalPago = parseFloat((pago + valor).toFixed(2));
         
-        // VERIFICAÇÃO PARA CREDÍARIO
+        // VERIFICAÇÃO DE CREDÍARIO (TRANSFERIDA DE finalizePedido para aqui)
         if (tipo === 'crediario' && !clienteSelect.value) {
             mostrarMensagem('Ao usar Crediário, é obrigatório selecionar um cliente cadastrado!', 'error');
             return;
@@ -603,24 +603,33 @@ document.addEventListener('DOMContentLoaded', async function() {
         const formaPagamento = pagamentos.length > 1 ? 'misto' : pagamentos[0].tipo;
         const troco = Math.max(0, pago - total);
         
-        // VALIDAÇÃO: CREDÍARIO REQUER CLIENTE CADASTRADO
+        // VALIDAÇÃO: CREDÍARIO REQUER CLIENTE CADASTRADO (FINAL CHECK)
         const isCrediario = pagamentos.some(p => p.tipo === 'crediario');
 
         if (isCrediario && !clienteId) {
-            mostrarMensagem('Crediário exige que um cliente cadastrado seja selecionado.', 'error');
-            return;
+            mostrarMensagem('O pagamento em Crediário exige que um cliente cadastrado seja selecionado.', 'error');
+            const clienteSection = document.querySelector('.cliente');
+            if (clienteSection) {
+                 clienteSection.style.border = '2px solid var(--error-color)';
+                 setTimeout(() => { clienteSection.style.border = 'none'; }, 5000);
+            }
+            return; // Bloqueia a finalização
         }
-        // FIM DA VALIDAÇÃO
-
+        
+        // Bloqueio de Crediário Misto (Se for Crediário, não deve ter pago mais de 0.01)
         if (isCrediario && pago > 0.01) {
             mostrarMensagem('Não é possível registrar pagamento misto junto com Crediário. Use Crediário como pagamento único ou zere o pagamento.', 'error');
             return;
         }
+        
+        // CHECK DE PAGAMENTO COM TOLERÂNCIA (Para resolver o bug de "não finalizar")
+        const epsilon = 0.001; 
 
-        if (pago < total) {
-             mostrarMensagem(`O valor pago (${formatarMoeda(pago)}) é menor que o total do pedido (${formatarMoeda(total)}). Ajuste o pagamento.`, 'error');
+        if (pago < total - epsilon) { 
+             mostrarMensagem(`O valor pago (${formatarMoeda(pago)}) é menor que o total do pedido (${formatarMoeda(total)}). Saldo pendente: ${formatarMoeda(total - pago)}. Ajuste o pagamento.`, 'error');
             return;
         }
+        // FIM DO CHECK DE PAGAMENTO ROBUSTO
         
         
         if (!confirm(`Deseja finalizar o pedido com ${carrinho.length} item(s)?\n\nCliente: ${clienteNome}\nForma de pagamento: ${formaPagamento.toUpperCase()}\nTotal Final: ${formatarMoeda(total)}\nTroco: ${formatarMoeda(troco)}`)) {
