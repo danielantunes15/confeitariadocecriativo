@@ -1,24 +1,32 @@
-// js/contas-a-pagar.js - Gestão de Contas a Pagar
+// js/contas-a-pagar.js - Gestão de Contas a Pagar (MODERNA)
 document.addEventListener('DOMContentLoaded', function() {
     
-    // --- AUTENTICAÇÃO ---
+    // --- AUTENTICAÇÃO E SEGURANÇA ---
     if (!window.sistemaAuth || !window.sistemaAuth.verificarAutenticacao()) {
         window.location.href = 'login.html';
         return;
     }
     const usuario = window.sistemaAuth.usuarioLogado;
     
+    // VERIFICAÇÃO DE ACESSO (Admin/Gerente)
+    const isAdminOrManager = ['administrador', 'admin', 'gerente', 'supervisor'].includes(usuario.tipo?.toLowerCase());
+    
     // Elementos do DOM
     const alertContainer = document.getElementById('alert-container');
     const loadingElement = document.getElementById('loading');
     const contentElement = document.getElementById('content');
     const errorElement = document.getElementById('error-message');
+    const acessoNegadoElement = document.getElementById('acesso-negado');
+    const painelGerencialContent = document.getElementById('painel-gerencial-content');
+    
     const contasPendentesBody = document.getElementById('contas-pendentes-body');
     const contasHistoricoBody = document.getElementById('contas-historico-body');
-    const contasReceberBody = document.getElementById('contas-receber-body'); // NOVO
+    const contasReceberBody = document.getElementById('contas-receber-body');
     const formNovaConta = document.getElementById('form-nova-conta');
     const formEditarConta = document.getElementById('form-editar-conta');
     const modalEditarConta = document.getElementById('modal-editar-conta');
+    const recorrenciaSelect = document.getElementById('conta-recorrencia');
+    const parcelasInput = document.getElementById('conta-parcelas');
     
     let todasContas = [];
     let contasAReceber = [];
@@ -38,7 +46,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const formatarData = (dataString) => {
         if (!dataString) return 'N/A';
         try {
-             // Usa o formato ISO local 'sv-SE' para forçar a data a ser tratada como local e evitar problemas de fuso
             const [ano, mes, dia] = dataString.split('-');
             const dataObj = new Date(ano, mes - 1, dia);
 
@@ -49,45 +56,44 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     const toggleLoading = (show) => {
-        loadingElement.style.display = show ? 'block' : 'none';
-        contentElement.style.display = show ? 'none' : 'block';
+        if (loadingElement) loadingElement.style.display = show ? 'block' : 'none';
+        if (contentElement) contentElement.style.display = show ? 'none' : 'block';
     };
     
-    // Função global para fechar modal (necessária para onclick no HTML)
     function fecharModalContas() {
-        document.getElementById('modal-editar-conta').style.display = 'none';
+        if (modalEditarConta) modalEditarConta.style.display = 'none';
     }
     window.fecharModalContas = fecharModalContas;
     
     // --- INICIALIZAÇÃO ---
     async function inicializarContas() {
         toggleLoading(true);
+        
+        if (!isAdminOrManager) {
+            toggleLoading(false);
+            if (acessoNegadoElement) acessoNegadoElement.style.display = 'block';
+            return;
+        }
+        
+        if (painelGerencialContent) painelGerencialContent.style.display = 'block';
+
         try {
-            // Teste de conexão básico
             const { error } = await supabase.from('sistema_usuarios').select('id').limit(1);
             if (error) throw error;
             
             configurarEventListeners();
-            // Carrega ambas as listas
             await Promise.all([
                 carregarContasAPagar(),
                 carregarContasAReceber()
             ]);
             
         } catch (error) {
-            console.error('Erro na inicialização do Gerencial:', error);
+            console.error('❌ Erro na inicialização do Gerencial:', error);
             toggleLoading(false);
-            errorElement.style.display = 'block';
-            errorElement.innerHTML = `
-                <h2>Erro de Conexão</h2>
-                <p>Não foi possível conectar ao banco de dados.</p>
-                <p>Detalhes do erro: ${error.message}</p>
-                <button onclick="location.reload()" class="btn btn-primary">Tentar Novamente</button>
-            `;
+            if (errorElement) errorElement.style.display = 'block';
         }
         toggleLoading(false);
-        // Garante que a primeira aba esteja ativa ao carregar
-        document.getElementById('contas-pendentes').classList.add('active');
+        if (document.getElementById('contas-pendentes')) document.getElementById('contas-pendentes').classList.add('active');
     }
 
     // --- EVENT LISTENERS ---
@@ -100,8 +106,63 @@ document.addEventListener('DOMContentLoaded', function() {
         window.addEventListener('click', (e) => {
             if (e.target === modalEditarConta) fecharModalContas();
         });
+        
+        if (recorrenciaSelect) {
+            recorrenciaSelect.addEventListener('change', () => {
+                const duracaoGroup = document.getElementById('duracao-recorrencia-group');
+                const isRecorrente = recorrenciaSelect.value !== 'unica';
+                duracaoGroup.style.display = isRecorrente ? 'block' : 'none';
+                if (isRecorrente) {
+                    parcelasInput.setAttribute('required', 'required');
+                } else {
+                    parcelasInput.removeAttribute('required');
+                }
+            });
+        }
     }
 
+    // --- DASHBOARD DE ALERTAS (NOVAS FUNÇÕES) ---
+    function atualizarDashboardAlertas(contas) {
+        const hoje = new Date();
+        hoje.setHours(0, 0, 0, 0);
+        
+        const fimDaSemana = new Date(hoje);
+        fimDaSemana.setDate(hoje.getDate() + 7);
+        
+        const fimDoMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
+        fimDoMes.setHours(23, 59, 59, 999);
+
+        let totalVencido = 0;
+        let totalSemana = 0;
+        let totalMes = 0;
+        
+        contas.filter(c => !c.data_pagamento).forEach(conta => {
+            const dataVencimento = new Date(conta.data_vencimento + 'T00:00:00'); 
+            
+            // Vencidas
+            if (dataVencimento < hoje) {
+                totalVencido += conta.valor;
+            }
+            
+            // A Pagar na Semana (até o fim do dia)
+            if (dataVencimento >= hoje && dataVencimento <= fimDaSemana) {
+                 totalSemana += conta.valor;
+            }
+            
+            // A Pagar no Mês (até o fim do mês, inclui vencidas)
+            if (dataVencimento.getMonth() === hoje.getMonth() && dataVencimento.getFullYear() === hoje.getFullYear()) {
+                 totalMes += conta.valor;
+            } else if (dataVencimento < hoje) {
+                 // Adiciona vencidas de meses anteriores no total do mês
+                 totalMes += conta.valor;
+            }
+        });
+        
+        document.getElementById('alerta-vencido-valor').textContent = formatarMoeda(totalVencido);
+        document.getElementById('alerta-semana-valor').textContent = formatarMoeda(totalSemana);
+        document.getElementById('alerta-mes-valor').textContent = formatarMoeda(totalMes);
+    }
+    
     // -----------------------------------------------------------
     // --- CONTAS A PAGAR (EXISTENTE) ---
     // -----------------------------------------------------------
@@ -120,6 +181,8 @@ document.addEventListener('DOMContentLoaded', function() {
             if (error) throw error;
             
             todasContas = data || [];
+            
+            atualizarDashboardAlertas(todasContas);
             
             // Filtros de exibição
             const filtroVencimento = document.getElementById('filtro-vencimento')?.value || 'proximo';
@@ -153,9 +216,6 @@ document.addEventListener('DOMContentLoaded', function() {
     function exibirContasPendentes(contas, filtro) {
         if (!contasPendentesBody) return;
         
-        // ... (restante da lógica de exibição de contas a pagar, inalterada)
-        
-        // Aplica o filtro de vencimento
         const hoje = new Date();
         hoje.setHours(0, 0, 0, 0);
         
@@ -201,14 +261,14 @@ document.addEventListener('DOMContentLoaded', function() {
                         ${statusText}
                     </span>
                 </td>
-                <td>
-                    <button class="btn-edit" onclick="editarConta('${conta.id}')" title="Editar">
+                <td class="action-buttons-table">
+                    <button class="btn-acao-icon btn-edit-icon" onclick="editarConta('${conta.id}')" title="Editar">
                         <i class="fas fa-edit"></i>
                     </button>
-                    <button class="btn-success" onclick="marcarComoPaga('${conta.id}')" title="Marcar como Pago">
-                        <i class="fas fa-check"></i>
+                    <button class="btn-acao-icon btn-pago-icon" onclick="marcarComoPaga('${conta.id}')" title="Marcar como Pago">
+                        <i class="fas fa-check-circle"></i>
                     </button>
-                    <button class="btn-danger" onclick="excluirConta('${conta.id}', '${conta.descricao}')" title="Excluir">
+                    <button class="btn-acao-icon btn-danger-icon" onclick="excluirConta('${conta.id}', '${conta.descricao}')" title="Excluir">
                         <i class="fas fa-trash"></i>
                     </button>
                 </td>
@@ -219,7 +279,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function exibirHistorico(contas) {
         if (!contasHistoricoBody) return;
-        // ... (restante da lógica de exibição de histórico, inalterada)
         contasHistoricoBody.innerHTML = '';
 
         if (contas.length === 0) {
@@ -239,8 +298,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         ${formatarData(conta.data_pagamento)}
                     </span>
                 </td>
-                <td>
-                    <button class="btn-secondary" onclick="reverterPagamento('${conta.id}', '${conta.descricao}')" title="Reverter Pagamento">
+                <td class="action-buttons-table">
+                    <button class="btn-acao-icon btn-edit-icon" onclick="reverterPagamento('${conta.id}', '${conta.descricao}')" title="Reverter Pagamento">
                         <i class="fas fa-undo"></i>
                     </button>
                 </td>
@@ -248,9 +307,8 @@ document.addEventListener('DOMContentLoaded', function() {
             contasHistoricoBody.appendChild(tr);
         });
     }
-    
-    // ... (restante das funções de CRUD de Contas a Pagar, inalteradas)
 
+    // --- LÓGICA DE RECORRÊNCIA E CRUD ---
     async function criarConta(e) {
         e.preventDefault();
         
@@ -259,35 +317,87 @@ document.addEventListener('DOMContentLoaded', function() {
         const valor = parseFloat(document.getElementById('conta-valor').value);
         const vencimento = document.getElementById('conta-vencimento').value;
         const observacoes = document.getElementById('conta-observacoes').value.trim();
+        
+        const recorrencia = recorrenciaSelect.value;
+        const parcelas = parseInt(parcelasInput.value) || 1;
 
         if (!descricao || isNaN(valor) || valor <= 0 || !vencimento) {
             mostrarMensagem('Preencha a descrição, o valor e a data de vencimento corretamente.', 'error');
             return;
         }
+        
+        if (recorrencia !== 'unica' && (isNaN(parcelas) || parcelas < 2)) {
+            mostrarMensagem('Para contas recorrentes, o número de parcelas deve ser 2 ou mais.', 'error');
+            return;
+        }
 
         try {
-            const { error } = await supabase.from('contas_a_pagar').insert({
-                descricao: descricao,
-                fornecedor: fornecedor || null,
-                valor: valor,
-                data_vencimento: vencimento,
-                observacoes: observacoes || null,
-                usuario_cadastro_id: usuario.id
-            });
+            if (recorrencia === 'unica') {
+                 await cadastrarContaSimples(descricao, fornecedor, valor, vencimento, observacoes);
+            } else {
+                 await cadastrarContasRecorrentes(descricao, fornecedor, valor, vencimento, observacoes, recorrencia, parcelas);
+            }
 
-            if (error) throw error;
-            
-            mostrarMensagem('Conta cadastrada com sucesso!', 'success');
+            mostrarMensagem(`Conta(s) cadastrada(s) com sucesso! Total de ${recorrencia === 'unica' ? '1' : parcelas} lançamento(s).`, 'success');
             formNovaConta.reset();
+            recorrenciaSelect.value = 'unica';
+            document.getElementById('duracao-recorrencia-group').style.display = 'none';
             await carregarContasAPagar();
-            // Volta para a lista
             document.querySelector('.tab-btn[data-tab="contas-pendentes"]').click(); 
+            
         } catch (error) {
             console.error('❌ Erro ao criar conta:', error);
             mostrarMensagem('Erro ao cadastrar conta: ' + error.message, 'error');
         }
     }
+    
+    async function cadastrarContaSimples(descricao, fornecedor, valor, vencimento, observacoes) {
+        const { error } = await supabase.from('contas_a_pagar').insert({
+            descricao: descricao,
+            fornecedor: fornecedor || null,
+            valor: valor,
+            data_vencimento: vencimento,
+            observacoes: observacoes || null,
+            usuario_cadastro_id: usuario.id
+        });
 
+        if (error) throw error;
+    }
+
+    async function cadastrarContasRecorrentes(descricaoBase, fornecedor, valor, primeiroVencimentoStr, observacoes, tipoRecorrencia, numParcelas) {
+        let proximaData = new Date(primeiroVencimentoStr + 'T00:00:00');
+        const inserts = [];
+
+        for (let i = 0; i < numParcelas; i++) {
+            const numParcela = i + 1;
+            const novaDescricao = `${descricaoBase} (Parcela ${numParcela}/${numParcelas})`;
+            const dataVencimento = proximaData.toISOString().split('T')[0];
+
+            inserts.push({
+                descricao: novaDescricao,
+                fornecedor: fornecedor || null,
+                valor: valor,
+                data_vencimento: dataVencimento,
+                observacoes: observacoes || null,
+                recorrencia_tipo: tipoRecorrencia,
+                recorrencia_parcela: numParcela,
+                usuario_cadastro_id: usuario.id
+            });
+            
+            // Calcula a próxima data de vencimento
+            if (tipoRecorrencia === 'mensal') {
+                proximaData.setMonth(proximaData.getMonth() + 1);
+            } else if (tipoRecorrencia === 'semestral') {
+                proximaData.setMonth(proximaData.getMonth() + 6);
+            } else if (tipoRecorrencia === 'anual') {
+                proximaData.setFullYear(proximaData.getFullYear() + 1);
+            }
+        }
+
+        const { error } = await supabase.from('contas_a_pagar').insert(inserts);
+        if (error) throw error;
+    }
+    
     window.editarConta = async function(contaId) {
         try {
             const conta = todasContas.find(c => c.id === contaId);
@@ -349,7 +459,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!confirm('Confirmar o pagamento desta conta?')) return;
         
         try {
-            // Data de pagamento é hoje (formato ISO para o banco)
             const dataPagamento = new Date().toISOString().split('T')[0];
             
             const { error } = await supabase.from('contas_a_pagar')
@@ -363,7 +472,6 @@ document.addEventListener('DOMContentLoaded', function() {
             
             mostrarMensagem('Conta marcada como paga e movida para o histórico!', 'success');
             await carregarContasAPagar();
-            // Abre a aba de histórico
             document.querySelector('.tab-btn[data-tab="historico"]').click();
         } catch (error) {
             console.error('❌ Erro ao marcar como paga:', error);
@@ -378,7 +486,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const { error } = await supabase.from('contas_a_pagar')
                 .update({ 
                     data_pagamento: null,
-                    usuario_pagamento_id: null // Limpa o usuário que pagou
+                    usuario_pagamento_id: null
                 })
                 .eq('id', contaId);
 
@@ -386,7 +494,6 @@ document.addEventListener('DOMContentLoaded', function() {
             
             mostrarMensagem('Pagamento revertido! Conta retornou para a lista de pendentes.', 'info');
             await carregarContasAPagar();
-            // Abre a aba de pendentes
             document.querySelector('.tab-btn[data-tab="contas-pendentes"]').click();
         } catch (error) {
             console.error('❌ Erro ao reverter pagamento:', error);
@@ -412,9 +519,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-
     // -----------------------------------------------------------
-    // --- NOVO: CONTAS A RECEBER (BASEADO EM ENCOMENDAS) ---
+    // --- CONTAS A RECEBER ---
     // -----------------------------------------------------------
     
     async function carregarContasAReceber() {
@@ -423,7 +529,6 @@ document.addEventListener('DOMContentLoaded', function() {
         contasReceberBody.innerHTML = '<tr><td colspan="7" style="text-align: center;"><div class="loading-spinner"></div> Carregando...</td></tr>';
         
         try {
-            // Busca todas as encomendas que NÃO estão como 'concluida'
             const { data, error } = await supabase.from('encomendas')
                 .select('*, cliente:clientes(nome)')
                 .neq('status', 'concluida') 
@@ -431,7 +536,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 
             if (error) throw error;
 
-            // Filtra apenas as encomendas que têm saldo a receber
             contasAReceber = (data || []).filter(enc => (enc.valor_total - enc.sinal_pago) > 0);
             
             exibirContasAReceber(contasAReceber);
@@ -439,7 +543,6 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (error) {
             console.error('❌ Erro ao carregar contas a receber:', error);
             contasReceberBody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--error-color);">Erro ao carregar contas a receber.</td></tr>';
-            mostrarMensagem('Erro ao carregar Contas a Receber. Verifique se as tabelas `encomendas` e `clientes` existem.', 'error');
         }
     }
 
@@ -463,7 +566,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 statusText = 'Parcialmente Pago';
             }
             
-            // Reutiliza a data de entrega como "Vencimento" para a gestão de recebíveis
             const dataVencimento = formatarData(conta.data_entrega); 
 
             const tr = document.createElement('tr');
@@ -493,21 +595,18 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!confirm(`Deseja confirmar o recebimento de R$ ${valor.toFixed(2).replace('.', ',')} do cliente ${nomeCliente}?\n\nIsso irá registrar a entrada no caixa e marcar a encomenda como PAGA/CONCLUÍDA.`)) return;
 
         try {
-             // 1. Atualizar o status da encomenda (usa lógica do encomendas-principal.js)
-             // Eu vou simular a chamada à função que já existe em encomendas-principal.js
              if (window.encomendasSupabase?.atualizarStatusEncomenda) {
-                 await window.encomendasSupabase.atualizarStatusEncomenda(encomendaId, 'paga'); // Marca como paga primeiro
-                 await window.encomendasSupabase.atualizarStatusEncomenda(encomendaId, 'concluida'); // Marca como concluída
+                 await window.encomendasSupabase.atualizarStatusEncomenda(encomendaId, 'paga'); 
+                 await window.encomendasSupabase.atualizarStatusEncomenda(encomendaId, 'concluida'); 
              } else {
                  throw new Error('Módulo de encomendas não carregado. Não foi possível atualizar o status.');
              }
              
-             // 2. Registrar a entrada no caixa (simulando que é uma venda final, como no encomendas-principal.js)
              const vendaData = {
                  data_venda: new Date().toISOString().split('T')[0],
                  cliente: nomeCliente,
                  total: valor,
-                 forma_pagamento: 'dinheiro', // Assumimos dinheiro para simplificar o registro no caixa
+                 forma_pagamento: 'dinheiro', 
                  observacoes: `Recebimento Saldo Encomenda #${encomendaId}`, 
                  usuario_id: usuario.id
              };
@@ -519,7 +618,9 @@ document.addEventListener('DOMContentLoaded', function() {
              }
             
             mostrarMensagem(`Recebimento de R$ ${valor.toFixed(2)} de ${nomeCliente} confirmado!`, 'success');
-            await carregarContasAReceber(); // Recarrega a lista de recebíveis
+            await carregarContasAReceber();
+            await carregarContasAPagar();
+            
 
         } catch (error) {
             console.error('❌ Erro ao confirmar recebimento:', error);

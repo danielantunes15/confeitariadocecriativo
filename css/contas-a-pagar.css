@@ -1,126 +1,210 @@
-/* css/contas-a-pagar.css - Estilos específicos para Contas a Pagar */
+/* css/contas-a-pagar.css - Estilos específicos para Contas a Pagar (VERSÃO MODERNA) */
 @import url('style.css');
 
-/* Reutilizando estilos de tabs de estoque/admin */
+:root {
+    --primary-color: #ff69b4; 
+    --secondary-color: #8a2be2; /* Roxo */
+    --text-dark: #333;
+    --text-light: #666;
+    --border-soft: #e0e0e0;
+    --bg-light: #f5f5f5;
+    --bg-pink: #fff0f5;
+    --warning-vencido: #f9d8d8;
+    --warning-alerta: #ffecb3;
+}
+
+/* Tabs */
 .tabs {
     display: flex;
-    border-bottom: 2px solid #e9ecef;
+    border-bottom: 1px solid var(--border-soft);
     margin-bottom: 1.5rem;
 }
 
 .tab-btn {
+    padding: 0.8rem 1.5rem;
     background: none;
     border: none;
-    padding: 1rem 1.5rem;
+    border-bottom: 3px solid transparent;
     cursor: pointer;
-    border-bottom: 2px solid transparent;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-light);
     transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-weight: 500;
-    color: #6c757d;
-}
-
-.tab-btn:hover {
-    color: #495057;
-    background: #f8f9fa;
 }
 
 .tab-btn.active {
-    /* Cor roxa para diferenciar (usando secondary-color do relatorios.css/pdf-styles.css) */
-    color: #8a2be2; 
-    border-bottom-color: #8a2be2;
-    background: #f8f9ff; 
+    color: var(--secondary-color); 
+    border-bottom-color: var(--secondary-color);
 }
 
-.tab-content {
-    display: none;
+.tab-btn:hover:not(.active) {
+    color: var(--text-dark);
 }
 
 .tab-content.active {
-    display: block;
-    animation: fadeIn 0.3s ease;
+    animation: fadeIn 0.4s ease;
 }
 
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+/* NOVO: DASHBOARD DE ALERTAS (Revisado) */
+.alert-dashboard {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
 }
 
-/* Estilos de filtro e busca */
+.kpi-alerta {
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.08);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    transition: all 0.3s ease;
+    border: 1px solid var(--border-soft);
+}
+
+.kpi-alerta i {
+    font-size: 1.8rem;
+    margin-bottom: 0.5rem;
+    opacity: 0.8;
+}
+
+.kpi-alerta h4 {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--text-light);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.kpi-alerta .valor {
+    font-size: 2rem;
+    font-weight: 800;
+    margin-top: 0.25rem;
+}
+
+.alerta-vencido {
+    background-color: var(--warning-vencido);
+    color: var(--error-color);
+    border-left: 6px solid var(--error-color);
+}
+.alerta-vencido .valor { color: var(--error-color); }
+
+.alerta-semana {
+    background-color: var(--warning-alerta);
+    color: var(--warning-color);
+    border-left: 6px solid var(--warning-color);
+}
+.alerta-semana .valor { color: var(--warning-color); }
+
+
+.alerta-mes {
+    background-color: var(--bg-pink);
+    color: var(--secondary-color);
+    border-left: 6px solid var(--secondary-color);
+}
+.alerta-mes .valor { color: var(--secondary-color); }
+
+/* Filtros e Busca (Visual Integrado) */
 .table-controls {
     display: flex;
     justify-content: space-between;
-    align-items: flex-end; /* Alinha o botão "Aplicar" com os inputs */
+    align-items: center; 
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--border-soft);
     margin-bottom: 1.5rem;
     gap: 1rem;
     flex-wrap: wrap;
 }
 
 .search-box {
-    position: relative;
-    flex: 1;
-    max-width: 300px;
+    flex-basis: 350px;
+    flex-grow: 1;
 }
 
-.search-box input {
-    width: 100%;
-    padding: 0.75rem 1rem 0.75rem 2.5rem;
-    border: 2px solid #e9ecef;
-    border-radius: 8px;
+.table-controls .form-group {
+    flex-basis: 200px;
+}
+
+/* Tabela e Status */
+.table-container table {
+    border-collapse: separate; /* Permite border-radius nas células */
+    border-spacing: 0;
+}
+
+.table-container th, .table-container td {
+    padding: 1rem;
+    border: none;
+    border-bottom: 1px solid var(--bg-light); /* Linha divisória suave */
+}
+
+.table-container th {
+    background-color: var(--bg-pink);
+    color: var(--primary-dark);
+    font-weight: 700;
     font-size: 0.9rem;
+    text-transform: uppercase;
 }
 
-.search-box i {
-    position: absolute;
-    left: 1rem;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #6c757d;
+.table-container tbody tr:hover {
+    background-color: #fcf4f8;
 }
 
-/* Estilos de Status/Badges */
-.status-badge {
-    padding: 0.25rem 0.75rem;
-    border-radius: 12px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    display: inline-flex;
+/* Estilos de Botões de Ação na Tabela (Ações) */
+.action-buttons-table {
+    display: flex;
+    gap: 5px;
+    justify-content: center;
+}
+
+.btn-acao-icon {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.1rem;
+    padding: 6px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+/* Estilos específicos para as ações */
+.btn-edit-icon { color: var(--info-color); }
+.btn-edit-icon:hover { background-color: #e0f7fa; transform: scale(1.1); }
+
+.btn-pago-icon { color: var(--success-color); font-size: 1.25rem; }
+.btn-pago-icon:hover { background-color: #e8f5e9; transform: scale(1.1); }
+
+.btn-danger-icon { color: var(--error-color); }
+.btn-danger-icon:hover { background-color: #f8d7da; transform: scale(1.1); }
+
+/* NOVO: Estilo para a caixa de recorrência */
+.card-recorrencia {
+    border: 1px solid var(--primary-light);
+    border-radius: var(--radius-sm);
+    padding: 1.5rem;
+    margin-top: 1.5rem;
+    background-color: var(--bg-pink);
+    box-shadow: inset 0 0 5px rgba(255, 105, 180, 0.1);
+}
+
+.card-recorrencia-title {
+    margin: 0 0 1rem 0;
+    color: var(--primary-dark);
+    display: flex;
     align-items: center;
-    gap: 0.25rem;
+    gap: 0.75rem;
+    font-size: 1.2rem;
 }
 
-/* Contas a Pagar */
-.status-badge.pendente {
-    background: #fff3cd; /* Amarelo (warning) */
-    color: #856404;
-}
-
-.status-badge.vencido {
-    background: #f8d7da; /* Vermelho (danger) */
-    color: #721c24;
-}
-
-.status-badge.pago {
-    background: #d4edda; /* Verde (success) */
-    color: #155724;
-}
-
-/* NOVO: Contas a Receber */
-.status-badge.a-receber {
-    background: #e3f2fd; /* Azul (info) */
-    color: #1565c0;
-}
-
-.status-badge.parcialmente-pago {
-    background: #f8f9fa;
-    color: #495057;
-}
-
-/* Formulário e Tabela (reutilizam style.css e estoque.css/admin.css) */
 
 /* Responsividade */
+@media (max-width: 992px) {
+    .alert-dashboard {
+        grid-template-columns: 1fr;
+    }
+}
+
 @media (max-width: 768px) {
     .table-controls {
         flex-direction: column;
@@ -135,8 +219,10 @@
         grid-template-columns: 1fr;
     }
     
-    /* Reajuste para o botão de filtro que estava alinhado à base */
-    .table-controls button {
-        margin-top: 1rem;
+    .table-container th, .table-container td {
+        padding: 0.75rem 0.5rem;
+        font-size: 0.85rem;
     }
+    
+    .kpi-alerta .valor { font-size: 1.5rem; }
 }
