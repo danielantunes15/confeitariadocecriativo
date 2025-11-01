@@ -240,9 +240,80 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
 
-    function exibirCategorias() { /* ... (Mantida) ... */ }
-    function selecionarCategoria(categoriaId) { /* ... (Mantida) ... */ }
-    function exibirProdutos() { /* ... (Mantida) ... */ }
+    function exibirCategorias() { 
+        categoriasContainer.innerHTML = ''; 
+        const categoriaTodos = document.createElement('button');
+        categoriaTodos.className = `categoria-btn active`;
+        categoriaTodos.setAttribute('data-categoria', 'todos');
+        categoriaTodos.innerHTML = `<i class="fas fa-th-large"></i><span>Todos</span>`;
+        categoriaTodos.addEventListener('click', () => selecionarCategoria('todos'));
+        categoriasContainer.appendChild(categoriaTodos);
+
+        categorias.forEach(categoria => {
+            const categoriaBtn = document.createElement('button');
+            categoriaBtn.className = `categoria-btn`;
+            categoriaBtn.setAttribute('data-categoria', categoria.id);
+            categoriaBtn.innerHTML = `<i class="fas ${categoria.icone || 'fa-tag'}"></i><span>${categoria.nome}</span>`;
+            categoriaBtn.addEventListener('click', () => selecionarCategoria(categoria.id));
+            categoriasContainer.appendChild(categoriaBtn);
+        });
+    }
+
+    function selecionarCategoria(categoriaId) {
+        categoriaSelecionada = categoriaId;
+        document.querySelectorAll('.categoria-btn').forEach(botao => {
+            botao.classList.toggle('active', botao.getAttribute('data-categoria') === categoriaId);
+        });
+        exibirProdutos();
+    }
+
+    function exibirProdutos() {
+        produtosContainer.innerHTML = ''; 
+        let produtosParaExibir = produtos.filter(p => p.ativo); 
+
+        if (categoriaSelecionada !== 'todos') {
+            produtosParaExibir = produtosParaExibir.filter(p => p.categoria_id === categoriaSelecionada);
+        }
+
+        if (produtosParaExibir.length === 0) {
+            produtosContainer.innerHTML = `<p style="text-align: center; color: #666; grid-column: 1 / -1;">Nenhum produto encontrado nesta categoria.</p>`;
+            return;
+        }
+
+        produtosParaExibir.forEach(produto => {
+            const produtoCard = document.createElement('div');
+            produtoCard.className = `produto-card ${produto.estoque_atual <= 0 ? 'out-of-stock' : ''}`;
+            
+            produtoCard.innerHTML = `
+                <div class="produto-imagem">
+                    <i class="fas ${produto.icone || 'fa-cube'}"></i>
+                    ${produto.estoque_atual <= 0 ? '<div class="out-of-stock-badge">ESGOTADO</div>' : ''}
+                    ${(produto.estoque_atual > 0 && produto.estoque_atual <= produto.estoque_minimo) ? '<div class="low-stock-badge">ÚLTIMAS UNID.</div>' : ''}
+                </div>
+                <div class="produto-info">
+                    <div class="produto-nome">${produto.nome}</div>
+                    <div class="produto-categoria">${produto.categoria?.nome || 'Sem categoria'}</div>
+                    <div class="produto-preco">R$ ${produto.preco_venda?.toFixed(2).replace('.', ',')}</div>
+                    <button class="btn-adicionar" data-id="${produto.id}" ${produto.estoque_atual <= 0 ? 'disabled' : ''}>
+                        ${produto.estoque_atual <= 0 ? 'Esgotado' : '<i class="fas fa-plus"></i> Adicionar'}
+                    </button>
+                </div>
+            `;
+            
+            produtoCard.addEventListener('click', (e) => {
+                if (!e.target.closest('.btn-adicionar')) {
+                    adicionarAoCarrinho(produto);
+                }
+            });
+            
+            produtoCard.querySelector('.btn-adicionar').addEventListener('click', (e) => {
+                e.stopPropagation(); 
+                adicionarAoCarrinho(produto);
+            });
+
+            produtosContainer.appendChild(produtoCard);
+        });
+    }
     
     function obterDadosCliente() {
         const endereco = carrinhoEnderecoInput.value.trim();
@@ -409,7 +480,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         authScreen.classList.remove('active');
         mobileNav.style.display = 'flex';
-        alternarView('view-inicio');
+        alternarView('view-cardapio'); // PONTO DE AJUSTE
         atualizarPerfilUI();
     }
     
@@ -427,9 +498,62 @@ document.addEventListener('DOMContentLoaded', async function() {
         alternarView('auth-screen');
     }
 
-    async function carregarStatusUltimoPedido() { /* ... (Mantida) ... */ }
-    function atualizarPerfilUI() { /* ... (Mantida) ... */ }
-    function atualizarCarrinhoDisplay() { /* ... (Mantida) ... */ }
+    async function carregarStatusUltimoPedido() {
+        statusUltimoPedido.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Buscando...';
+        
+        try {
+            const { data, error } = await supabase.from('pedidos_online')
+                .select('*')
+                .eq('telefone_cliente', clientePerfil.telefone)
+                .order('created_at', { ascending: false })
+                .limit(1); 
+                
+            if (error) throw error;
+            
+            const ultimoPedido = data ? data[0] : null;
+            
+            if (ultimoPedido) {
+                statusUltimoPedido.innerHTML = `
+                    <p>Pedido #${ultimoPedido.id} - Status: 
+                        <span class="status-badge-history status-${ultimoPedido.status}">
+                            ${ultimoPedido.status.toUpperCase()}
+                        </span>
+                    </p>
+                    <p style="font-size: 0.9rem;">Total: ${formatarMoeda(ultimoPedido.total)}</p>
+                `;
+            } else {
+                 statusUltimoPedido.innerHTML = 'Você ainda não fez nenhum pedido conosco!';
+            }
+            
+            homeEndereco.innerHTML = clientePerfil.endereco || 'Endereço não cadastrado.';
+            
+        } catch (error) {
+            statusUltimoPedido.innerHTML = 'Erro ao carregar status.';
+            console.error('Erro ao carregar status do pedido:', error);
+        }
+    }
+
+    function atualizarPerfilUI() {
+        profileNameSpan.textContent = clientePerfil.nome.split(' ')[0];
+        homeClienteNome.textContent = clientePerfil.nome.split(' ')[0];
+        carrinhoClienteNomeDisplay.textContent = clientePerfil.nome || 'N/A';
+        carrinhoEnderecoDisplay.textContent = clientePerfil.endereco || 'N/A';
+        carrinhoEnderecoInput.value = clientePerfil.endereco || '';
+        
+        const opcoesPagamentoOriginal = document.querySelector('.pagamento .opcoes-pagamento');
+        if (pagamentoOpcoesContainer.children.length === 0 && opcoesPagamentoOriginal) {
+            pagamentoOpcoesContainer.innerHTML = opcoesPagamentoOriginal.innerHTML;
+        }
+    }
+
+    function atualizarCarrinhoDisplay() {
+        carrinhoClienteNomeDisplay.textContent = clientePerfil.nome || 'N/A';
+        carrinhoEnderecoDisplay.textContent = clientePerfil.endereco || 'N/A';
+        carrinhoEnderecoInput.value = clientePerfil.endereco || '';
+        
+        atualizarCarrinho();
+    }
+    
     async function finalizarPedidoDireto() { /* ... (Mantida) ... */ }
     async function enviarPedidoWhatsapp() { /* ... (Mantida) ... */ }
 
