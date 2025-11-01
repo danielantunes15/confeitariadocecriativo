@@ -679,29 +679,54 @@ document.addEventListener('DOMContentLoaded', function() {
         crediarioDevedoresBody.innerHTML = '<tr><td colspan="6" style="text-align: center;"><div class="loading-spinner"></div> Carregando...</td></tr>';
         
         try {
-            // CORRIGIDO: Usando os aliases convencionais 'usuario' e 'cliente' para o JOIN
-            const { data, error } = await supabase.from('vendas')
-                .select(`
-                    id, 
-                    data_venda, 
-                    total, 
-                    created_at,
-                    usuario:sistema_usuarios(nome), 
-                    cliente:clientes(nome)
-                `)
-                .eq('forma_pagamento', 'crediario')
-                .neq('total', 0.00) // Filtra apenas as dívidas em aberto
+            // **BUSCAR APENAS OS DADOS DIRETOS DA TABELA VENDAS**
+            const { data: vendasData, error } = await supabase
+                .from('vendas')
+                .select('id, data_venda, total, created_at, cliente, usuario_id, forma_pagamento, observacoes')
+                .in('forma_pagamento', ['crediario', 'misto']) // CORREÇÃO: Incluir pagamentos 'misto' que podem ter dívida pendente
+                .neq('total', 0.00)
                 .order('data_venda', { ascending: true });
             
             if (error) throw error;
 
-            vendasCrediario = data || [];
+            // **BUSCAR NOMES DOS USUÁRIOS EM PARALELO**
+            const usuarioIds = [...new Set(vendasData.map(v => v.usuario_id).filter(Boolean))];
+            const usuariosMap = new Map();
             
+            if (usuarioIds.length > 0) {
+                const { data: usuariosData } = await supabase
+                    .from('sistema_usuarios')
+                    .select('id, nome')
+                    .in('id', usuarioIds);
+                
+                if (usuariosData) {
+                    usuariosData.forEach(usuario => {
+                        usuariosMap.set(usuario.id, usuario.nome);
+                    });
+                }
+            }
+
+            // **PROCESSAR OS DADOS FINAIS**
+            const vendasProcessadas = (vendasData || []).map(venda => ({
+                id: venda.id,
+                data_venda: venda.data_venda,
+                total: venda.total,
+                created_at: venda.created_at,
+                usuario: { 
+                    nome: usuariosMap.get(venda.usuario_id) || 'Usuário Não Encontrado' 
+                },
+                cliente: { 
+                    nome: venda.cliente || 'Cliente Não Informado' 
+                }
+            }));
+
+            vendasCrediario = vendasProcessadas;
             exibirVendasCrediario(vendasCrediario);
 
         } catch (error) {
             console.error('❌ Erro ao carregar vendas Crediário:', error);
             crediarioDevedoresBody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--error-color);">Erro ao carregar vendas Crediário.</td></tr>';
+            mostrarMensagem('Erro ao carregar vendas do Crediário', 'error');
         }
     }
 
@@ -769,7 +794,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const { error } = await supabase.from('vendas')
                 .update({ 
                     total: 0.00, // Zera o total para tirar da lista de devedores
-                    forma_pagamento: 'dinheiro', // Atualiza para o pagamento final
                     observacoes: 'DÍVIDA CREDÍARIO PAGA. ' + new Date().toLocaleDateString('pt-BR')
                 })
                 .eq('id', vendaId);
