@@ -15,9 +15,19 @@
 <body class="pedido-body">
     <header class="header">
         <div class="container">
-            <div class="header-content-publico">
-                <h1 class="logo">Doce Criativo</h1>
-                <p class="slogan-publico">Seu cardápio digital</p>
+            <div class="header-content-publico" style="justify-content: space-between; align-items: center; flex-direction: row;">
+                <div style="text-align: left;">
+                    <h1 class="logo">Doce Criativo</h1>
+                    <p class="slogan-publico">Seu cardápio digital</p>
+                </div>
+                <div id="auth-controls">
+                    <button id="login-google-btn" class="btn btn-primary" style="padding: 10px 15px;">
+                        <i class="fab fa-google"></i> Login
+                    </button>
+                    <button id="profile-btn" class="btn btn-primary" style="display: none; padding: 10px 15px;">
+                        <i class="fas fa-user-circle"></i> <span id="profile-name"></span>
+                    </button>
+                </div>
             </div>
         </div>
     </header>
@@ -25,101 +35,154 @@
     <main class="main">
         <div class="container">
             <div id="alert-container"></div>
+            
+            <div class="tabs-nav-cliente">
+                <button class="tab-btn-cliente active" data-tab="cardapio">
+                    <i class="fas fa-utensils"></i> Cardápio
+                </button>
+                <button class="tab-btn-cliente" data-tab="meus-pedidos" id="meus-pedidos-tab">
+                    <i class="fas fa-history"></i> Meus Pedidos
+                </button>
+            </div>
+            
+            <div id="tab-cardapio" class="tab-content-cliente active">
 
-            <section class="categorias">
-                <h2>Categorias</h2>
-                <div class="categorias-botoes" id="categorias-container">
-                    <div class="loading-container"><div class="spinner"></div></div>
-                </div>
-            </section>
-
-            <section class="produtos">
-                <h2>Cardápio</h2>
-                <div class="produtos-grid" id="produtos-container">
-                    <div class="loading-container"><div class="spinner"></div></div>
-                </div>
-            </section>
-
-            <section class="carrinho">
-                <h2><i class="fas fa-shopping-bag"></i> Minha Sacola</h2>
-                <div class="carrinho-itens" id="carrinho-itens">
-                    <p style="text-align: center; color: #666;">Sua sacola está vazia.</p>
-                </div>
-                <div class="carrinho-total">
-                    <strong>Total: R$ <span id="total-carrinho">0,00</span></strong>
-                </div>
-            </section>
-
-            <section class="card-pedido">
-                <h2><i class="fas fa-user-alt"></i> 1. Seus Dados</h2>
-                <form id="form-cliente">
-                    <div class="form-group">
-                        <label for="cliente-nome">Seu Nome *</label>
-                        <input type="text" id="cliente-nome" placeholder="Digite seu nome" required>
+                <section class="categorias">
+                    <h2>Categorias</h2>
+                    <div class="categorias-botoes" id="categorias-container">
+                        <div class="loading-container"><div class="spinner"></div></div>
                     </div>
-                    <div class="form-group">
-                        <label for="cliente-telefone">Seu WhatsApp *</label>
-                        <input type="tel" id="cliente-telefone" placeholder="(99) 99999-9999" required>
-                    </div>
-                </form>
-            </section>
+                </section>
 
-            <section class="card-pedido">
-                <h2><i class="fas fa-map-marker-alt"></i> 2. Endereço de Entrega</h2>
-                <form id="form-entrega">
-                    <div class="form-group">
-                        <label for="cliente-endereco">Endereço Completo *</label>
-                        <textarea id="cliente-endereco" rows="3" placeholder="Ex: Rua das Flores, 123, Bairro, Cidade (Ponto de referência)" required></textarea>
+                <section class="produtos">
+                    <h2>Cardápio</h2>
+                    <div class="produtos-grid" id="produtos-container">
+                        <div class="loading-container"><div class="spinner"></div></div>
                     </div>
-                </form>
-            </section>
+                </section>
 
-            <section class="pagamento">
-                <h2><i class="fas fa-money-check-alt"></i> 3. Forma de Pagamento</h2>
-                <div class="opcoes-pagamento">
-                    <label class="pagamento-opcao">
-                        <input type="radio" name="pagamento" value="Dinheiro" checked>
-                        <span class="pagamento-icone">💵</span>
-                        <span class="pagamento-texto">
-                            <span class="pagamento-titulo">Dinheiro</span>
-                            <span class="pagamento-descricao">Pagar na entrega</span>
-                        </span>
-                    </label>
-                    <label class="pagamento-opcao">
-                        <input type="radio" name="pagamento" value="PIX">
-                        <span class="pagamento-icone">📱</span>
-                        <span class="pagamento-texto">
-                            <span class="pagamento-titulo">PIX</span>
-                            <span class="pagamento-descricao">Pagar na entrega</span>
-                        </span>
-                    </label>
-                    <label class="pagamento-opcao">
-                        <input type="radio" name="pagamento" value="Cartão (Maquininha)">
-                        <span class="pagamento-icone">💳</span>
-                        <span class="pagamento-texto">
-                            <span class="pagamento-titulo">Cartão (Maquininha)</span>
-                            <span class="pagamento-descricao">Débito ou Crédito na entrega</span>
-                        </span>
-                    </label>
-                </div>
-            </section>
-
-            <section class="finalizar">
-                <div class="form-group" style="text-align: center;">
-                    <label style="font-weight: bold; margin-bottom: 10px;">Como deseja finalizar?</label>
-                    <div class="form-actions" style="justify-content: center; gap: 1rem;">
-                        <button id="enviar-pedido-whatsapp" class="btn-whatsapp" style="flex: 1; min-width: 200px;">
-                            <i class="fab fa-whatsapp"></i> Enviar pelo WhatsApp
-                        </button>
-                        <button id="finalizar-pedido-direto" class="btn btn-primary" style="flex: 1; min-width: 200px; background: var(--rosa-escuro); color: white; border-radius: 30px;">
-                            <i class="fas fa-check-circle"></i> Salvar no Sistema
-                        </button>
+                <section class="carrinho">
+                    <h2><i class="fas fa-shopping-bag"></i> Minha Sacola</h2>
+                    <div class="carrinho-itens" id="carrinho-itens">
+                        <p style="text-align: center; color: #666;">Sua sacola está vazia.</p>
                     </div>
-                </div>
-            </section>
+                    <div class="carrinho-total">
+                        <strong>Total: R$ <span id="total-carrinho">0,00</span></strong>
+                    </div>
+                </section>
+
+                <section class="card-pedido" id="cliente-data-section">
+                    <h2><i class="fas fa-user-alt"></i> 1. Seus Dados</h2>
+                    <div id="logged-in-info" style="display: none;">
+                        <p>Pedido para: <strong id="cliente-nome-logado"></strong></p>
+                        <p>WhatsApp: <strong id="cliente-telefone-logado"></strong> (Usaremos este)</p>
+                        <input type="hidden" id="cliente-nome" value="" />
+                        <input type="hidden" id="cliente-telefone" value="" />
+                    </div>
+                    <form id="form-cliente" style="display: none;">
+                        <div class="form-group">
+                            <label for="cliente-nome">Seu Nome *</label>
+                            <input type="text" id="cliente-nome-input" placeholder="Digite seu nome" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="cliente-telefone">Seu WhatsApp *</label>
+                            <input type="tel" id="cliente-telefone-input" placeholder="(99) 99999-9999" required>
+                        </div>
+                    </form>
+                </section>
+
+                <section class="card-pedido">
+                    <h2><i class="fas fa-map-marker-alt"></i> 2. Endereço de Entrega</h2>
+                    <form id="form-entrega">
+                        <div class="form-group">
+                            <label for="cliente-endereco">Endereço Completo *</label>
+                            <textarea id="cliente-endereco" rows="3" placeholder="Ex: Rua das Flores, 123, Bairro, Cidade (Ponto de referência)" required></textarea>
+                        </div>
+                    </form>
+                </section>
+
+                <section class="pagamento">
+                    <h2><i class="fas fa-money-check-alt"></i> 3. Forma de Pagamento</h2>
+                    <div class="opcoes-pagamento">
+                        <label class="pagamento-opcao">
+                            <input type="radio" name="pagamento" value="Dinheiro" checked>
+                            <span class="pagamento-icone">💵</span>
+                            <span class="pagamento-texto">
+                                <span class="pagamento-titulo">Dinheiro</span>
+                                <span class="pagamento-descricao">Pagar na entrega</span>
+                            </span>
+                        </label>
+                        <label class="pagamento-opcao">
+                            <input type="radio" name="pagamento" value="PIX">
+                            <span class="pagamento-icone">📱</span>
+                            <span class="pagamento-texto">
+                                <span class="pagamento-titulo">PIX</span>
+                                <span class="pagamento-descricao">Pagar na entrega</span>
+                            </span>
+                        </label>
+                        <label class="pagamento-opcao">
+                            <input type="radio" name="pagamento" value="Cartão (Maquininha)">
+                            <span class="pagamento-icone">💳</span>
+                            <span class="pagamento-texto">
+                                <span class="pagamento-titulo">Cartão (Maquininha)</span>
+                                <span class="pagamento-descricao">Débito ou Crédito na entrega</span>
+                            </span>
+                        </label>
+                    </div>
+                </section>
+
+                <section class="finalizar">
+                    <div class="form-group" style="text-align: center;">
+                        <label style="font-weight: bold; margin-bottom: 10px;">Como deseja finalizar?</label>
+                        <div class="form-actions" style="justify-content: center; gap: 1rem;">
+                            <button id="enviar-pedido-whatsapp" class="btn-whatsapp" style="flex: 1; min-width: 200px;">
+                                <i class="fab fa-whatsapp"></i> Enviar pelo WhatsApp
+                            </button>
+                            <button id="finalizar-pedido-direto" class="btn btn-primary" style="flex: 1; min-width: 200px; background: var(--rosa-escuro); color: white; border-radius: 30px;">
+                                <i class="fas fa-check-circle"></i> Salvar no Sistema
+                            </button>
+                        </div>
+                    </div>
+                </section>
+            </div>
+            
+            <div id="tab-meus-pedidos" class="tab-content-cliente">
+                <section class="card-pedido" style="text-align: center;" id="historico-loading">
+                    <h2><i class="fas fa-history"></i> Histórico de Pedidos</h2>
+                    <p id="historico-message">Faça login para visualizar seus pedidos anteriores.</p>
+                    <div id="historico-pedidos-list" class="table-container" style="display: none;">
+                        <table style="width: 100%;">
+                            <thead>
+                                <tr>
+                                    <th>Pedido</th>
+                                    <th>Data</th>
+                                    <th>Total</th>
+                                    <th>Status</th>
+                                    <th>Detalhes</th>
+                                </tr>
+                            </thead>
+                            <tbody id="pedidos-history-body">
+                                </tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+            
         </div>
     </main>
 
+    <div id="profile-modal" class="modal">
+        <div class="modal-content" style="max-width: 400px; text-align: center;">
+            <span class="close" id="close-profile-modal">&times;</span>
+            <h3 style="color: var(--rosa-escuro); margin-bottom: 1rem;"><i class="fas fa-user-circle"></i> Sua Conta</h3>
+            <p>Logado como:</p>
+            <strong id="modal-user-email" style="display: block; font-size: 1.1rem; margin-bottom: 1.5rem;"></strong>
+            <button id="logout-btn-publico" class="btn btn-danger" style="width: 100%;">
+                <i class="fas fa-sign-out-alt"></i> Fazer Logout
+            </button>
+        </div>
+    </div>
+    
     <footer class="footer">
         <div class="container">
             <p>Confeitaria Doces Criativos - © 2025</p>

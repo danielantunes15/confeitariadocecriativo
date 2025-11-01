@@ -1,96 +1,91 @@
-/* Importa os estilos que já criamos */
-@import url('style.css');
-@import url('vendas.css');
+/* Estilos para a Área do Cliente (Login e Histórico) */
 
-/* Estilos específicos para a página de pedido público */
-
-.pedido-body {
-    background: linear-gradient(135deg, #fff0f5 0%, #ffe4e9 100%);
-}
-
-/* Header simplificado */
-.header-content-publico {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 1rem 0;
-}
 .header-content-publico .logo {
-    font-size: 2.5rem;
-    color: white;
-}
-.slogan-publico {
-    font-size: 1rem;
-    color: white;
-    opacity: 0.9;
-    margin-top: -10px;
+    font-size: 1.8rem;
+    margin-right: 1rem;
 }
 
-/* Card para formulários */
-.card-pedido {
-    background-color: var(--branco);
-    border-radius: 8px;
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+.slogan-publico {
+    display: block;
+    font-size: 0.8rem;
+    margin-top: 0;
 }
-.card-pedido h2 {
-    color: var(--rosa-principal);
+
+#auth-controls {
+    display: flex;
+    align-items: center;
+}
+
+.tabs-nav-cliente {
+    display: flex;
+    margin-bottom: 1rem;
     border-bottom: 2px solid var(--rosa-claro);
-    padding-bottom: 10px;
-    margin-bottom: 1rem;
 }
-.card-pedido .form-group {
-    margin-bottom: 1rem;
-}
-.card-pedido .form-group label {
+
+.tab-btn-cliente {
+    background: none;
+    border: none;
+    padding: 10px 15px;
+    font-size: 1rem;
     font-weight: bold;
-    color: #555;
-    margin-bottom: 5px;
+    color: #888;
+    cursor: pointer;
+    transition: color 0.3s ease;
+    border-bottom: 3px solid transparent;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.tab-btn-cliente.active {
+    color: var(--rosa-escuro);
+    border-bottom-color: var(--rosa-escuro);
+}
+
+.tab-content-cliente {
+    display: none;
+    animation: fadeIn 0.4s;
+}
+
+.tab-content-cliente.active {
     display: block;
 }
-.card-pedido .form-group input,
-.card-pedido .form-group textarea {
-    width: 100%;
-    padding: 12px;
-    border: 1px solid #ddd;
+
+#logged-in-info {
+    border: 1px solid var(--rosa-claro);
     border-radius: 5px;
-    font-size: 1rem;
-}
-.card-pedido .form-group input:focus,
-.card-pedido .form-group textarea:focus {
-    border-color: var(--rosa-principal);
-    outline: none;
-    box-shadow: 0 0 0 2px var(--rosa-claro);
+    padding: 15px;
+    background-color: #fff0f5;
 }
 
-/* Botão final do WhatsApp */
-.btn-whatsapp {
-    background: linear-gradient(135deg, #25D366, #128C7E);
-    color: var(--branco);
-    border: none;
-    padding: 1rem 2rem;
-    border-radius: 30px;
-    font-size: 1.2rem;
-    font-weight: bold;
-    cursor: pointer;
+/* Estilos da Tabela de Histórico */
+#historico-pedidos-list table {
     width: 100%;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
+    border-collapse: collapse;
 }
-.btn-whatsapp:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 6px 12px rgba(37, 211, 102, 0.3);
+
+#historico-pedidos-list th,
+#historico-pedidos-list td {
+    padding: 12px 8px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+    font-size: 0.9rem;
 }
-.btn-whatsapp:disabled {
-    background: #ccc;
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
+
+#historico-pedidos-list th {
+    background-color: var(--rosa-claro);
+    color: var(--rosa-escuro);
 }
-.btn-whatsapp .fa-whatsapp {
-    font-size: 1.5rem;
+
+.status-badge-history {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
 }
+
+.status-novo { background-color: #ffe0b2; color: #ff9800; }
+.status-preparando { background-color: #fff3cd; color: #856404; }
+.status-pronto { background-color: #d1ecf1; color: #0c5460; }
+.status-entregue { background-color: #d4edda; color: #155724; }
+.status-cancelado { background-color: #f8d7da; color: #721c24; }
