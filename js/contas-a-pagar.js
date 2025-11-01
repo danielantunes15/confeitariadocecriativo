@@ -22,6 +22,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const contasPendentesBody = document.getElementById('contas-pendentes-body');
     const contasHistoricoBody = document.getElementById('contas-historico-body');
     const contasReceberBody = document.getElementById('contas-receber-body');
+    // NOVO ELEMENTO: Crediário
+    const crediarioDevedoresBody = document.getElementById('crediario-devedores-body');
+    
     const formNovaConta = document.getElementById('form-nova-conta');
     const formEditarConta = document.getElementById('form-editar-conta');
     const modalEditarConta = document.getElementById('modal-editar-conta');
@@ -30,6 +33,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     let todasContas = [];
     let contasAReceber = [];
+    let vendasCrediario = []; // NOVO: Para armazenar as vendas Crediário
 
     // --- FUNÇÕES AUXILIARES ---
     const mostrarMensagem = (mensagem, tipo = 'success') => {
@@ -86,6 +90,10 @@ document.addEventListener('DOMContentLoaded', function() {
         if (tabId === 'contas-pendentes' || tabId === 'historico') {
             carregarContasAPagar();
         }
+        // NOVO: Carregar Crediário ao mudar para a aba
+        if (tabId === 'crediario-devedores') {
+            carregarVendasCrediario();
+        }
     }
 
     // --- INICIALIZAÇÃO ---
@@ -107,7 +115,8 @@ document.addEventListener('DOMContentLoaded', function() {
             configurarEventListeners();
             await Promise.all([
                 carregarContasAPagar(),
-                carregarContasAReceber()
+                carregarContasAReceber(),
+                carregarVendasCrediario() // NOVO: Carregar Crediário na inicialização
             ]);
             
         } catch (error) {
@@ -553,7 +562,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // -----------------------------------------------------------
-    // --- CONTAS A RECEBER ---
+    // --- CONTAS A RECEBER (Encomendas) ---
     // -----------------------------------------------------------
     
     async function carregarContasAReceber() {
@@ -657,6 +666,121 @@ document.addEventListener('DOMContentLoaded', function() {
 
         } catch (error) {
             console.error('❌ Erro ao confirmar recebimento:', error);
+            mostrarMensagem('Erro ao registrar recebimento: ' + error.message, 'error');
+        }
+    }
+    
+    // -----------------------------------------------------------
+    // --- MÓDULO: CREDÍARIO (VENDAS A PRAZO) ---
+    // -----------------------------------------------------------
+    
+    async function carregarVendasCrediario() {
+        if (!crediarioDevedoresBody) return;
+        crediarioDevedoresBody.innerHTML = '<tr><td colspan="6" style="text-align: center;"><div class="loading-spinner"></div> Carregando...</td></tr>';
+        
+        try {
+            // Busca VENDAS que foram marcadas como Crediário
+            const { data, error } = await supabase.from('vendas')
+                .select(`
+                    id, 
+                    data_venda, 
+                    total, 
+                    created_at,
+                    usuario:sistema_usuarios(nome), 
+                    cliente:clientes(nome)
+                `)
+                .eq('forma_pagamento', 'crediario')
+                .neq('total', 0.00) // Filtra apenas as dívidas em aberto
+                .order('data_venda', { ascending: true });
+            
+            if (error) throw error;
+
+            vendasCrediario = data || [];
+            
+            exibirVendasCrediario(vendasCrediario);
+
+        } catch (error) {
+            console.error('❌ Erro ao carregar vendas Crediário:', error);
+            crediarioDevedoresBody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--error-color);">Erro ao carregar vendas Crediário.</td></tr>';
+        }
+    }
+
+    function exibirVendasCrediario(vendas) {
+        if (!crediarioDevedoresBody) return;
+        crediarioDevedoresBody.innerHTML = '';
+
+        if (vendas.length === 0) {
+            crediarioDevedoresBody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #666;">Nenhuma venda no Crediário pendente.</td></tr>';
+            return;
+        }
+
+        vendas.forEach(venda => {
+            const dataVenda = formatarData(venda.data_venda);
+            
+            // O status é "Pendente" porque o total (que representa a dívida) é > 0
+            const statusClass = 'pendente';
+            const statusText = 'Pendente';
+            
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${dataVenda}</td>
+                <td>${venda.cliente?.nome || 'Cliente Removido'}</td>
+                <td>${venda.usuario?.nome || 'N/A'}</td>
+                <td>${formatarMoeda(venda.total)}</td>
+                <td>
+                    <span class="status-badge ${statusClass}">
+                        <i class="fas fa-hand-holding-usd"></i>
+                        ${statusText}
+                    </span>
+                </td>
+                <td class="action-buttons-table">
+                    <button class="btn-primary btn-sm" onclick="confirmarRecebimentoCrediario('${venda.id}', '${venda.cliente?.nome || 'N/A'}', ${venda.total.toFixed(2)})" title="Confirmar Recebimento">
+                        <i class="fas fa-check-double"></i> Receber
+                    </button>
+                    </td>
+            `;
+            crediarioDevedoresBody.appendChild(tr);
+        });
+    }
+
+    // NOVO: Função de recebimento (similar ao contas a receber, mas zera a venda)
+    window.confirmarRecebimentoCrediario = async function(vendaId, nomeCliente, valor) {
+        if (!confirm(`Deseja confirmar o recebimento de R$ ${valor.toFixed(2).replace('.', ',')} do cliente ${nomeCliente}?\n\nIsso irá registrar a entrada no caixa e marcar a dívida como paga.`)) return;
+
+        try {
+            // 1. Registrar a movimentação de caixa (entrada)
+            const movimentacaoData = {
+                data_caixa: new Date().toISOString().split('T')[0],
+                tipo: 'entrada',
+                valor: valor,
+                descricao: `Recebimento Crediário ref. Venda #${vendaId} - Cliente: ${nomeCliente}`,
+                usuario_id: usuario.id
+            };
+            
+            // Usamos o módulo de encomendas pois ele contém a função registrarMovimentacao (foi usado para encomendas e aqui também)
+            if (window.encomendasSupabase?.registrarMovimentacao) {
+                await window.encomendasSupabase.registrarMovimentacao(movimentacaoData); 
+            } else {
+                 // Fallback: Tentar usar o Supabase diretamente se o módulo não estiver carregado
+                 await supabase.from('caixa_movimentacoes').insert([movimentacaoData]);
+            }
+             
+            // 2. Zerar o valor da venda para indicar que foi paga (manter o registro da venda)
+            const { error } = await supabase.from('vendas')
+                .update({ 
+                    total: 0.00, // Zera o total para tirar da lista de devedores
+                    forma_pagamento: 'dinheiro', // Atualiza para o pagamento final
+                    observacoes: 'DÍVIDA CREDÍARIO PAGA. ' + new Date().toLocaleDateString('pt-BR')
+                })
+                .eq('id', vendaId);
+
+            if (error) throw error;
+            
+            mostrarMensagem(`Recebimento de R$ ${valor.toFixed(2)} de ${nomeCliente} confirmado!`, 'success');
+            await carregarVendasCrediario();
+
+        } catch (error) {
+            console.error('❌ Erro ao confirmar recebimento do Crediário:', error);
             mostrarMensagem('Erro ao registrar recebimento: ' + error.message, 'error');
         }
     }

@@ -197,6 +197,20 @@
     font-size: 1.2rem;
 }
 
+/* Status Badges */
+.status-badge.pendente,
+.status-badge.a-receber,
+.status-badge.parcialmente-pago {
+    background-color: #ffb6c1; /* Rosa claro */
+    color: #db7093; /* Rosa escuro */
+    border: 1px solid #ff69b4;
+}
+
+.status-badge.vencido {
+    background-color: var(--warning-vencido);
+    color: var(--error-color);
+}
+
 
 /* Responsividade */
 @media (max-width: 992px) {

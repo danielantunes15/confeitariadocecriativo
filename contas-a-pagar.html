@@ -103,7 +103,7 @@
                         <div class="tabs">
                             <button class="tab-btn active" data-tab="contas-pendentes">Contas a Pagar</button>
                             <button class="tab-btn" data-tab="contas-a-receber">Contas a Receber</button>
-                            <button class="tab-btn" data-tab="nova-conta">Nova Conta (Pagar)</button>
+                            <button class="tab-btn" data-tab="crediario-devedores">Crediário (Devedores)</button> <button class="tab-btn" data-tab="nova-conta">Nova Conta (Pagar)</button>
                             <button class="tab-btn" data-tab="historico">Histórico (Pagas)</button>
                         </div>
 
@@ -130,7 +130,29 @@
                                 </table>
                             </div>
                         </div>
-
+                        
+                        <div id="crediario-devedores" class="tab-content" style="display: none;">
+                            <h3 style="margin-top: 0;"><i class="fas fa-users"></i> Clientes no Crediário (Dívidas)</h3>
+                            <div class="table-container">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Data Venda</th>
+                                            <th>Cliente</th>
+                                            <th>Vendedor</th>
+                                            <th>Total da Dívida (R$)</th>
+                                            <th>Status</th>
+                                            <th>Ações</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="crediario-devedores-body">
+                                        <tr>
+                                            <td colspan="6" style="text-align: center;">Carregando clientes no crediário...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                         <div id="contas-pendentes" class="tab-content active">
                             <h3 style="margin-top: 0;"><i class="fas fa-file-invoice-dollar"></i> Contas a Pagar Pendentes</h3>
                             <div class="table-controls">
