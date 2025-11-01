@@ -199,7 +199,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
             totalCarrinho.textContent = total.toFixed(2).replace('.', ',');
             
-            // Agora verifica se a clienteLogado é nula para desabilitar
+            // Verifica se está logado para habilitar botões de finalização
             const isReady = carrinho.length > 0 && clienteLogado; 
             enviarPedidoBtn.disabled = !isReady;
             if (finalizarDiretoBtn) finalizarDiretoBtn.disabled = !isReady; 
@@ -334,8 +334,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                  authId: clienteLogado.id
              };
         } else {
-             // NOVO: Mensagem explícita para o cliente (caso falhe a validação mais abaixo)
-             mostrarMensagem('Faça login ou cadastre-se para prosseguir com o pedido.', 'error');
+             // Redireciona para a tela de login
+             alternarView('auth-screen');
+             mostrarMensagem('🚨 Você precisa estar logado para enviar o pedido. Faça login ou cadastre-se!', 'error');
              return null;
         }
     }
@@ -349,15 +350,11 @@ document.addEventListener('DOMContentLoaded', async function() {
             return null;
         }
         
-        // REGRAS CRÍTICAS DE VALIDAÇÃO DE AUTENTICAÇÃO
-        if (!clienteLogado || !dadosCliente) {
-            // Força a transição para a tela de autenticação
-            alternarView('auth-screen');
-            mostrarMensagem('🚨 Você precisa estar logado para enviar o pedido. Faça login ou cadastre-se!', 'error');
-            return null;
+        // Regra crítica: se obterDadosCliente falhar (retornar null) a validação para.
+        if (!dadosCliente) {
+             return null;
         }
         
-        // Regras adicionais de validação (Endereço, Pagamento)
         if (!dadosCliente.nome || !dadosCliente.telefone || !dadosCliente.endereco) {
             mostrarMensagem('Dados do cliente ou endereço incompletos. Verifique o Login/Cadastro.', 'error');
             return null;
@@ -492,7 +489,14 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         authScreen.classList.remove('active');
         mobileNav.style.display = 'flex';
+        
+        // Redireciona para o cardápio após o login
         alternarView('view-cardapio');
+        
+        // O menu já está reordenado, garantimos que a classe 'active' está no botão Cardápio
+        document.querySelector('.nav-item-app[data-view="view-inicio"]')?.classList.remove('active');
+        document.querySelector('.nav-item-app[data-view="view-cardapio"]')?.classList.add('active');
+
         atualizarPerfilUI();
     }
     
@@ -507,12 +511,19 @@ document.addEventListener('DOMContentLoaded', async function() {
         document.getElementById('login-form-group').style.display = 'block';
 
         mostrarMensagem('Sessão encerrada.', 'info');
+        // Após logout, volta para a tela de autenticação
         alternarView('auth-screen');
     }
 
     async function carregarStatusUltimoPedido() {
         statusUltimoPedido.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Buscando...';
         
+        // Esta função deve primeiro verificar se clienteLogado é válido
+        if (!clienteLogado || !clientePerfil.telefone) {
+            statusUltimoPedido.innerHTML = 'Faça login para ver o status do último pedido.';
+            return;
+        }
+
         try {
             const { data, error } = await supabase.from('pedidos_online')
                 .select('*')
@@ -546,11 +557,18 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     function atualizarPerfilUI() {
-        profileNameSpan.textContent = clientePerfil.nome.split(' ')[0];
-        homeClienteNome.textContent = clientePerfil.nome.split(' ')[0];
-        carrinhoClienteNomeDisplay.textContent = clientePerfil.nome || 'N/A';
-        carrinhoEnderecoDisplay.textContent = clientePerfil.endereco || 'N/A';
-        carrinhoEnderecoInput.value = clientePerfil.endereco || '';
+        // Verifica se o cliente está logado antes de atualizar o perfil
+        if (clienteLogado) {
+            profileNameSpan.textContent = clientePerfil.nome.split(' ')[0];
+            homeClienteNome.textContent = clientePerfil.nome.split(' ')[0];
+            carrinhoClienteNomeDisplay.textContent = clientePerfil.nome || 'N/A';
+            carrinhoEnderecoDisplay.textContent = clientePerfil.endereco || 'N/A';
+            carrinhoEnderecoInput.value = clientePerfil.endereco || '';
+        } else {
+            // Caso não esteja logado, define valores genéricos
+            profileNameSpan.textContent = 'Visitante';
+            homeClienteNome.textContent = 'Visitante';
+        }
         
         const opcoesPagamentoOriginal = document.querySelector('.pagamento .opcoes-pagamento');
         if (pagamentoOpcoesContainer.children.length === 0 && opcoesPagamentoOriginal) {
@@ -559,10 +577,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     function atualizarCarrinhoDisplay() {
-        carrinhoClienteNomeDisplay.textContent = clientePerfil.nome || 'N/A';
-        carrinhoEnderecoDisplay.textContent = clientePerfil.endereco || 'N/A';
-        carrinhoEnderecoInput.value = clientePerfil.endereco || '';
-        
+        atualizarPerfilUI(); // Garante que os dados do cliente no carrinho estejam atualizados
         atualizarCarrinho();
     }
     
@@ -674,6 +689,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
             
             const telefoneSalvo = localStorage.getItem('clienteTelefone');
+            let clienteEncontrado = false;
             
             // 1. Tenta carregar o perfil logado
             if (telefoneSalvo) {
@@ -682,23 +698,25 @@ document.addEventListener('DOMContentLoaded', async function() {
                     clientePerfil.nome = cliente.nome;
                     clientePerfil.telefone = cliente.telefone;
                     clientePerfil.endereco = cliente.endereco;
-                    // Define o estado de login, mas não alterna a view ainda
                     clienteLogado = { id: clientePerfil.telefone, email: clientePerfil.telefone }; 
-                    atualizarPerfilUI();
+                    clienteEncontrado = true;
                 } else {
                      localStorage.removeItem('clienteTelefone');
                 }
             }
             
-            // 2. Garante que o cardápio seja o primeiro a ser visto para clientes não logados
+            // 2. Configuração inicial da UI
             authScreen.classList.remove('active');
             mobileNav.style.display = 'flex';
             
-            // Se estiver logado, vai para a Home, se não, vai para o Cardápio
-            if (clienteLogado) {
-                 alternarView('view-inicio');
+            // Define o Cardápio como a view inicial ativa
+            alternarView('view-cardapio');
+            
+            // Se o cliente foi encontrado e logado, atualiza o perfil.
+            if (clienteEncontrado) {
+                atualizarPerfilUI();
             } else {
-                 alternarView('view-cardapio');
+                // Se não foi encontrado, mas estamos exibindo o cardápio, exibe a mensagem de login
                  mostrarMensagem('Faça login para salvar seu pedido e ver o histórico.', 'info');
             }
             
@@ -711,7 +729,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         } catch (error) {
             console.error('❌ Erro na inicialização:', error);
             mostrarMensagem('Erro ao carregar o app: ' + error.message, 'error');
-            // Mantém auth-screen como fallback em caso de erro crítico de conexão
+            // Em caso de erro crítico de conexão, volta para a tela de autenticação
             document.getElementById('auth-screen').classList.add('active');
         }
     })();
