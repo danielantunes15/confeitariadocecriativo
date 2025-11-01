@@ -27,7 +27,7 @@ section {
     border-radius: 8px;
     padding: 1.5rem;
     margin-bottom: 1.5rem;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 /* Estilos para categorias */
@@ -227,8 +227,6 @@ section {
     padding-top: 1rem;
     border-top: 2px solid var(--rosa-claro);
 }
-
-/* Estilos para pagamento - REMOVIDO E SUBSTITUÍDO */
 
 /* Estilos para finalizar pedido */
 .btn-finalizar {
@@ -513,32 +511,112 @@ footer {
     }
 }
 
+/* --- INÍCIO: CORREÇÃO E NOVOS ESTILOS PARA DESCONTO/ACRÉSCIMO --- */
 
-/* ADDED FOR DESCONTO/ACRÉSCIMO SUPPORT */
-.desconto-acrescimo .form-row {
+.desconto-acrescimo .form-row-ajuste {
     display: grid;
-    grid-template-columns: 1fr 1fr auto;
+    /* 3 colunas: Desconto, Acréscimo, Botão */
+    grid-template-columns: 1fr 1fr minmax(100px, auto); 
     gap: 1rem;
     align-items: flex-end;
 }
-.desconto-acrescimo .form-control {
-    width: 100%;
+
+.ajuste-group {
+    /* Garante que o label fique acima do grupo de inputs */
+    display: flex;
+    flex-direction: column;
 }
+
+.input-group-ajuste {
+    /* Alinha o select e o input horizontalmente */
+    display: flex;
+    gap: 0; 
+    align-items: center;
+}
+
+/* Garante que select e input preencham a altura e largura definida no HTML */
+.input-group-ajuste select,
+.input-group-ajuste input {
+    padding: 10px; 
+    height: 44px; /* Altura consistente */
+    border-radius: 0; /* Remove border-radius para se juntarem */
+}
+
+/* Arredondar apenas as pontas externas */
+.input-group-ajuste select {
+    border-top-left-radius: 8px;
+    border-bottom-left-radius: 8px;
+    border-right: none; /* Remove borda dupla */
+}
+
+.input-group-ajuste input {
+    border-top-right-radius: 8px;
+    border-bottom-right-radius: 8px;
+}
+
+/* Estilo para o botão de aplicar */
 .desconto-acrescimo .btn {
     width: 100%;
     padding: 12px 1rem;
     font-size: 1rem;
+    height: 44px; /* Altura consistente */
 }
+
+/* Estilo para o Resumo do Ajuste (Onde estava o problema visual) */
+.ajuste-resumo-card {
+    /* Estilo do container de resumo */
+    padding: 10px 15px;
+    border: 1px solid var(--rosa-claro);
+    border-radius: 8px;
+    background-color: var(--cinza-claro);
+    margin-top: 15px;
+}
+
+.ajuste-item-detalhe {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 5px 0;
+    font-size: 0.9rem;
+    color: var(--cinza-escuro);
+}
+
+/* Cores específicas para Desconto e Acréscimo */
+.ajuste-item-detalhe.desconto-valor {
+    color: var(--error-color); /* Vermelho */
+    font-weight: bold;
+}
+
+.ajuste-item-detalhe.acrescimo-valor {
+    color: var(--success-color); /* Verde */
+    font-weight: bold;
+}
+
+/* Estilo para a linha final */
+.ajuste-item-detalhe.total-final {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--rosa-claro);
+    font-size: 1.1rem;
+    color: var(--rosa-escuro);
+}
+
+.valor-final {
+    font-weight: 800; /* Mais negrito para o resultado */
+}
+
+/* Responsividade para a nova estrutura */
 @media (max-width: 600px) {
-    .desconto-acrescimo .form-row {
-        grid-template-columns: 1fr;
+    .desconto-acrescimo .form-row-ajuste {
+        grid-template-columns: 1fr; /* Stack em coluna única no mobile */
+    }
+    
+    .desconto-acrescimo .form-group {
+        margin-bottom: 0.5rem;
+    }
+    
+    .ajuste-group {
+        margin-bottom: 0.5rem;
     }
 }
-/* Reusing general section card style for consistency */
-section.desconto-acrescimo {
-    background-color: var(--branco);
-    border-radius: 8px;
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
+/* --- FIM: CORREÇÃO E NOVOS ESTILOS PARA DESCONTO/ACRÉSCIMO --- */

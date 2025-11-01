@@ -7,6 +7,22 @@ document.addEventListener('DOMContentLoaded', async function() {
         return;
     }
 
+    // Variáveis globais (Movidas para o topo para garantir a inicialização)
+    let categorias = [];
+    let produtos = [];
+    let clientes = [];
+    let carrinho = [];
+    let pagamentos = []; 
+    let categoriaSelecionada = 'todos'; 
+    
+    // NOVO ESTADO GLOBAL DE AJUSTE (Desconto/Acréscimo)
+    let descontoPercentual = 0; 
+    let acrescimoPercentual = 0; 
+    let descontoValorFixo = 0; 
+    let acrescimoValorFixo = 0; 
+    let descontoTipo = 'percentual'; 
+    let acrescimoTipo = 'percentual'; 
+
     // Elementos do DOM
     const categoriasContainer = document.getElementById('categorias-container');
     const produtosContainer = document.getElementById('produtos-container');
@@ -21,28 +37,30 @@ document.addEventListener('DOMContentLoaded', async function() {
     const valorPagamentoMisto = document.getElementById('valor-pagamento-misto');
     const pagamentosAdicionadosContainer = document.getElementById('pagamentos-adicionados-container');
     const saldoPendenteMisto = document.getElementById('saldo-pendente-misto');
-    const mensagemPagamentosIniciais = document.getElementById('mensagem-pagamentos-iniciais');
     
     // Elementos de Desconto/Acréscimo (NOVOS)
-    const tipoAjusteSelect = document.getElementById('tipo-ajuste');
-    const valorAjusteInput = document.getElementById('valor-ajuste');
+    const descontoTipoSelect = document.getElementById('desconto-tipo');
+    const descontoInput = document.getElementById('desconto-input');
+    const acrescimoTipoSelect = document.getElementById('acrescimo-tipo');
+    const acrescimoInput = document.getElementById('acrescimo-input');
     const aplicarAjusteBtn = document.getElementById('aplicar-ajuste-btn');
     const totalAjustadoSpan = document.getElementById('valor-total-ajustado');
-    
-    // Variáveis globais
-    let categorias = [];
-    let produtos = [];
-    let clientes = [];
-    let carrinho = [];
-    let pagamentos = []; 
-    let categoriaSelecionada = 'todos';
-    
-    // NOVO ESTADO GLOBAL DE AJUSTE
-    let ajusteTipo = 'desconto'; // 'desconto' ou 'acrescimo'
-    let ajustePercentual = 0;
+    const totalAjustadoP = document.getElementById('total-ajustado'); 
+
 
     // Funções auxiliares globais
     const formatarMoeda = (valor) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor || 0);
+
+    // Definição da função mostrarMensagem
+    const mostrarMensagem = (mensagem, tipo = 'success') => {
+        const container = document.getElementById('alert-container');
+        if (!container) return;
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${tipo}`;
+        alertDiv.innerHTML = `<span>${mensagem}</span><button class="alert-close" onclick="this.parentElement.remove()">&times;</button>`;
+        container.appendChild(alertDiv);
+        setTimeout(() => { if (alertDiv.parentNode) alertDiv.remove(); }, 5000);
+    };
 
     const formatarFormaPagamento = (forma) => {
         const formas = {
@@ -82,19 +100,31 @@ document.addEventListener('DOMContentLoaded', async function() {
         return carrinho.reduce((sum, item) => sum + (item.produto.preco_venda * item.quantidade), 0);
     };
     
-    // NOVO: Calcula o total AJUSTADO (final)
+    // LÓGICA REESCRITA PARA VALOR OU PERCENTUAL
     const getAdjustedTotal = () => {
         const grossTotal = getGrossTotal();
-        const percentual = ajustePercentual / 100;
         let finalTotal = grossTotal;
 
-        if (ajusteTipo === 'desconto') {
-            finalTotal = grossTotal * (1 - percentual);
-        } else if (ajusteTipo === 'acrescimo') {
-            finalTotal = grossTotal * (1 + percentual);
+        // 1. Aplica o Desconto
+        if (descontoTipo === 'valor') {
+            finalTotal = finalTotal - descontoValorFixo;
+        } else if (descontoTipo === 'percentual' && descontoPercentual > 0) {
+            const desconto = descontoPercentual / 100;
+            finalTotal = finalTotal * (1 - desconto);
         }
 
-        return parseFloat(Math.max(0, finalTotal).toFixed(2)); // Garante que o total não seja negativo e tenha 2 casas decimais
+        // Garante que o subtotal não seja negativo após o desconto
+        finalTotal = Math.max(0, finalTotal); 
+
+        // 2. Aplica o Acréscimo
+        if (acrescimoTipo === 'valor') {
+            finalTotal = finalTotal + acrescimoValorFixo;
+        } else if (acrescimoTipo === 'percentual' && acrescimoPercentual > 0) {
+            const acrescimo = acrescimoPercentual / 100;
+            finalTotal = finalTotal * (1 + acrescimo);
+        }
+
+        return parseFloat(finalTotal.toFixed(2)); // Garante 2 casas decimais
     };
     
     // Calcula o total já pago
@@ -113,8 +143,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                     <p>Seu carrinho está vazio</p>
                 </div>
             `;
+            // Reseta o resumo
+            if (totalAjustadoP) totalAjustadoP.innerHTML = `<strong>Total Final:</strong> R$ <span id="valor-total-ajustado">0,00</span>`;
             totalCarrinho.textContent = '0,00';
-            totalAjustadoSpan.textContent = 'R$ 0,00';
             finalizarPedidoBtn.disabled = true;
         } else {
             carrinhoItens.innerHTML = '';
@@ -142,7 +173,70 @@ document.addEventListener('DOMContentLoaded', async function() {
                 `;
                 carrinhoItens.appendChild(itemElement);
             });
-            totalCarrinho.textContent = grossTotal.toFixed(2);
+            
+            // ATUALIZAÇÃO DO RESUMO DETALHADO (Para resolver o layout estranho)
+            
+            const hasAdjustment = (descontoTipo === 'valor' && descontoValorFixo > 0) || (descontoTipo === 'percentual' && descontoPercentual > 0) || 
+                                  (acrescimoTipo === 'valor' && acrescimoValorFixo > 0) || (acrescimoTipo === 'percentual' && acrescimoPercentual > 0);
+            
+            // Recálculo do valor de ajuste absoluto para exibição
+            // Nota: Este cálculo é complexo devido à ordem de aplicação (Desconto primeiro, Acréscimo depois).
+            const valorDescontoAbsoluto = grossTotal - (descontoTipo === 'valor' ? (grossTotal - descontoValorFixo) : (grossTotal * (1 - descontoPercentual / 100)));
+            const subtotalAposDesconto = grossTotal - valorDescontoAbsoluto;
+            const valorAcrescimoAbsoluto = adjustedTotal - subtotalAposDesconto;
+
+            if (hasAdjustment) {
+                let htmlDetalhe = '';
+                
+                // DESCONTO
+                if (valorDescontoAbsoluto > 0.01) { // Verifica se há desconto significativo
+                    const valorDisplay = descontoTipo === 'valor' ? formatarMoeda(descontoValorFixo) : `${descontoPercentual}%`;
+                    const valorDeducao = descontoTipo === 'valor' ? descontoValorFixo : grossTotal * (descontoPercentual / 100);
+
+                    htmlDetalhe += `<p class="ajuste-item-detalhe desconto-valor">
+                                        <span>Desconto (${valorDisplay}):</span>
+                                        <span class="valor">- ${formatarMoeda(valorDeducao)}</span>
+                                    </p>`;
+                }
+                
+                // ACRÉSCIMO
+                if (valorAcrescimoAbsoluto > 0.01) { // Verifica se há acréscimo significativo
+                    const valorDisplay = acrescimoTipo === 'valor' ? formatarMoeda(acrescimoValorFixo) : `${acrescimoPercentual}%`;
+                    const valorAdicao = acrescimoTipo === 'valor' ? acrescimoValorFixo : subtotalAposDesconto * (acrescimoPercentual / 100);
+
+                    htmlDetalhe += `<p class="ajuste-item-detalhe acrescimo-valor">
+                                        <span>Acréscimo (${valorDisplay}):</span>
+                                        <span class="valor">+ ${formatarMoeda(valorAdicao)}</span>
+                                    </p>`;
+                }
+                
+                // CONTEÚDO DETALHADO INJETANDO HTML
+                const summaryHTML = `
+                    <div id="ajuste-detalhe-resumo" class="ajuste-resumo-card">
+                        <p class="ajuste-item-detalhe">
+                            <span style="font-weight: bold;">Total Bruto:</span> 
+                            <span class="valor-bruto">${formatarMoeda(grossTotal)}</span>
+                        </p>
+                        ${htmlDetalhe}
+                        <p class="ajuste-item-detalhe total-final">
+                            <span style="font-weight: bold;">Total Final:</span> 
+                            <span id="valor-total-ajustado" class="valor-final">${adjustedTotal.toFixed(2).replace('.', ',')}</span>
+                        </p>
+                    </div>
+                `;
+                if (totalAjustadoP) totalAjustadoP.innerHTML = summaryHTML;
+
+            } else {
+                 // CONTEÚDO PADRÃO (sem ajuste)
+                 if (totalAjustadoP) {
+                     totalAjustadoP.innerHTML = `
+                         <strong>Total Final:</strong> R$ <span id="valor-total-ajustado">${adjustedTotal.toFixed(2).replace('.', ',')}</span>
+                     `;
+                 }
+            }
+            
+            // Atualiza o total principal do carrinho com o valor AJUSTADO (o valor que o cliente realmente paga)
+            totalCarrinho.textContent = adjustedTotal.toFixed(2).replace('.', ',');
             finalizarPedidoBtn.disabled = false;
             document.querySelectorAll('.btn-remover').forEach(btn => btn.addEventListener('click', function() {
                 const index = parseInt(this.getAttribute('data-index'));
@@ -153,8 +247,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 aumentarQuantidade(index);
             }));
 
-            // NOVO: Atualiza o total ajustado
-            totalAjustadoSpan.textContent = formatarMoeda(adjustedTotal);
+            // Atualiza o total ajustado (este é apenas o valor final que a atendente vê)
+            if (totalAjustadoSpan) totalAjustadoSpan.textContent = formatarMoeda(adjustedTotal);
         }
         
         // NOVO: Atualiza a seção de pagamentos
@@ -170,10 +264,15 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
         // Limpar pagamentos e resetar ajuste se o total mudar
         pagamentos = [];
-        ajustePercentual = 0;
-        valorAjusteInput.value = 0;
-        ajusteTipo = 'desconto';
-        tipoAjusteSelect.value = 'desconto';
+        
+        // REINICIA TODOS OS PARÂMETROS GLOBAIS DE AJUSTE
+        descontoPercentual = acrescimoPercentual = descontoValorFixo = acrescimoValorFixo = 0;
+        descontoTipo = acrescimoTipo = 'percentual';
+        
+        if (descontoInput) descontoInput.value = 0;
+        if (acrescimoInput) acrescimoInput.value = 0;
+        if (descontoTipoSelect) descontoTipoSelect.value = 'percentual';
+        if (acrescimoTipoSelect) acrescimoTipoSelect.value = 'percentual';
         
         atualizarCarrinho();
         mostrarMensagem(`${produtoNome} removido do carrinho.`, 'info');
@@ -188,33 +287,67 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     };
 
-    // --- NOVO: FUNÇÕES DE AJUSTE (DESCONTO/ACRÉSCIMO) ---
+    // --- FUNÇÕES DE AJUSTE (DESCONTO/ACRÉSCIMO) ---
     
     function aplicarAjuste() {
-        const valor = parseFloat(valorAjusteInput.value) || 0;
-        const tipo = tipoAjusteSelect.value;
         const grossTotal = getGrossTotal();
-
-        if (valor < 0 || valor > 100) {
-            mostrarMensagem('O percentual deve ser entre 0 e 100.', 'error');
+        
+        // 1. LER E VALIDAR DESCONTO
+        const descontoRaw = parseFloat(descontoInput.value) || 0;
+        const descontoType = descontoTipoSelect.value;
+        
+        if (descontoType === 'percentual' && (descontoRaw < 0 || descontoRaw > 100)) {
+            mostrarMensagem('O percentual de desconto deve ser entre 0 e 100.', 'error');
             return;
         }
+        if (descontoType === 'valor' && descontoRaw > grossTotal) {
+            mostrarMensagem('O desconto em valor (R$) não pode ser maior que o Total Bruto.', 'error');
+            return;
+        }
+
+        // 2. LER E VALIDAR ACRÉSCIMO
+        const acrescimoRaw = parseFloat(acrescimoInput.value) || 0;
+        const acrescimoType = acrescimoTipoSelect.value;
         
-        if (grossTotal === 0 && valor > 0) {
+        if (acrescimoType === 'percentual' && (acrescimoRaw < 0 || acrescimoRaw > 100)) {
+            mostrarMensagem('O percentual de acréscimo deve ser entre 0 e 100.', 'error');
+            return;
+        }
+
+        // 3. ATUALIZAR ESTADOS GLOBAIS
+        if (descontoType === 'percentual') {
+            descontoPercentual = descontoRaw;
+            descontoValorFixo = 0;
+        } else {
+            descontoPercentual = 0;
+            descontoValorFixo = descontoRaw;
+        }
+        descontoTipo = descontoType;
+        
+        if (acrescimoType === 'percentual') {
+            acrescimoPercentual = acrescimoRaw;
+            acrescimoValorFixo = 0;
+        } else {
+            acrescimoPercentual = 0;
+            acrescimoValorFixo = acrescimoRaw;
+        }
+        acrescimoTipo = acrescimoType;
+
+
+        if (grossTotal === 0 && (descontoRaw > 0 || acrescimoRaw > 0)) {
              mostrarMensagem('Adicione produtos ao carrinho antes de aplicar ajustes.', 'error');
-            return;
+             // Reseta o estado global se o carrinho estiver vazio
+             descontoPercentual = acrescimoPercentual = descontoValorFixo = acrescimoValorFixo = 0;
+             return;
         }
 
-        ajusteTipo = tipo;
-        ajustePercentual = valor;
-        
         // Limpar pagamentos, pois o total mudou
         pagamentos = []; 
 
         const adjustedTotal = getAdjustedTotal();
-        const diff = adjustedTotal - grossTotal;
+        const ajusteTotal = adjustedTotal - grossTotal; 
 
-        mostrarMensagem(`${tipo === 'desconto' ? 'Desconto' : 'Acréscimo'} de ${valor}% aplicado. Ajuste: ${formatarMoeda(diff)}`, 'success');
+        mostrarMensagem(`Ajustes aplicados. Diferença total: ${formatarMoeda(ajusteTotal)}`, 'success');
         
         atualizarCarrinho();
     }
@@ -284,6 +417,13 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
         
         const novoTotalPago = parseFloat((pago + valor).toFixed(2));
+        
+        // VERIFICAÇÃO PARA CREDÍARIO
+        if (tipo === 'crediario' && !clienteSelect.value) {
+            mostrarMensagem('Ao usar Crediário, é obrigatório selecionar um cliente cadastrado!', 'error');
+            return;
+        }
+        // FIM DA VALIDAÇÃO CREDÍARIO
 
         if (tipo === 'crediario' && novoTotalPago > total) {
              // Crediário DEVE ser o valor exato (ou menor, mas nunca mais para não gerar troco)
@@ -309,7 +449,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
     
-    // ... (carregarCategorias, exibirCategorias, selecionarCategoria, carregarProdutos, exibirProdutos, carregarClientes, exibirClientesNaLista inalteradas)
+    // ... (restante das funções de carregamento e exibição)
 
     const carregarCategorias = async () => {
         try {
@@ -458,9 +598,21 @@ document.addEventListener('DOMContentLoaded', async function() {
             return;
         }
         
-        // Verifica se há crediário sem pagamento total
-        const hasCrediario = pagamentos.some(p => p.tipo === 'crediario');
-        if (hasCrediario && pago > 0.01) {
+        const clienteId = clienteSelect.value || null;
+        const clienteNome = clienteSelect.options[clienteSelect.selectedIndex].dataset.nome;
+        const formaPagamento = pagamentos.length > 1 ? 'misto' : pagamentos[0].tipo;
+        const troco = Math.max(0, pago - total);
+        
+        // VALIDAÇÃO: CREDÍARIO REQUER CLIENTE CADASTRADO
+        const isCrediario = pagamentos.some(p => p.tipo === 'crediario');
+
+        if (isCrediario && !clienteId) {
+            mostrarMensagem('Crediário exige que um cliente cadastrado seja selecionado.', 'error');
+            return;
+        }
+        // FIM DA VALIDAÇÃO
+
+        if (isCrediario && pago > 0.01) {
             mostrarMensagem('Não é possível registrar pagamento misto junto com Crediário. Use Crediário como pagamento único ou zere o pagamento.', 'error');
             return;
         }
@@ -470,12 +622,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             return;
         }
         
-        const clienteId = clienteSelect.value || null;
-        const clienteNome = clienteSelect.options[clienteSelect.selectedIndex].dataset.nome;
         
-        const formaPagamento = pagamentos.length > 1 ? 'misto' : pagamentos[0].tipo;
-        const troco = Math.max(0, pago - total);
-
         if (!confirm(`Deseja finalizar o pedido com ${carrinho.length} item(s)?\n\nCliente: ${clienteNome}\nForma de pagamento: ${formaPagamento.toUpperCase()}\nTotal Final: ${formatarMoeda(total)}\nTroco: ${formatarMoeda(troco)}`)) {
             return;
         }
@@ -502,8 +649,15 @@ document.addEventListener('DOMContentLoaded', async function() {
             // NOVO: Criar observação detalhada do ajuste e pagamento
             let observacoesVenda = '';
             
-            if (ajustePercentual > 0) {
-                 observacoesVenda += `AJUSTE: ${ajusteTipo === 'desconto' ? 'Desconto' : 'Acréscimo'} de ${ajustePercentual}% (${formatarMoeda(total - grossTotal)}) \n`;
+            if (descontoPercentual > 0 || acrescimoPercentual > 0 || descontoValorFixo > 0 || acrescimoValorFixo > 0) {
+                 observacoesVenda += `AJUSTES APLICADOS:\n`;
+                 
+                 if (descontoTipo === 'valor' && descontoValorFixo > 0) observacoesVenda += `Desconto: ${formatarMoeda(descontoValorFixo)} (Valor Fixo)\n`;
+                 if (descontoTipo === 'percentual' && descontoPercentual > 0) observacoesVenda += `Desconto: ${descontoPercentual}%\n`;
+                 
+                 if (acrescimoTipo === 'valor' && acrescimoValorFixo > 0) observacoesVenda += `Acréscimo: ${formatarMoeda(acrescimoValorFixo)} (Valor Fixo)\n`;
+                 if (acrescimoTipo === 'percentual' && acrescimoPercentual > 0) observacoesVenda += `Acréscimo: ${acrescimoPercentual}%\n`;
+                 
                  observacoesVenda += `Total Bruto: ${formatarMoeda(grossTotal)}\n`;
                  observacoesVenda += `Total Ajustado: ${formatarMoeda(total)}\n`;
             }
@@ -557,8 +711,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             mensagem += `📋 Número do Pedido: ${venda.id}\n`;
             mensagem += `👤 Cliente: ${clienteNome}\n`;
             mensagem += `💰 Total Final: ${formatarMoeda(total)}\n`;
-            if (ajustePercentual > 0) {
-                 mensagem += `\n(${ajusteTipo === 'desconto' ? 'Desconto' : 'Acréscimo'} de ${ajustePercentual}%)`;
+            if (descontoPercentual > 0 || acrescimoPercentual > 0 || descontoValorFixo > 0 || acrescimoValorFixo > 0) {
+                 mensagem += `\n(Ajustes aplicados. Detalhes nas Observações.)`;
             }
             mensagem += `\nDetalhes de Pagamento:\n${observacoesVenda}`;
             
@@ -568,10 +722,13 @@ document.addEventListener('DOMContentLoaded', async function() {
             // Resetar
             carrinho = [];
             pagamentos = []; 
-            ajustePercentual = 0;
-            valorAjusteInput.value = 0;
-            ajusteTipo = 'desconto';
-            tipoAjusteSelect.value = 'desconto';
+            descontoPercentual = acrescimoPercentual = descontoValorFixo = acrescimoValorFixo = 0;
+            descontoTipo = acrescimoTipo = 'percentual';
+            if (descontoInput) descontoInput.value = 0;
+            if (acrescimoInput) acrescimoInput.value = 0;
+            if (descontoTipoSelect) descontoTipoSelect.value = 'percentual';
+            if (acrescimoTipoSelect) acrescimoTipoSelect.value = 'percentual';
+
 
             atualizarCarrinho();
             clienteSelect.value = '';
@@ -608,8 +765,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         // Evento para adicionar pagamento
         if (adicionarPagamentoBtn) adicionarPagamentoBtn.addEventListener('click', adicionarPagamento);
         
-        // Atualiza ajusteTipo ao trocar o select
-        if (tipoAjusteSelect) tipoAjusteSelect.addEventListener('change', () => { ajusteTipo = tipoAjusteSelect.value; atualizarCarrinho(); });
+        // Eventos de mudança nos selects para atualizar o estado global
+        if (descontoTipoSelect) descontoTipoSelect.addEventListener('change', () => { descontoTipo = descontoTipoSelect.value; });
+        if (acrescimoTipoSelect) acrescimoTipoSelect.addEventListener('change', () => { acrescimoTipo = acrescimoTipoSelect.value; });
     };
 
     // Função de inicialização
