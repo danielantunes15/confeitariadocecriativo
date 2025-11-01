@@ -14,6 +14,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     const mobileNav = document.getElementById('mobile-bottom-nav');
     const navItems = document.querySelectorAll('.nav-item-app');
     
+    // NOVO: Elemento do Badge
+    const carrinhoBadge = document.getElementById('carrinho-badge'); 
+    
     // Elementos de Login/Cadastro
     const authTelefoneInput = document.getElementById('auth-telefone');
     const btnIniciarSessao = document.getElementById('btn-iniciar-sessao');
@@ -50,6 +53,14 @@ document.addEventListener('DOMContentLoaded', async function() {
     const carrinhoEnderecoInput = document.getElementById('carrinho-endereco-input');
     const enviarPedidoBtn = document.getElementById('enviar-pedido-whatsapp');
     const pagamentoOpcoesContainer = document.querySelector('#view-carrinho .opcoes-pagamento'); 
+
+    // Elementos do Modal de Edição de Endereço (NOVOS)
+    const modalEditarEndereco = document.getElementById('modal-editar-endereco');
+    const formEditarEndereco = document.getElementById('form-editar-endereco');
+    const modalCepInput = document.getElementById('modal-cep');
+    const modalRuaInput = document.getElementById('modal-rua');
+    const modalNumeroInput = document.getElementById('modal-numero');
+    const modalBairroInput = document.getElementById('modal-bairro');
 
     let categorias = [];
     let produtos = [];
@@ -90,14 +101,12 @@ document.addEventListener('DOMContentLoaded', async function() {
         return digitos.length >= 12 ? digitos : '55' + digitos;
     }
 
-    // --- FUNÇÃO DE BUSCA POR CEP ---
-
+    // --- FUNÇÃO DE BUSCA POR CEP (Para Cadastro e Modal de Edição) ---
+    // É mais seguro deixar a função no escopo global para o `onblur` do HTML funcionar
     window.buscarCep = async function(cep) {
         const cepLimpo = cep.replace(/\D/g, ''); 
         
-        if (cepLimpo.length !== 8) {
-            return;
-        }
+        if (cepLimpo.length !== 8) return;
 
         mostrarMensagem('Buscando endereço...', 'info');
 
@@ -109,13 +118,22 @@ document.addEventListener('DOMContentLoaded', async function() {
                 mostrarMensagem('CEP não encontrado ou inválido.', 'error');
                 return;
             }
-
-            cadastroRuaInput.value = data.logradouro || '';
-            cadastroBairroInput.value = data.bairro || '';
-            cadastroCidadeInput.value = data.localidade || '';
-            cadastroEstadoInput.value = data.uf || '';
             
-            cadastroNumeroInput.focus();
+            // Lógica para preencher os campos corretos (Cadastro ou Modal)
+            if (document.getElementById('cadastro-form').style.display === 'block') {
+                 // Preenchimento da tela de cadastro
+                cadastroRuaInput.value = data.logradouro || '';
+                cadastroBairroInput.value = data.bairro || '';
+                cadastroCidadeInput.value = data.localidade || '';
+                cadastroEstadoInput.value = data.uf || '';
+                cadastroNumeroInput.focus();
+            } else if (modalEditarEndereco.style.display === 'flex') {
+                 // Preenchimento do modal de edição
+                modalRuaInput.value = data.logradouro || '';
+                modalBairroInput.value = data.bairro || '';
+                modalNumeroInput.focus();
+            }
+
             mostrarMensagem('Endereço preenchido automaticamente.', 'success');
 
         } catch (error) {
@@ -173,12 +191,17 @@ document.addEventListener('DOMContentLoaded', async function() {
             totalCarrinho.textContent = '0,00';
             enviarPedidoBtn.disabled = true;
             if (finalizarDiretoBtn) finalizarDiretoBtn.disabled = true; 
+            if (carrinhoBadge) { 
+                carrinhoBadge.style.display = 'none';
+            }
         } else {
             carrinhoItens.innerHTML = '';
             let total = 0;
+            let totalItens = 0; 
             carrinho.forEach((item, index) => {
                 const itemSubtotal = item.produto.preco_venda * item.quantidade;
                 total += itemSubtotal;
+                totalItens += item.quantidade; 
                 const itemElement = document.createElement('div');
                 itemElement.className = 'carrinho-item';
                 itemElement.innerHTML = `
@@ -199,6 +222,12 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
             totalCarrinho.textContent = total.toFixed(2).replace('.', ',');
             
+            // Atualiza o badge
+            if (carrinhoBadge) {
+                carrinhoBadge.textContent = totalItens;
+                carrinhoBadge.style.display = 'block';
+            }
+
             // Verifica se está logado para habilitar botões de finalização
             const isReady = carrinho.length > 0 && clienteLogado; 
             enviarPedidoBtn.disabled = !isReady;
@@ -323,7 +352,8 @@ document.addEventListener('DOMContentLoaded', async function() {
              const telefone = clientePerfil.telefone;
              
              if (!telefone) {
-                mostrarMensagem('Telefone não encontrado no perfil. Refaça o login/cadastro.', 'error');
+                alternarView('auth-screen');
+                mostrarMensagem('Sua sessão expirou. Por favor, faça login novamente.', 'error');
                 return null;
              }
              
@@ -334,7 +364,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                  authId: clienteLogado.id
              };
         } else {
-             // Redireciona para a tela de login
+             // Força a transição para a tela de autenticação
              alternarView('auth-screen');
              mostrarMensagem('🚨 Você precisa estar logado para enviar o pedido. Faça login ou cadastre-se!', 'error');
              return null;
@@ -350,7 +380,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             return null;
         }
         
-        // Regra crítica: se obterDadosCliente falhar (retornar null) a validação para.
+        // Se obterDadosCliente já falhou, ele já redirecionou, então paramos a validação
         if (!dadosCliente) {
              return null;
         }
@@ -493,7 +523,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         // Redireciona para o cardápio após o login
         alternarView('view-cardapio');
         
-        // O menu já está reordenado, garantimos que a classe 'active' está no botão Cardápio
+        // Garante que o Cardápio está ativo no menu inferior
         document.querySelector('.nav-item-app[data-view="view-inicio"]')?.classList.remove('active');
         document.querySelector('.nav-item-app[data-view="view-cardapio"]')?.classList.add('active');
 
@@ -518,37 +548,47 @@ document.addEventListener('DOMContentLoaded', async function() {
     async function carregarStatusUltimoPedido() {
         statusUltimoPedido.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Buscando...';
         
-        // Esta função deve primeiro verificar se clienteLogado é válido
         if (!clienteLogado || !clientePerfil.telefone) {
-            statusUltimoPedido.innerHTML = 'Faça login para ver o status do último pedido.';
+            statusUltimoPedido.innerHTML = '<p>Faça login para ver o status e o histórico de pedidos.</p>';
             return;
         }
 
         try {
+            // Consulta para buscar os últimos 3 pedidos
             const { data, error } = await supabase.from('pedidos_online')
                 .select('*')
                 .eq('telefone_cliente', clientePerfil.telefone)
                 .order('created_at', { ascending: false })
-                .limit(1); 
+                .limit(3); 
                 
             if (error) throw error;
             
-            const ultimoPedido = data ? data[0] : null;
+            const pedidos = data || [];
             
-            if (ultimoPedido) {
-                statusUltimoPedido.innerHTML = `
-                    <p>Pedido #${ultimoPedido.id} - Status: 
-                        <span class="status-badge-history status-${ultimoPedido.status}">
-                            ${ultimoPedido.status.toUpperCase()}
-                        </span>
-                    </p>
-                    <p style="font-size: 0.9rem;">Total: ${formatarMoeda(ultimoPedido.total)}</p>
-                `;
+            let htmlHistorico = '';
+            
+            if (pedidos.length > 0) {
+                 htmlHistorico += '<h4>Últimos Pedidos:</h4>';
+                 pedidos.forEach((p, index) => {
+                     const dataPedido = new Date(p.created_at).toLocaleDateString('pt-BR');
+                     htmlHistorico += `
+                         <div class="card-pedido-historico" style="padding: 10px; border-bottom: 1px dashed #ccc; margin-bottom: 5px;">
+                             <p style="font-weight: bold; margin: 0;">Pedido #${p.id} - ${dataPedido}</p>
+                             <p style="font-size: 0.9rem; margin: 0;">Status: 
+                                 <span class="status-badge-history status-${p.status}">
+                                     ${p.status.toUpperCase()}
+                                 </span>
+                                 | Total: ${formatarMoeda(p.total)}
+                             </p>
+                         </div>
+                     `;
+                 });
             } else {
-                 statusUltimoPedido.innerHTML = 'Você ainda não fez nenhum pedido conosco!';
+                 htmlHistorico = 'Você ainda não fez nenhum pedido conosco!';
             }
             
-            homeEndereco.innerHTML = clientePerfil.endereco || 'Endereço não cadastrado.';
+            homeEndereco.innerHTML = `<strong>Endereço Atual:</strong><br>${clientePerfil.endereco || 'Endereço não cadastrado.'}`;
+            statusUltimoPedido.innerHTML = htmlHistorico;
             
         } catch (error) {
             statusUltimoPedido.innerHTML = 'Erro ao carregar status.';
@@ -557,7 +597,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     function atualizarPerfilUI() {
-        // Verifica se o cliente está logado antes de atualizar o perfil
         if (clienteLogado) {
             profileNameSpan.textContent = clientePerfil.nome.split(' ')[0];
             homeClienteNome.textContent = clientePerfil.nome.split(' ')[0];
@@ -565,7 +604,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             carrinhoEnderecoDisplay.textContent = clientePerfil.endereco || 'N/A';
             carrinhoEnderecoInput.value = clientePerfil.endereco || '';
         } else {
-            // Caso não esteja logado, define valores genéricos
             profileNameSpan.textContent = 'Visitante';
             homeClienteNome.textContent = 'Visitante';
         }
@@ -577,10 +615,72 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     function atualizarCarrinhoDisplay() {
-        atualizarPerfilUI(); // Garante que os dados do cliente no carrinho estejam atualizados
+        atualizarPerfilUI(); 
         atualizarCarrinho();
     }
     
+    // --- NOVAS FUNÇÕES DE EDIÇÃO DE ENDEREÇO ---
+    
+    function abrirModalEditarEndereco() {
+        if (!clienteLogado) {
+             alternarView('auth-screen');
+             mostrarMensagem('Faça login para editar seu endereço.', 'error');
+             return;
+        }
+        
+        // Pré-preenche o CEP se estiver disponível
+        const cepMatch = clientePerfil.endereco ? clientePerfil.endereco.match(/\(CEP:\s?(\d{5}-\d{3})\)/) : null;
+        modalCepInput.value = cepMatch ? cepMatch[1] : '';
+
+        // Limpa campos de rua/num/bairro para o ViaCEP preencher
+        modalRuaInput.value = '';
+        modalNumeroInput.value = '';
+        modalBairroInput.value = '';
+
+        modalEditarEndereco.style.display = 'flex';
+    }
+
+    async function salvarEdicaoEndereco(e) {
+        e.preventDefault();
+        
+        const telefone = clientePerfil.telefone;
+        
+        const cep = modalCepInput.value.trim();
+        const rua = modalRuaInput.value.trim();
+        const numero = modalNumeroInput.value.trim();
+        const bairro = modalBairroInput.value.trim();
+        
+        if (!rua || !numero || !bairro || !cep) {
+            return mostrarMensagem('Preencha a Rua, Número, Bairro e CEP.', 'error');
+        }
+
+        // Simulação de Cidade/Estado, pois não temos inputs no modal
+        const enderecoCompleto = `${rua}, ${numero}, ${bairro} (CEP: ${cep})`;
+
+        try {
+            // 1. Atualizar o cliente_delivery no Supabase
+            const { error } = await supabase.from('clientes_delivery')
+                .update({ endereco: enderecoCompleto })
+                .eq('telefone', telefone);
+
+            if (error) throw error;
+            
+            // 2. Atualizar o estado local do perfil
+            clientePerfil.endereco = enderecoCompleto;
+
+            mostrarMensagem('✅ Endereço atualizado com sucesso!', 'success');
+            modalEditarEndereco.style.display = 'none';
+            atualizarPerfilUI(); 
+            carregarStatusUltimoPedido(); 
+
+        } catch (error) {
+            console.error('Erro ao salvar endereço:', error);
+            mostrarMensagem('Erro ao salvar endereço. Verifique sua conexão.', 'error');
+        }
+    }
+    
+    // --- FINALIZAÇÃO DE PEDIDOS ---
+
     async function finalizarPedidoDireto() { 
         const dados = validarDados();
 
@@ -650,7 +750,11 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (btnIniciarSessao) btnIniciarSessao.addEventListener('click', iniciarSessao);
         if (cadastroForm) cadastroForm.addEventListener('submit', finalizarCadastro);
         if (logoutBtnApp) logoutBtnApp.addEventListener('click', fazerLogoutApp);
-
+        if (formEditarEndereco) formEditarEndereco.addEventListener('submit', salvarEdicaoEndereco); 
+        
+        // Listener para abrir modal de endereço
+        document.getElementById('abrir-modal-editar-endereco')?.addEventListener('click', abrirModalEditarEndereco);
+        
         navItems.forEach(item => {
             item.addEventListener('click', (e) => {
                 e.preventDefault();
