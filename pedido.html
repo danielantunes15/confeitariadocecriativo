@@ -2,195 +2,169 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Faça seu Pedido - Confeitaria Doces Criativos</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Doce Criativo App</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/vendas.css">
-    <link rel="stylesheet" href="css/responsive.css">
     <link rel="stylesheet" href="css/pedido.css">
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body class="pedido-body">
-    <header class="header">
-        <div class="container">
-            <div class="header-content-publico" style="justify-content: space-between; align-items: center; flex-direction: row;">
-                <div style="text-align: left;">
-                    <h1 class="logo">Doce Criativo</h1>
-                    <p class="slogan-publico">Seu cardápio digital</p>
-                </div>
-                <div id="auth-controls">
-                    <button id="login-google-btn" class="btn btn-primary" style="padding: 10px 15px;">
-                        <i class="fab fa-google"></i> Login
+<body class="app-body">
+    
+    <main id="app-container">
+        <div id="alert-container"></div>
+
+        <div id="auth-screen" class="app-view active" style="padding-top: 15vh;">
+            <div class="login-card-app">
+                <h1 class="logo-app">Doce Criativo</h1>
+                <p class="slogan-app">Bem-vindo(a)! Faça seu login ou cadastro rápido.</p>
+                
+                <div id="login-form-group">
+                    <div class="form-group">
+                        <label for="auth-telefone">Seu WhatsApp/Telefone *</label>
+                        <input type="tel" id="auth-telefone" placeholder="(99) 99999-9999" required>
+                    </div>
+                    <button id="btn-iniciar-sessao" class="btn-login-app">
+                        <i class="fas fa-sign-in-alt"></i> Entrar ou Cadastrar
                     </button>
-                    <button id="profile-btn" class="btn btn-primary" style="display: none; padding: 10px 15px;">
-                        <i class="fas fa-user-circle"></i> <span id="profile-name"></span>
-                    </button>
+                    <p class="auth-note">O login é feito pelo seu número. Se for seu primeiro acesso, faremos um cadastro rápido!</p>
                 </div>
+                
+                <form id="cadastro-form" style="display: none; margin-top: 2rem;">
+                    <h3><i class="fas fa-user-plus"></i> Cadastro Rápido</h3>
+                    <input type="hidden" id="cadastro-telefone-hidden">
+                    <div class="form-group">
+                        <label for="cadastro-nome">Nome Completo *</label>
+                        <input type="text" id="cadastro-nome" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="cadastro-endereco">Seu Endereço *</label>
+                        <textarea id="cadastro-endereco" rows="2" required placeholder="Rua, número, bairro"></textarea>
+                    </div>
+                    <button type="submit" id="btn-finalizar-cadastro" class="btn-login-app">
+                        Finalizar Cadastro
+                    </button>
+                </form>
+
             </div>
         </div>
-    </header>
 
-    <main class="main">
-        <div class="container">
-            <div id="alert-container"></div>
-            
-            <div class="tabs-nav-cliente">
-                <button class="tab-btn-cliente active" data-tab="cardapio">
-                    <i class="fas fa-utensils"></i> Cardápio
-                </button>
-                <button class="tab-btn-cliente" data-tab="meus-pedidos" id="meus-pedidos-tab">
-                    <i class="fas fa-history"></i> Meus Pedidos
-                </button>
+        <div id="view-inicio" class="app-view">
+             <header class="app-header">
+                <h1 class="logo-app">Início</h1>
+                <div id="profile-display">
+                    <span id="profile-name"></span>
+                    <button id="logout-btn-app" class="btn-icon"><i class="fas fa-sign-out-alt"></i></button>
+                </div>
+            </header>
+            <div class="app-content-scroll">
+                <section class="card-app">
+                    <h2>👋 Olá, <span id="home-cliente-nome">Cliente</span>!</h2>
+                    <p>Seu app de pedidos oficial da **Doce Criativo**.</p>
+                </section>
+                <section class="card-app">
+                    <h2><i class="fas fa-history"></i> Status do Último Pedido</h2>
+                    <div id="status-ultimo-pedido">Nenhum pedido recente.</div>
+                </section>
+                <section class="card-app">
+                    <h2><i class="fas fa-tags"></i> Oferta do Dia</h2>
+                    <div id="oferta-dia">Veja na aba Promoções!</div>
+                </section>
             </div>
-            
-            <div id="tab-cardapio" class="tab-content-cliente active">
+        </div>
 
+        <div id="view-cardapio" class="app-view">
+            <header class="app-header">
+                <h1 class="logo-app">Cardápio</h1>
+            </header>
+            <div class="app-content-scroll">
                 <section class="categorias">
                     <h2>Categorias</h2>
-                    <div class="categorias-botoes" id="categorias-container">
-                        <div class="loading-container"><div class="spinner"></div></div>
-                    </div>
+                    <div class="categorias-botoes" id="categorias-container"></div>
                 </section>
-
                 <section class="produtos">
-                    <h2>Cardápio</h2>
-                    <div class="produtos-grid" id="produtos-container">
-                        <div class="loading-container"><div class="spinner"></div></div>
-                    </div>
+                    <h2>Produtos</h2>
+                    <div class="produtos-grid" id="produtos-container"></div>
                 </section>
+            </div>
+        </div>
 
-                <section class="carrinho">
-                    <h2><i class="fas fa-shopping-bag"></i> Minha Sacola</h2>
-                    <div class="carrinho-itens" id="carrinho-itens">
-                        <p style="text-align: center; color: #666;">Sua sacola está vazia.</p>
-                    </div>
+        <div id="view-promocoes" class="app-view">
+             <header class="app-header">
+                <h1 class="logo-app">Promoções</h1>
+            </header>
+            <div class="app-content-scroll">
+                 <section class="card-app">
+                    <p>Aqui apareceriam seus produtos em destaque ou cupons de desconto.</p>
+                    <p>*(Funcionalidade a ser implementada no futuro, mas a estrutura está pronta!)*</p>
+                 </section>
+            </div>
+        </div>
+
+        <div id="view-carrinho" class="app-view">
+            <header class="app-header">
+                <h1 class="logo-app">Carrinho</h1>
+            </header>
+            <div class="app-content-scroll">
+                <section class="carrinho card-app">
+                    <h2 style="border: none;"><i class="fas fa-shopping-bag"></i> Seu Pedido</h2>
+                    <div class="carrinho-itens" id="carrinho-itens"></div>
                     <div class="carrinho-total">
                         <strong>Total: R$ <span id="total-carrinho">0,00</span></strong>
                     </div>
                 </section>
-
-                <section class="card-pedido" id="cliente-data-section">
-                    <h2><i class="fas fa-user-alt"></i> 1. Seus Dados</h2>
-                    <div id="logged-in-info" style="display: none;">
-                        <p>Pedido para: <strong id="cliente-nome-logado"></strong></p>
-                        <p>WhatsApp: <strong id="cliente-telefone-logado"></strong> (Usaremos este)</p>
-                        <input type="hidden" id="cliente-nome" value="" />
-                        <input type="hidden" id="cliente-telefone" value="" />
+                
+                <section class="card-pedido card-app">
+                    <h2><i class="fas fa-map-marker-alt"></i> Entrega e Pagamento</h2>
+                    <p>Entrega para: <strong id="carrinho-endereco-display">N/A</strong></p>
+                    <p>Cliente: <strong id="carrinho-cliente-nome">N/A</strong></p>
+                    
+                    <div class="form-group" style="margin-top: 1rem;">
+                        <label for="carrinho-endereco-input">Alterar Endereço</label>
+                        <textarea id="carrinho-endereco-input" rows="2" required></textarea>
                     </div>
-                    <form id="form-cliente" style="display: none;">
-                        <div class="form-group">
-                            <label for="cliente-nome">Seu Nome *</label>
-                            <input type="text" id="cliente-nome-input" placeholder="Digite seu nome" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="cliente-telefone">Seu WhatsApp *</label>
-                            <input type="tel" id="cliente-telefone-input" placeholder="(99) 99999-9999" required>
-                        </div>
-                    </form>
-                </section>
 
-                <section class="card-pedido">
-                    <h2><i class="fas fa-map-marker-alt"></i> 2. Endereço de Entrega</h2>
-                    <form id="form-entrega">
-                        <div class="form-group">
-                            <label for="cliente-endereco">Endereço Completo *</label>
-                            <textarea id="cliente-endereco" rows="3" placeholder="Ex: Rua das Flores, 123, Bairro, Cidade (Ponto de referência)" required></textarea>
-                        </div>
-                    </form>
-                </section>
-
-                <section class="pagamento">
-                    <h2><i class="fas fa-money-check-alt"></i> 3. Forma de Pagamento</h2>
-                    <div class="opcoes-pagamento">
-                        <label class="pagamento-opcao">
-                            <input type="radio" name="pagamento" value="Dinheiro" checked>
-                            <span class="pagamento-icone">💵</span>
-                            <span class="pagamento-texto">
-                                <span class="pagamento-titulo">Dinheiro</span>
-                                <span class="pagamento-descricao">Pagar na entrega</span>
-                            </span>
-                        </label>
-                        <label class="pagamento-opcao">
-                            <input type="radio" name="pagamento" value="PIX">
-                            <span class="pagamento-icone">📱</span>
-                            <span class="pagamento-texto">
-                                <span class="pagamento-titulo">PIX</span>
-                                <span class="pagamento-descricao">Pagar na entrega</span>
-                            </span>
-                        </label>
-                        <label class="pagamento-opcao">
-                            <input type="radio" name="pagamento" value="Cartão (Maquininha)">
-                            <span class="pagamento-icone">💳</span>
-                            <span class="pagamento-texto">
-                                <span class="pagamento-titulo">Cartão (Maquininha)</span>
-                                <span class="pagamento-descricao">Débito ou Crédito na entrega</span>
-                            </span>
-                        </label>
-                    </div>
-                </section>
-
-                <section class="finalizar">
-                    <div class="form-group" style="text-align: center;">
-                        <label style="font-weight: bold; margin-bottom: 10px;">Como deseja finalizar?</label>
-                        <div class="form-actions" style="justify-content: center; gap: 1rem;">
-                            <button id="enviar-pedido-whatsapp" class="btn-whatsapp" style="flex: 1; min-width: 200px;">
-                                <i class="fab fa-whatsapp"></i> Enviar pelo WhatsApp
-                            </button>
-                            <button id="finalizar-pedido-direto" class="btn btn-primary" style="flex: 1; min-width: 200px; background: var(--rosa-escuro); color: white; border-radius: 30px;">
-                                <i class="fas fa-check-circle"></i> Salvar no Sistema
-                            </button>
-                        </div>
+                    <div class="pagamento" style="margin-top: 1.5rem;">
+                        <label style="font-weight: bold; margin-bottom: 5px; display: block;">Forma de Pagamento</label>
+                        <div class="opcoes-pagamento">
+                            </div>
                     </div>
                 </section>
             </div>
             
-            <div id="tab-meus-pedidos" class="tab-content-cliente">
-                <section class="card-pedido" style="text-align: center;" id="historico-loading">
-                    <h2><i class="fas fa-history"></i> Histórico de Pedidos</h2>
-                    <p id="historico-message">Faça login para visualizar seus pedidos anteriores.</p>
-                    <div id="historico-pedidos-list" class="table-container" style="display: none;">
-                        <table style="width: 100%;">
-                            <thead>
-                                <tr>
-                                    <th>Pedido</th>
-                                    <th>Data</th>
-                                    <th>Total</th>
-                                    <th>Status</th>
-                                    <th>Detalhes</th>
-                                </tr>
-                            </thead>
-                            <tbody id="pedidos-history-body">
-                                </tbody>
-                        </table>
-                    </div>
-                </section>
-            </div>
-            
+            <footer class="finalizar-app">
+                 <div class="finalizar-actions">
+                    <button id="finalizar-pedido-direto" class="btn-login-app" style="background: var(--rosa-escuro);">
+                        <i class="fas fa-check-circle"></i> Finalizar Pedido
+                    </button>
+                    <button id="enviar-pedido-whatsapp" class="btn-whatsapp-app">
+                        <i class="fab fa-whatsapp"></i> WhatsApp
+                    </button>
+                 </div>
+            </footer>
         </div>
+        
     </main>
 
-    <div id="profile-modal" class="modal">
-        <div class="modal-content" style="max-width: 400px; text-align: center;">
-            <span class="close" id="close-profile-modal">&times;</span>
-            <h3 style="color: var(--rosa-escuro); margin-bottom: 1rem;"><i class="fas fa-user-circle"></i> Sua Conta</h3>
-            <p>Logado como:</p>
-            <strong id="modal-user-email" style="display: block; font-size: 1.1rem; margin-bottom: 1.5rem;"></strong>
-            <button id="logout-btn-publico" class="btn btn-danger" style="width: 100%;">
-                <i class="fas fa-sign-out-alt"></i> Fazer Logout
-            </button>
-        </div>
-    </div>
-    
-    <footer class="footer">
-        <div class="container">
-            <p>Confeitaria Doces Criativos - © 2025</p>
-        </div>
-    </footer>
-    
+    <nav id="mobile-bottom-nav" style="display: none;">
+        <button class="nav-item-app active" data-view="view-inicio">
+            <i class="fas fa-home"></i> <span>Início</span>
+        </button>
+        <button class="nav-item-app" data-view="view-cardapio">
+            <i class="fas fa-utensils"></i> <span>Cardápio</span>
+        </button>
+        <button class="nav-item-app" data-view="view-promocoes">
+            <i class="fas fa-tags"></i> <span>Promo</span>
+        </button>
+        <button class="nav-item-app" data-view="view-carrinho">
+            <i class="fas fa-shopping-cart"></i> <span>Carrinho</span>
+        </button>
+    </nav>
+
+
     <script>
-        // Configuração do Supabase (A mesma do seu index.html)
         const SUPABASE_URL = 'https://jdfijbhlujoiuraoxivb.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpkZmlqYmhsdWpvaXVyYW94aXZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg4NDE3MzgsImV4cCI6MjA3NDQxNzczOH0.yEMThoZdXPx1aNCO1a6wO-FPoMU-gTgxJlsW883rKvc';
         window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
