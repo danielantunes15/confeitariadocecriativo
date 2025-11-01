@@ -411,9 +411,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         const tipo = tipoPagamentoMisto.value;
         const valor = parseFloat(valorPagamentoMisto.value);
 
-        // --- CORREÇÃO APLICADA AQUI: Permite valor <= 0 APENAS para Crediário ---
-        if (isNaN(valor) || (valor <= 0 && tipo !== 'crediario')) { 
-            mostrarMensagem('Insira um valor de pagamento válido. Para Crediário, insira 0,00 e certifique-se de que nenhum outro pagamento foi adicionado.', 'error');
+        // --- CORREÇÃO APLICADA AQUI: Permite valor >= 0, pois o problema de Crediário será resolvido no finalizePedido
+        if (isNaN(valor) || (valor < 0)) { 
+            mostrarMensagem('Insira um valor de pagamento válido.', 'error');
             return;
         }
         // -----------------------------------------------------------------------
@@ -605,13 +605,18 @@ document.addEventListener('DOMContentLoaded', async function() {
         const formaPagamento = pagamentos.length > 1 ? 'misto' : pagamentos[0].tipo;
         const troco = Math.max(0, pago - total);
         
+        // NOVO CÁLCULO: Total pago desconsiderando Crediário.
+        // Isso representa o dinheiro real pago na hora.
+        const pagoSemCrediario = pagamentos
+            .filter(p => p.tipo !== 'crediario')
+            .reduce((sum, p) => sum + p.valor, 0);
+        // FIM DO NOVO CÁLCULO
+
         // VALIDAÇÃO: CREDÍARIO REQUER CLIENTE CADASTRADO (FINAL CHECK)
         const isCrediario = pagamentos.some(p => p.tipo === 'crediario');
-        // NOVO CHECK: A venda é Crediário se for a única forma de pagamento e o valor for zero.
-        const isFullCrediario = isCrediario && pagamentos.length === 1 && pagamentos[0].valor <= 0.01;
-
+        
         if (isCrediario && !clienteId) {
-            mostrarMensagem('O pagamento em Crediário exige que um cliente cadastrado seja selecionado.', 'error');
+            mostrarMensagem('O pagamento em Crediário exige que um cliente cadastrado seja selecionado!', 'error');
             const clienteSection = document.querySelector('.cliente');
             if (clienteSection) {
                  clienteSection.style.border = '2px solid var(--error-color)';
@@ -621,17 +626,20 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
         
         // Bloqueio de Crediário Misto (Se for Crediário, não deve ter pago mais de 0.01)
-        if (isCrediario && pago > 0.01) {
-            mostrarMensagem('Não é possível registrar pagamento misto junto com Crediário. Use Crediário como pagamento único ou zere o pagamento.', 'error');
+        // CORREÇÃO APLICADA: Usa 'pagoSemCrediario' para ignorar o valor inserido no campo Crediário,
+        // permitindo que o Crediário seja a única forma de pagamento com valor.
+        if (isCrediario && pagoSemCrediario > 0.01) { 
+            mostrarMensagem('Não é possível registrar pagamento misto junto com Crediário. Se a venda for totalmente a prazo, zere os demais pagamentos. Se for parcial, remova o Crediário e registre apenas o valor pago na hora.', 'error');
             return;
         }
         
         // CHECK DE PAGAMENTO COM TOLERÂNCIA (Para resolver o bug de "não finalizar")
         const epsilon = 0.001; 
         
-        // *** CORREÇÃO CRÍTICA AQUI ***
-        // Se for Crediário ÚNICO (R$ 0,00), a validação de pagamento é ignorada.
-        if (!isFullCrediario && pago < total - epsilon) { 
+        // *** NOVO CHECK: Determina se é Crediário Total (pagamentos reais são zero).
+        const isFullCrediarioForValidation = isCrediario && pagoSemCrediario <= epsilon; 
+        
+        if (!isFullCrediarioForValidation && pago < total - epsilon) { 
              mostrarMensagem(`O valor pago (${formatarMoeda(pago)}) é menor que o total do pedido (${formatarMoeda(total)}). Saldo pendente: ${formatarMoeda(total - pago)}. Ajuste o pagamento.`, 'error');
             return;
         }
@@ -687,17 +695,17 @@ document.addEventListener('DOMContentLoaded', async function() {
                  }
             }
             
-            // Crediário não deve registrar valor no caixa imediatamente
-            const valorTotalParaCaixa = pagamentos.filter(p => p.tipo !== 'crediario').reduce((sum, p) => sum + p.valor, 0) - troco;
-            
-            // Se for crediário, o total da venda deve ser 0 para o caixa, ou o valor pago se houver troco
-            const totalParaRegistroCaixa = isFullCrediario ? 0.00 : total; 
+            // CORREÇÃO: Define o valor que entra no caixa (vendaData.total)
+            // Se for Crediário Total, entra R$ 0,00 no caixa.
+            // Caso contrário, entra o valor real pago (pagoSemCrediario), pois o troco já está implícito.
+            const totalParaRegistroCaixa = isFullCrediarioForValidation ? 0.00 : pagoSemCrediario;
+
 
             const vendaData = {
                 data_venda: new Date().toISOString().split('T')[0],
                 cliente: clienteNome,
                 cliente_id: clienteId, 
-                total: totalParaRegistroCaixa, // Total para fins de CAIXA
+                total: totalParaRegistroCaixa, // Total para fins de CAIXA (dinheiro real)
                 forma_pagamento: formaPagamento, 
                 observacoes: observacoesVenda,
                 usuario_id: usuarioAtual.id

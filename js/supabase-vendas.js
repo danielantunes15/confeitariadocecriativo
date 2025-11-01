@@ -106,9 +106,12 @@ class VendasSupabase {
             // Garantir que o total seja número
             vendaData.total = parseFloat(vendaData.total) || 0;
             
-            if (vendaData.total <= 0) {
-                throw new Error('Total da venda deve ser maior que zero');
+            // --- CORREÇÃO APLICADA AQUI ---
+            // Permite total ser 0.00, que é o valor correto para vendas integrais a prazo (crediário).
+            if (vendaData.total < 0) { 
+                throw new Error('Total da venda não pode ser negativo.');
             }
+            // --- FIM DA CORREÇÃO ---
 
             // Preparar dados para inserção (apenas campos necessários)
             const dadosVenda = {
