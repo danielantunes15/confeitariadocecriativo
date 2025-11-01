@@ -199,6 +199,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
             totalCarrinho.textContent = total.toFixed(2).replace('.', ',');
             
+            // Agora verifica se a clienteLogado é nula para desabilitar
             const isReady = carrinho.length > 0 && clienteLogado; 
             enviarPedidoBtn.disabled = !isReady;
             if (finalizarDiretoBtn) finalizarDiretoBtn.disabled = !isReady; 
@@ -333,7 +334,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                  authId: clienteLogado.id
              };
         } else {
-             mostrarMensagem('Erro de autenticação.', 'error');
+             // NOVO: Mensagem explícita para o cliente (caso falhe a validação mais abaixo)
+             mostrarMensagem('Faça login ou cadastre-se para prosseguir com o pedido.', 'error');
              return null;
         }
     }
@@ -346,7 +348,17 @@ document.addEventListener('DOMContentLoaded', async function() {
             mostrarMensagem('Sua sacola está vazia!', 'error');
             return null;
         }
-        if (!dadosCliente || !dadosCliente.nome || !dadosCliente.telefone || !dadosCliente.endereco) {
+        
+        // REGRAS CRÍTICAS DE VALIDAÇÃO DE AUTENTICAÇÃO
+        if (!clienteLogado || !dadosCliente) {
+            // Força a transição para a tela de autenticação
+            alternarView('auth-screen');
+            mostrarMensagem('🚨 Você precisa estar logado para enviar o pedido. Faça login ou cadastre-se!', 'error');
+            return null;
+        }
+        
+        // Regras adicionais de validação (Endereço, Pagamento)
+        if (!dadosCliente.nome || !dadosCliente.telefone || !dadosCliente.endereco) {
             mostrarMensagem('Dados do cliente ou endereço incompletos. Verifique o Login/Cadastro.', 'error');
             return null;
         }
@@ -663,20 +675,34 @@ document.addEventListener('DOMContentLoaded', async function() {
             
             const telefoneSalvo = localStorage.getItem('clienteTelefone');
             
+            // 1. Tenta carregar o perfil logado
             if (telefoneSalvo) {
                 const cliente = await buscarClientePorTelefone(telefoneSalvo);
                 if (cliente) {
                     clientePerfil.nome = cliente.nome;
                     clientePerfil.telefone = cliente.telefone;
                     clientePerfil.endereco = cliente.endereco;
-                    logarClienteManual();
+                    // Define o estado de login, mas não alterna a view ainda
+                    clienteLogado = { id: clientePerfil.telefone, email: clientePerfil.telefone }; 
+                    atualizarPerfilUI();
                 } else {
-                     alternarView('auth-screen');
+                     localStorage.removeItem('clienteTelefone');
                 }
-            } else {
-                 alternarView('auth-screen');
             }
             
+            // 2. Garante que o cardápio seja o primeiro a ser visto para clientes não logados
+            authScreen.classList.remove('active');
+            mobileNav.style.display = 'flex';
+            
+            // Se estiver logado, vai para a Home, se não, vai para o Cardápio
+            if (clienteLogado) {
+                 alternarView('view-inicio');
+            } else {
+                 alternarView('view-cardapio');
+                 mostrarMensagem('Faça login para salvar seu pedido e ver o histórico.', 'info');
+            }
+            
+            // 3. Carrega os dados para renderizar
             await carregarCategorias(); 
             await carregarProdutos();
             configurarEventListeners();
@@ -685,6 +711,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         } catch (error) {
             console.error('❌ Erro na inicialização:', error);
             mostrarMensagem('Erro ao carregar o app: ' + error.message, 'error');
+            // Mantém auth-screen como fallback em caso de erro crítico de conexão
             document.getElementById('auth-screen').classList.add('active');
         }
     })();
