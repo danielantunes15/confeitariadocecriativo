@@ -411,10 +411,12 @@ document.addEventListener('DOMContentLoaded', async function() {
         const tipo = tipoPagamentoMisto.value;
         const valor = parseFloat(valorPagamentoMisto.value);
 
-        if (isNaN(valor) || valor <= 0) {
-            mostrarMensagem('Insira um valor de pagamento válido.', 'error');
+        // --- CORREÇÃO APLICADA AQUI: Permite valor <= 0 APENAS para Crediário ---
+        if (isNaN(valor) || (valor <= 0 && tipo !== 'crediario')) { 
+            mostrarMensagem('Insira um valor de pagamento válido. Para Crediário, insira 0,00 e certifique-se de que nenhum outro pagamento foi adicionado.', 'error');
             return;
         }
+        // -----------------------------------------------------------------------
         
         const novoTotalPago = parseFloat((pago + valor).toFixed(2));
         
@@ -605,6 +607,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         // VALIDAÇÃO: CREDÍARIO REQUER CLIENTE CADASTRADO (FINAL CHECK)
         const isCrediario = pagamentos.some(p => p.tipo === 'crediario');
+        // NOVO CHECK: A venda é Crediário se for a única forma de pagamento e o valor for zero.
+        const isFullCrediario = isCrediario && pagamentos.length === 1 && pagamentos[0].valor <= 0.01;
 
         if (isCrediario && !clienteId) {
             mostrarMensagem('O pagamento em Crediário exige que um cliente cadastrado seja selecionado.', 'error');
@@ -624,8 +628,10 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         // CHECK DE PAGAMENTO COM TOLERÂNCIA (Para resolver o bug de "não finalizar")
         const epsilon = 0.001; 
-
-        if (pago < total - epsilon) { 
+        
+        // *** CORREÇÃO CRÍTICA AQUI ***
+        // Se for Crediário ÚNICO (R$ 0,00), a validação de pagamento é ignorada.
+        if (!isFullCrediario && pago < total - epsilon) { 
              mostrarMensagem(`O valor pago (${formatarMoeda(pago)}) é menor que o total do pedido (${formatarMoeda(total)}). Saldo pendente: ${formatarMoeda(total - pago)}. Ajuste o pagamento.`, 'error');
             return;
         }
@@ -685,7 +691,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             const valorTotalParaCaixa = pagamentos.filter(p => p.tipo !== 'crediario').reduce((sum, p) => sum + p.valor, 0) - troco;
             
             // Se for crediário, o total da venda deve ser 0 para o caixa, ou o valor pago se houver troco
-            const totalParaRegistroCaixa = formaPagamento === 'crediario' ? 0.00 : total; 
+            const totalParaRegistroCaixa = isFullCrediario ? 0.00 : total; 
 
             const vendaData = {
                 data_venda: new Date().toISOString().split('T')[0],
