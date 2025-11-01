@@ -31,6 +31,14 @@ document.addEventListener('DOMContentLoaded', function() {
     const recorrenciaSelect = document.getElementById('conta-recorrencia');
     const parcelasInput = document.getElementById('conta-parcelas');
     
+    // NOVOS ELEMENTOS DO MODAL CREDÍARIO
+    const modalPagamentoCrediario = document.getElementById('modal-pagamento-crediario');
+    const formPagamentoCrediario = document.getElementById('form-pagamento-crediario');
+    const pagamentoCrediarioVendaId = document.getElementById('pagamento-crediario-venda-id');
+    const pagamentoCrediarioClienteNome = document.getElementById('pagamento-crediario-cliente-nome');
+    const pagamentoCrediarioValor = document.getElementById('pagamento-crediario-valor');
+    const pagamentoCrediarioForma = document.getElementById('pagamento-crediario-forma');
+    
     let todasContas = [];
     let contasAReceber = [];
     let vendasCrediario = []; // NOVO: Para armazenar as vendas Crediário
@@ -68,6 +76,22 @@ document.addEventListener('DOMContentLoaded', function() {
         if (modalEditarConta) modalEditarConta.style.display = 'none';
     }
     window.fecharModalContas = fecharModalContas;
+    
+    // Função para abrir e fechar o modal Crediário (Definida no HTML, mas re-declarada aqui para consistência)
+    window.abrirModalCrediario = (vendaId, nomeCliente, valor) => {
+        if (!modalPagamentoCrediario) return;
+        
+        pagamentoCrediarioVendaId.value = vendaId;
+        pagamentoCrediarioClienteNome.textContent = nomeCliente;
+        pagamentoCrediarioValor.textContent = formatarMoeda(valor);
+        modalPagamentoCrediario.style.display = 'flex';
+    };
+    
+    function fecharModalCrediario() {
+        if (modalPagamentoCrediario) modalPagamentoCrediario.style.display = 'none';
+        if (formPagamentoCrediario) formPagamentoCrediario.reset();
+    }
+    window.fecharModalCrediario = fecharModalCrediario;
     
     // --- LÓGICA DE TROCA DE ABAS PADRONIZADA ---
     function switchTab(tabId) {
@@ -145,8 +169,14 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('aplicar-filtro')?.addEventListener('click', carregarContasAPagar);
         
         document.getElementById('fechar-modal-editar-conta')?.addEventListener('click', fecharModalContas);
+        
+        // Listeners para o novo modal Crediário
+        document.getElementById('fechar-modal-crediario')?.addEventListener('click', fecharModalCrediario);
+        if (formPagamentoCrediario) formPagamentoCrediario.addEventListener('submit', confirmarPagamentoCrediario);
+        
         window.addEventListener('click', (e) => {
             if (e.target === modalEditarConta) fecharModalContas();
+            if (e.target === modalPagamentoCrediario) fecharModalCrediario();
         });
         
         if (recorrenciaSelect) {
@@ -454,7 +484,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             modalEditarConta.style.display = 'flex';
         } catch (error) {
-            console.error('Erro ao carregar conta para edição:', error);
+            console.error('❌ Erro ao carregar conta para edição:', error);
             mostrarMensagem('Erro ao carregar dados da conta: ' + error.message, 'error');
         }
     };
@@ -680,11 +710,11 @@ document.addEventListener('DOMContentLoaded', function() {
         
         try {
             // **BUSCAR APENAS OS DADOS DIRETOS DA TABELA VENDAS**
-            // CORREÇÃO: Filtra apenas por 'crediario', que agora deve incluir todas as vendas a prazo
+            // Filtra apenas por 'crediario' e total diferente de 0.00
             const { data: vendasData, error } = await supabase
                 .from('vendas')
                 .select('id, data_venda, total, created_at, cliente, usuario_id, forma_pagamento, observacoes')
-                .eq('forma_pagamento', 'crediario') // Filtra APENAS por 'crediario'
+                .eq('forma_pagamento', 'crediario')
                 .neq('total', 0.00)
                 .order('data_venda', { ascending: true });
             
@@ -769,40 +799,77 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // NOVO: Função de recebimento (similar ao contas a receber, mas zera a venda)
+    // Ação do botão "Receber" na tabela - ABRE O MODAL
     window.confirmarRecebimentoCrediario = async function(vendaId, nomeCliente, valor) {
-        if (!confirm(`Deseja confirmar o recebimento de R$ ${valor.toFixed(2).replace('.', ',')} do cliente ${nomeCliente}?\n\nIsso irá registrar a entrada no caixa e marcar a dívida como paga.`)) return;
+        // Abre o modal para escolher a forma de pagamento
+        window.abrirModalCrediario(vendaId, nomeCliente, valor);
+    }
+    
+    // Função para processar o pagamento no modal
+    async function confirmarPagamentoCrediario(e) {
+        e.preventDefault();
+        
+        const vendaId = pagamentoCrediarioVendaId.value;
+        const nomeCliente = pagamentoCrediarioClienteNome.textContent;
+        // Pega o valor do elemento P, removendo formatação
+        const valorTexto = pagamentoCrediarioValor.textContent;
+        // Usa o Intl.NumberFormat para garantir que a leitura do valor formatado esteja correta
+        const valor = parseFloat(valorTexto.replace(/R\$\s?/, '').replace(/\./g, '').replace(',', '.'));
+        const formaPagamento = pagamentoCrediarioForma.value;
 
         try {
-            // 1. Registrar a movimentação de caixa (entrada)
-            const movimentacaoData = {
-                data_caixa: new Date().toISOString().split('T')[0],
-                tipo: 'entrada',
-                valor: valor,
-                descricao: `Recebimento Crediário ref. Venda #${vendaId} - Cliente: ${nomeCliente}`,
+            // 1. Criar uma NOVA VENDA para registrar a entrada de caixa e a forma de pagamento no relatório.
+            const vendaData = {
+                data_venda: new Date().toISOString().split('T')[0],
+                cliente: nomeCliente,
+                total: valor,
+                forma_pagamento: formaPagamento, // Registra a forma real de pagamento
+                observacoes: `Recebimento de Dívida Crediário ref. Venda Original #${vendaId}`,
                 usuario_id: usuario.id
             };
-            
-            // Usamos o módulo de encomendas pois ele contém a função registrarMovimentacao (foi usado para encomendas e aqui também)
-            if (window.encomendasSupabase?.registrarMovimentacao) {
-                await window.encomendasSupabase.registrarMovimentacao(movimentacaoData); 
+             
+            if (window.vendasSupabase?.criarVenda) {
+                // Cria uma nova venda que entrará no caixa/relatórios com a forma correta.
+                // Não adicionamos itens aqui, é apenas um registro financeiro.
+                await window.vendasSupabase.criarVenda(vendaData); 
             } else {
-                 // Fallback: Tentar usar o Supabase diretamente se o módulo não estiver carregado
-                 await supabase.from('caixa_movimentacoes').insert([movimentacaoData]);
+                 throw new Error('Módulo de vendas não carregado. O registro da venda/caixa falhou.');
+            }
+            
+            // 1b. NOVO TRECHO: Registrar a movimentação de caixa (Entrada) para que apareça na tabela de Movimentações de Caixa.
+            if (window.encomendasSupabase?.registrarMovimentacao) {
+                const movimentacaoData = {
+                    data_caixa: new Date().toISOString().split('T')[0],
+                    tipo: 'entrada',
+                    valor: valor,
+                    descricao: `Recebimento Crediário (${formaPagamento.toUpperCase()}) ref. Venda Original #${vendaId}`,
+                    usuario_id: usuario.id
+                };
+                await window.encomendasSupabase.registrarMovimentacao(movimentacaoData);
+                
+                // AVISO AO USUÁRIO: Informar sobre a duplicidade de Dinheiro no Saldo Final
+                if (formaPagamento === 'dinheiro') {
+                    mostrarMensagem(`Atenção: O recebimento em Dinheiro foi registrado na Movimentação de Caixa. O Saldo Final será duplicado, pois já é somado nas Vendas. Considere registrar uma Saída manual para balancear.`, 'warning');
+                }
+
+            } else {
+                console.warn('Módulo de encomendas (registrarMovimentacao) não carregado.');
             }
              
-            // 2. Zerar o valor da venda para indicar que foi paga (manter o registro da venda)
+            // 2. Zerar o valor da VENDA ORIGINAL para tirar da lista de devedores.
             const { error } = await supabase.from('vendas')
                 .update({ 
                     total: 0.00, // Zera o total para tirar da lista de devedores
-                    observacoes: 'DÍVIDA CREDÍARIO PAGA. ' + new Date().toLocaleDateString('pt-BR')
+                    observacoes: 'DÍVIDA CREDÍARIO PAGA. Forma Final: ' + formaPagamento.toUpperCase() + ' - ' + new Date().toLocaleDateString('pt-BR')
                 })
                 .eq('id', vendaId);
 
             if (error) throw error;
             
-            mostrarMensagem(`Recebimento de R$ ${valor.toFixed(2)} de ${nomeCliente} confirmado!`, 'success');
-            await carregarVendasCrediario();
+            mostrarMensagem(`Recebimento de ${formatarMoeda(valor)} de ${nomeCliente} (${formaPagamento}) confirmado!`, 'success');
+            
+            fecharModalCrediario();
+            await carregarVendasCrediario(); // Recarrega a lista de devedores para remover o item
 
         } catch (error) {
             console.error('❌ Erro ao confirmar recebimento do Crediário:', error);
