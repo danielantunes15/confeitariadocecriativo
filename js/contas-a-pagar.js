@@ -679,7 +679,7 @@ document.addEventListener('DOMContentLoaded', function() {
         crediarioDevedoresBody.innerHTML = '<tr><td colspan="6" style="text-align: center;"><div class="loading-spinner"></div> Carregando...</td></tr>';
         
         try {
-            // Busca VENDAS que foram marcadas como Crediário
+            // CORRIGIDO: Usando os aliases convencionais 'usuario' e 'cliente' para o JOIN
             const { data, error } = await supabase.from('vendas')
                 .select(`
                     id, 
