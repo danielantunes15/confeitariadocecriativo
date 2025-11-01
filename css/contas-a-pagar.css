@@ -1,0 +1,142 @@
+/* css/contas-a-pagar.css - Estilos específicos para Contas a Pagar */
+@import url('style.css');
+
+/* Reutilizando estilos de tabs de estoque/admin */
+.tabs {
+    display: flex;
+    border-bottom: 2px solid #e9ecef;
+    margin-bottom: 1.5rem;
+}
+
+.tab-btn {
+    background: none;
+    border: none;
+    padding: 1rem 1.5rem;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+    color: #6c757d;
+}
+
+.tab-btn:hover {
+    color: #495057;
+    background: #f8f9fa;
+}
+
+.tab-btn.active {
+    /* Cor roxa para diferenciar (usando secondary-color do relatorios.css/pdf-styles.css) */
+    color: #8a2be2; 
+    border-bottom-color: #8a2be2;
+    background: #f8f9ff; 
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Estilos de filtro e busca */
+.table-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end; /* Alinha o botão "Aplicar" com os inputs */
+    margin-bottom: 1.5rem;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.search-box {
+    position: relative;
+    flex: 1;
+    max-width: 300px;
+}
+
+.search-box input {
+    width: 100%;
+    padding: 0.75rem 1rem 0.75rem 2.5rem;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    font-size: 0.9rem;
+}
+
+.search-box i {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6c757d;
+}
+
+/* Estilos de Status/Badges */
+.status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+/* Contas a Pagar */
+.status-badge.pendente {
+    background: #fff3cd; /* Amarelo (warning) */
+    color: #856404;
+}
+
+.status-badge.vencido {
+    background: #f8d7da; /* Vermelho (danger) */
+    color: #721c24;
+}
+
+.status-badge.pago {
+    background: #d4edda; /* Verde (success) */
+    color: #155724;
+}
+
+/* NOVO: Contas a Receber */
+.status-badge.a-receber {
+    background: #e3f2fd; /* Azul (info) */
+    color: #1565c0;
+}
+
+.status-badge.parcialmente-pago {
+    background: #f8f9fa;
+    color: #495057;
+}
+
+/* Formulário e Tabela (reutilizam style.css e estoque.css/admin.css) */
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .table-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .search-box, .table-controls .form-group {
+        max-width: none;
+    }
+    
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+    
+    /* Reajuste para o botão de filtro que estava alinhado à base */
+    .table-controls button {
+        margin-top: 1rem;
+    }
+}
