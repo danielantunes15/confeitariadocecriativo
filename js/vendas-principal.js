@@ -602,18 +602,22 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         const clienteId = clienteSelect.value || null;
         const clienteNome = clienteSelect.options[clienteSelect.selectedIndex].dataset.nome;
-        const formaPagamento = pagamentos.length > 1 ? 'misto' : pagamentos[0].tipo;
+        
+        // CORREÇÃO: Força a forma de pagamento para 'crediario' se a opção estiver presente, evitando o 'misto' no DB.
+        const isCrediario = pagamentos.some(p => p.tipo === 'crediario');
+        const formaPagamento = isCrediario ? 'crediario' : pagamentos[0].tipo; 
+
         const troco = Math.max(0, pago - total);
         
         // NOVO CÁLCULO: Total pago desconsiderando Crediário.
-        // Isso representa o dinheiro real pago na hora.
         const pagoSemCrediario = pagamentos
             .filter(p => p.tipo !== 'crediario')
             .reduce((sum, p) => sum + p.valor, 0);
         // FIM DO NOVO CÁLCULO
 
         // VALIDAÇÃO: CREDÍARIO REQUER CLIENTE CADASTRADO (FINAL CHECK)
-        const isCrediario = pagamentos.some(p => p.tipo === 'crediario');
+        
+        const epsilon = 0.001; 
         
         if (isCrediario && !clienteId) {
             mostrarMensagem('O pagamento em Crediário exige que um cliente cadastrado seja selecionado!', 'error');
@@ -626,17 +630,13 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
         
         // Bloqueio de Crediário Misto (Se for Crediário, não deve ter pago mais de 0.01)
-        // CORREÇÃO APLICADA: Usa 'pagoSemCrediario' para ignorar o valor inserido no campo Crediário,
-        // permitindo que o Crediário seja a única forma de pagamento com valor.
         if (isCrediario && pagoSemCrediario > 0.01) { 
             mostrarMensagem('Não é possível registrar pagamento misto junto com Crediário. Se a venda for totalmente a prazo, zere os demais pagamentos. Se for parcial, remova o Crediário e registre apenas o valor pago na hora.', 'error');
             return;
         }
         
         // CHECK DE PAGAMENTO COM TOLERÂNCIA (Para resolver o bug de "não finalizar")
-        const epsilon = 0.001; 
         
-        // *** NOVO CHECK: Determina se é Crediário Total (pagamentos reais são zero).
         const isFullCrediarioForValidation = isCrediario && pagoSemCrediario <= epsilon; 
         
         if (!isFullCrediarioForValidation && pago < total - epsilon) { 
@@ -695,18 +695,26 @@ document.addEventListener('DOMContentLoaded', async function() {
                  }
             }
             
-            // CORREÇÃO: Define o valor que entra no caixa (vendaData.total)
-            // Se for Crediário Total, entra R$ 0,00 no caixa.
-            // Caso contrário, entra o valor real pago (pagoSemCrediario), pois o troco já está implícito.
-            const totalParaRegistroCaixa = isFullCrediarioForValidation ? 0.00 : pagoSemCrediario;
+            // CORREÇÃO: Define o valor que entra no campo 'total' da tabela 'vendas'.
+            const valorRealDaVenda = total; 
+            
+            let valorParaRegistroTotal;
 
+            if (isCrediario) {
+                // Se for crediário, o 'total' armazena a DÍVIDA PENDENTE (valor total - valor pago no momento).
+                const debitoRestante = parseFloat((valorRealDaVenda - pagoSemCrediario).toFixed(2));
+                valorParaRegistroTotal = debitoRestante;
+            } else {
+                // Para outros tipos de pagamento (dinheiro, cartão), registra o valor total da venda.
+                valorParaRegistroTotal = valorRealDaVenda; 
+            }
 
             const vendaData = {
                 data_venda: new Date().toISOString().split('T')[0],
                 cliente: clienteNome,
                 cliente_id: clienteId, 
-                total: totalParaRegistroCaixa, // Total para fins de CAIXA (dinheiro real)
-                forma_pagamento: formaPagamento, 
+                total: valorParaRegistroTotal, // AGORA REGISTRA A DÍVIDA (se crediário) ou o total da venda
+                forma_pagamento: formaPagamento, // Registra 'crediario' se for crediário
                 observacoes: observacoesVenda,
                 usuario_id: usuarioAtual.id
             };
