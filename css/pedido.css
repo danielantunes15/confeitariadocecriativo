@@ -299,12 +299,11 @@
 #view-cardapio .categorias-botoes {
     display: flex;
     flex-wrap: nowrap; /* MANTÉM NA LINHA PARA ROLAGEM HORIZONTAL (Conforme solicitado) */
-    overflow-x: auto; /* HABILITA A ROLAGEM LATERAL */
+    overflow-x: auto; /* HABILITA ROLAGEM LATERAL */
     gap: 0.5rem; /* Reduz o espaçamento entre botões */
     -webkit-overflow-scrolling: touch; /* Melhoria de performance em iOS */
     
     /* === CORREÇÃO PARA RESOLVER O CORTE NO MOBILE === */
-    /* A rolagem será visível e estendida até a borda do cartão. */
     margin: 0 -15px; /* Compensa a padding de 15px do .card-app (pai) */
     padding: 0 15px 10px 15px; /* Re-aplica a padding horizontal e a padding-bottom para a barra */
     /* === FIM DA CORREÇÃO === */
@@ -323,3 +322,46 @@
 #view-cardapio .categoria-btn span {
     margin: 0 !important; /* Remove margens que podem ter sido definidas para o ícone */
 }
+
+/* --- INÍCIO: ESTILOS PARA O HISTÓRICO DE PEDIDOS (SOLICITAÇÃO DO USUÁRIO) --- */
+.card-pedido-historico {
+    padding: 10px;
+    border-bottom: 1px dashed #ccc;
+    margin-bottom: 5px;
+}
+
+.status-badge-history {
+    padding: 4px 8px;
+    border-radius: 10px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+/* Cores dos Status (Mapeadas para as cores de Delivery) */
+.status-NOVO, .status-novo {
+    background-color: #ffb6c1; /* rosa claro */
+    color: #db7093; /* rosa escuro */
+}
+
+.status-PREPARANDO, .status-preparando {
+    background-color: #fff3cd; /* amarelo claro */
+    color: #cc8400; /* laranja escuro */
+}
+
+.status-PRONTO, .status-pronto {
+    background-color: #e3f2fd; /* azul claro */
+    color: #1565c0; /* azul escuro */
+}
+
+.status-ENTREGUE, .status-entregue {
+    background-color: #e8f5e9; /* verde claro */
+    color: #2e7d32; /* verde escuro */
+}
+
+.status-CANCELADO, .status-cancelado {
+    background-color: #ffebee; /* vermelho claro */
+    color: #c62828; /* vermelho escuro */
+}
+/* --- FIM: ESTILOS PARA O HISTÓRICO DE PEDIDOS --- */
