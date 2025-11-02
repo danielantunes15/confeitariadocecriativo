@@ -509,9 +509,10 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         try {
             // 1. Buscar a última venda com os itens
+            // ATENÇÃO: A busca é feita na tabela VENDAS, onde os itens são detalhados.
             const { data, error } = await supabase.from('vendas')
                 .select(`id, itens:vendas_itens(produto_id, quantidade)`)
-                .eq('cliente_id', clientePerfil.telefone) // CORRIGIDO: Usa o telefone do cliente
+                .eq('cliente_id', clientePerfil.telefone) 
                 .order('created_at', { ascending: false })
                 .limit(1); 
             
@@ -699,6 +700,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         window.alternarView('auth-screen');
     }
 
+    // FUNÇÃO CORRIGIDA: Lendo pedidos do 'pedidos_online' para mostrar status
     async function carregarStatusUltimoPedido() {
         statusUltimoPedido.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Buscando histórico...';
         
@@ -709,10 +711,10 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
 
         try {
-            // CORREÇÃO CRÍTICA: Filtra por cliente_id (telefone) em vez do nome.
-            const { data, error } = await supabase.from('vendas')
-                .select(`id, created_at, total, forma_pagamento, status_pedido, itens:vendas_itens(produto_id, quantidade)`)
-                .eq('cliente_id', clientePerfil.telefone) 
+            // CORREÇÃO CRÍTICA: Busca os pedidos na tabela 'pedidos_online' (onde são salvos)
+            const { data, error } = await supabase.from('pedidos_online')
+                .select(`id, created_at, total, forma_pagamento, status, observacoes`)
+                .eq('telefone_cliente', clientePerfil.telefone) 
                 .order('created_at', { ascending: false })
                 .limit(3); 
                 
@@ -725,30 +727,46 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (pedidos.length > 0) {
                  htmlHistorico += '<h4>Últimos Pedidos:</h4>';
                  
-                 if (pedidos[0].itens && pedidos[0].itens.length > 0) {
-                     repetirCompraContainer.style.display = 'block';
-                 } else {
-                     repetirCompraContainer.style.display = 'none';
-                 }
+                 // Como a tabela 'pedidos_online' não tem a relação de itens, 
+                 // desabilita a repetição de compra que depende da tabela 'vendas_itens'
+                 repetirCompraContainer.style.display = 'none'; 
+                 // ^ Se você implementar o detalhamento de itens em pedidos_online, reabilite isso.
                  
                  pedidos.forEach((p, index) => {
                      const dataPedido = new Date(p.created_at).toLocaleDateString('pt-BR');
                      
-                     let listaItens = '';
-                     if (p.itens && p.itens.length > 0) {
-                        listaItens = p.itens.map(item => {
-                            const produto = produtos.find(prod => prod.id === item.produto_id);
-                            return `${item.quantidade}x ${produto ? produto.nome : 'Produto Removido'}`;
-                        }).join(', ');
-                     }
-                     
+                     // NOVO: Lógica para extrair itens da string de observações (que contém a lista formatada)
+                    let listaItens = '';
+                    const obsLines = p.observacoes.split('\n');
+                    let isItemList = false;
+                    for (const line of obsLines) {
+                        if (line.includes('Itens:')) {
+                            isItemList = true;
+                            continue;
+                        }
+                        if (line.includes('Total:') || line.includes('OBSERVAÇÕES ADICIONAIS:')) {
+                            isItemList = false;
+                            break;
+                        }
+                        if (isItemList && line.trim() !== '') {
+                            // Remove o asterisco inicial e o espaço
+                            listaItens += line.replace('*', '').trim() + ', ';
+                        }
+                    }
+                    if (listaItens.endsWith(', ')) {
+                        listaItens = listaItens.slice(0, -2);
+                    }
+                    
+                    // Status da tabela pedidos_online
+                    const status = (p.status || 'novo').toUpperCase();
+                    
                      htmlHistorico += `
                          <div class="card-pedido-historico" style="padding: 10px; border-bottom: 1px dashed #ccc; margin-bottom: 5px;">
                              <p style="font-weight: bold; margin: 0;">Pedido #${p.id} - ${dataPedido}</p>
-                             <p style="font-size: 0.9rem; margin: 0;">Itens: ${listaItens}</p>
+                             <p style="font-size: 0.9rem; margin: 0;">Itens: ${listaItens || 'N/A'}</p>
                              <p style="font-size: 0.9rem; margin: 0;">Status: 
-                                 <span class="status-badge-history status-${p.status_pedido || 'NOVO'}">
-                                     ${(p.status_pedido || 'NOVO').toUpperCase()}
+                                 <span class="status-badge-history status-${status}">
+                                     ${status}
                                  </span>
                                  | Total: ${formatarMoeda(p.total)}
                              </p>
