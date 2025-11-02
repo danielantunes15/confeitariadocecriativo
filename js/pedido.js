@@ -55,9 +55,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     const carrinhoEnderecoDisplay = document.getElementById('carrinho-endereco-display');
     const carrinhoClienteNomeDisplay = document.getElementById('carrinho-cliente-nome');
     const carrinhoEnderecoInput = document.getElementById('carrinho-endereco-input');
-    const enviarPedidoBtn = document.getElementById('enviar-pedido-whatsapp');
     const pagamentoOpcoesContainer = document.querySelector('#view-carrinho .opcoes-pagamento'); 
-
+    
     // Elementos do Modal de Edição de Endereço (NOVOS)
     const modalEditarEndereco = document.getElementById('modal-editar-endereco');
     const formEditarEndereco = document.getElementById('form-editar-endereco');
@@ -212,7 +211,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (carrinho.length === 0) {
             carrinhoItens.innerHTML = `<p style="text-align: center; color: #666;">Sua sacola está vazia.</p>`;
             totalCarrinho.textContent = '0,00';
-            enviarPedidoBtn.disabled = true;
             if (finalizarDiretoBtn) finalizarDiretoBtn.disabled = true; 
             if (carrinhoBadge) carrinhoBadge.style.display = 'none';
         } else {
@@ -251,7 +249,6 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             // Verifica se está logado para habilitar botões de finalização
             const isReady = carrinho.length > 0 && clienteLogado; 
-            enviarPedidoBtn.disabled = !isReady;
             if (finalizarDiretoBtn) finalizarDiretoBtn.disabled = !isReady; 
             
             document.querySelectorAll('.btn-remover').forEach(btn => btn.addEventListener('click', function() {
@@ -786,7 +783,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         const opcoesPagamentoOriginal = document.querySelector('.pagamento .opcoes-pagamento');
         if (pagamentoOpcoesContainer.children.length === 0 && opcoesPagamentoOriginal) {
-            pagamentoOpcoesContainer.innerHTML = opcoesPagcoesPagamentoOriginal.innerHTML;
+            pagamentoOpcoesContainer.innerHTML = opcoesPagamentoOriginal.innerHTML;
         }
     }
 
@@ -854,9 +851,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
     
-    // --- FINALIZAÇÃO DE PEDIDOS ---
+    // --- FINALIZAÇÃO DE PEDIDOS (FUNÇÃO UNIFICADA) ---
 
-    async function finalizarPedidoDireto() { 
+    async function finalizarPedidoEEnviarWhatsApp() { 
         const dados = validarDados();
 
         if (!dados) return;
@@ -865,7 +862,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         finalizarDiretoBtn.disabled = true;
 
         try {
-            // 1. Criar o pedido_online
+            // 1. Criar o pedido_online (DB)
             const { error } = await supabase.from('pedidos_online').insert({
                 nome_cliente: dados.nome,
                 telefone_cliente: dados.telefone,
@@ -887,7 +884,23 @@ document.addEventListener('DOMContentLoaded', async function() {
                 await supabase.from('produtos').update({ estoque_atual: novoEstoque }).eq('id', produtoId);
             }
 
-            mostrarMensagem('✅ Pedido enviado e registrado com sucesso!', 'success');
+            // 3. ENVIAR MENSAGEM VIA WHATSAPP (Ação automática após finalizar)
+            let mensagem = `*PEDIDO ONLINE - DOCE CRIATIVO*\n\n`;
+            mensagem += `*Cliente:* ${dados.nome}\n`;
+            mensagem += `*Telefone:* ${dados.telefone}\n`;
+            mensagem += `*Endereço:* ${dados.endereco}\n`;
+            mensagem += `*Pagamento:* ${dados.formaPagamento}\n`;
+            mensagem += `*TOTAL:* ${formatarMoeda(dados.total)}\n\n`;
+            
+            mensagem += `--- DETALHES ---\n`;
+            mensagem += dados.observacoes;
+
+            const url = `https://wa.me/${NUMERO_WHATSAPP}?text=${encodeURIComponent(mensagem)}`;
+            window.open(url, '_blank');
+            
+            // Fim do envio WhatsApp
+
+            mostrarMensagem('✅ Pedido registrado e mensagem enviada via WhatsApp!', 'success');
             limparFormularioECarrinho();
             window.alternarView('view-inicio');
             carregarStatusUltimoPedido();
@@ -898,27 +911,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         } finally {
             finalizarDiretoBtn.disabled = false;
         }
-    }
-    
-    async function enviarPedidoWhatsapp() { 
-        const dados = validarDados();
-
-        if (!dados) return;
-
-        let mensagem = `*PEDIDO ONLINE - DOCE CRIATIVO*\n\n`;
-        mensagem += `*Cliente:* ${dados.nome}\n`;
-        mensagem += `*Telefone:* ${dados.telefone}\n`;
-        mensagem += `*Endereço:* ${dados.endereco}\n`;
-        mensagem += `*Pagamento:* ${dados.formaPagamento}\n`;
-        mensagem += `*TOTAL:* ${formatarMoeda(dados.total)}\n\n`;
-        
-        mensagem += `--- DETALHES ---\n`;
-        mensagem += dados.observacoes;
-
-        const url = `https://wa.me/${NUMERO_WHATSAPP}?text=${encodeURIComponent(mensagem)}`;
-        window.open(url, '_blank');
-        
-        mostrarMensagem('Mensagem do pedido enviada! Aguarde a confirmação via WhatsApp.', 'info');
     }
 
     // --- FUNÇÕES DE EVENTOS ---
@@ -942,8 +934,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
         });
         
-        if (enviarPedidoBtn) enviarPedidoBtn.addEventListener('click', enviarPedidoWhatsapp);
-        if (finalizarDiretoBtn) finalizarDiretoBtn.addEventListener('click', finalizarPedidoDireto);
+        // NOVO: Apenas um listener para o botão de finalizar
+        if (finalizarDiretoBtn) finalizarDiretoBtn.addEventListener('click', finalizarPedidoEEnviarWhatsApp);
         
         carrinhoEnderecoInput.addEventListener('change', (e) => {
              clientePerfil.endereco = e.target.value.trim();
@@ -993,11 +985,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             authScreen.classList.remove('active');
             mobileNav.style.display = 'flex';
             
-            if (clienteEncontrado) {
-                 window.alternarView('view-cardapio');
-            } else {
-                 window.alternarView('view-boas-vindas');
-            }
+            // >> ALTERAÇÃO SOLICITADA: Pula a tela de boas-vindas
+            window.alternarView('view-cardapio');
+            // << FIM DA ALTERAÇÃO
             
             // 3. Carrega os dados para renderizar
             await carregarCategorias(); 
