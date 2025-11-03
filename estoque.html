@@ -105,7 +105,7 @@
                             <table>
                                 <thead>
                                     <tr>
-                                        <th>Ícone</th>
+                                        <th>Foto</th>
                                         <th>Produto</th>
                                         <th>Categoria</th>
                                         <th>Preço Venda (R$)</th>
@@ -146,12 +146,8 @@
                                     <input id="produto-preco-venda" type="number" step="0.01" min="0" required />
                                 </div>
                                 <div class="form-group">
-                                    <label for="produto-icone">Ícone do Produto *</label>
-                                    <div class="icones-container">
-                                        <div class="icones-grid" id="icones-grid">
-                                            </div>
-                                        <input type="hidden" id="produto-icone" required />
-                                    </div>
+                                    <label for="produto-foto-file">Anexar Foto do Produto *</label>
+                                    <input type="file" id="produto-foto-file" accept="image/*" required>
                                 </div>
                             </div>
                             
@@ -247,12 +243,10 @@
                         <input id="editar-produto-preco-venda" type="number" step="0.01" min="0" required />
                     </div>
                     <div class="form-group">
-                        <label for="editar-produto-icone">Ícone do Produto *</label>
-                        <div class="icones-container">
-                            <div class="icones-grid" id="editar-icones-grid">
-                                </div>
-                            <input type="hidden" id="editar-produto-icone" required />
-                        </div>
+                        <label for="editar-produto-foto-file">Anexar Nova Foto (Opcional)</label>
+                        <input type="file" id="editar-produto-foto-file" accept="image/*">
+                        <p style="font-size: 0.8em; margin-top: 5px;">Deixe vazio para manter a foto atual.</p>
+                        <img id="editar-foto-preview" src="" alt="Foto Atual" style="max-width: 100px; max-height: 100px; margin-top: 10px; display: none; border-radius: 4px;">
                     </div>
                 </div>
                 

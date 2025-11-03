@@ -11,42 +11,67 @@ document.addEventListener('DOMContentLoaded', function() {
     const contentElement = document.getElementById('content');
     const errorElement = document.getElementById('error-message');
     
-    // Lista de ícones de confeitaria
-    const iconesConfeitaria = [
-        { classe: 'fa-cookie', nome: 'Biscoito' },
-        { classe: 'fa-birthday-cake', nome: 'Bolo' },
-        { classe: 'fa-ice-cream', nome: 'Sorvete' },
-        { classe: 'fa-candy-cane', nome: 'Pirulito' },
-        { classe: 'fa-mug-hot', nome: 'Chocolate' },
-        { classe: 'fa-star', nome: 'Estrela' },
-        { classe: 'fa-heart', nome: 'Coração' },
-        { classe: 'fa-gem', nome: 'Diamante' },
-        { classe: 'fa-cupcake', nome: 'Cupcake' },
-        { classe: 'fa-pie', nome: 'Torta' },
-        { classe: 'fa-bread-slice', nome: 'Pão' },
-        { classe: 'fa-cheese', nome: 'Queijo' },
-        { classe: 'fa-apple-alt', nome: 'Maçã' },
-        { classe: 'fa-lemon', nome: 'Limão' },
-        { classe: 'fa-stroopwafel', nome: 'Waffle' },
-        { classe: 'fa-doughnut', nome: 'Donut' },
-        { classe: 'fa-croissant', nome: 'Croissant' },
-        { classe: 'fa-pizza-slice', nome: 'Pizza' },
-        { classe: 'fa-hamburger', nome: 'Hambúrguer' },
-        { classe: 'fa-hotdog', nome: 'Hot Dog' },
-        { classe: 'fa-cookie-bite', nome: 'Biscoito Mordido' },
-        { classe: 'fa-cake-candles', nome: 'Bolo com Velas' },
-        { classe: 'fa-muffin', nome: 'Muffin' },
-        { classe: 'fa-pastafarianism', nome: 'Macarrão' },
-        { classe: 'fa-egg', nome: 'Ovo' },
-        { classe: 'fa-fish', nome: 'Peixe' },
-        { classe: 'fa-drumstick-bite', nome: 'Frango' },
-        { classe: 'fa-carrot', nome: 'Cenoura' },
-        { classe: 'fa-pepper-hot', nome: 'Pimenta' },
-        { classe: 'fa-seedling', nome: 'Planta' }
-    ];
-
     // Inicializar a aplicação
     inicializarEstoque();
+
+    // --- FUNÇÃO AUXILIAR PARA LIMPAR NOMES DE ARQUIVO ---
+    const sanitizeFilename = (text) => {
+        // 1. Normaliza e remove acentos
+        return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "") 
+                   // 2. Remove caracteres não-alfanuméricos (exceto espaços, _ e -)
+                   .replace(/[^a-zA-Z0-9\s-]/g, "") 
+                   .trim()
+                   // 3. Substitui espaços e múltiplos hífens por um único underline
+                   .replace(/[\s-]+/g, '_'); 
+    };
+
+    // --- FUNÇÃO DE UPLOAD PARA SUPABASE STORAGE (CÓDIGO FINAL DE UPLOAD) ---
+    async function uploadFotoProduto(file, nomeProduto) {
+        if (!file) return null;
+        
+        const nomeBucket = 'fotos-produtos'; // <--- SUBSTITUA SE USOU OUTRO NOME EXATO
+        
+        // Sanitiza o nome do produto para evitar o erro 'Invalid key'
+        const sanitizedName = sanitizeFilename(nomeProduto);
+        
+        // NOME DO ARQUIVO: Usa o nome do produto sanitizado + timestamp
+        const ext = file.name.split('.').pop();
+        const fileName = `${sanitizedName}-${Date.now()}.${ext}`;
+        const storagePath = `produtos/${fileName}`;
+
+        mostrarMensagem(`Iniciando upload de ${fileName}...`, 'info');
+
+        try {
+            // 1. FAZER O UPLOAD REAL DO ARQUIVO
+            const { error: uploadError } = await window.supabase.storage
+                .from(nomeBucket) 
+                .upload(storagePath, file, {
+                    cacheControl: '3600', 
+                    upsert: false 
+                });
+                
+            if (uploadError) {
+                console.error('❌ Erro no upload Supabase:', uploadError);
+                throw new Error(uploadError.message || 'Falha ao enviar a foto. Verifique a permissão "INSERT" do Storage.');
+            }
+
+            // 2. OBTER A URL PÚBLICA SALVA NO BANCO (A URL REAL)
+            const { data: urlData } = window.supabase.storage
+                .from(nomeBucket) 
+                .getPublicUrl(storagePath);
+                
+            mostrarMensagem('Upload e URL real obtidos com sucesso!', 'success');
+            
+            // 3. RETORNAR A URL PÚBLICA REAL
+            return urlData.publicUrl;
+            
+        } catch (error) {
+            console.error('❌ Erro durante o processo de upload:', error);
+            mostrarMensagem('Erro fatal ao fazer upload da foto: ' + error.message, 'error');
+            return null;
+        }
+    }
+
 
     async function inicializarEstoque() {
         try {
@@ -70,8 +95,8 @@ document.addEventListener('DOMContentLoaded', function() {
             await carregarListaProdutos();
             await carregarListaCategorias();
             
-            // Carregar ícones nos formulários
-            carregarIcones();
+            // Adicionado: Chamadas originais de ícones, mas que agora usarão a lógica de foto (HTML foi substituído)
+            carregarIcones(); 
 
             console.log('✅ Módulo de estoque inicializado com sucesso!');
 
@@ -152,6 +177,17 @@ document.addEventListener('DOMContentLoaded', function() {
         if (aplicarFiltroBtn) {
             aplicarFiltroBtn.addEventListener('click', carregarListaProdutos);
         }
+        
+        // Listener para preview da foto no modal de edição
+        document.getElementById('editar-produto-foto-file')?.addEventListener('change', function(e) {
+            const preview = document.getElementById('editar-foto-preview');
+            if (e.target.files.length > 0) {
+                const file = e.target.files[0];
+                preview.src = URL.createObjectURL(file);
+                preview.style.display = 'block';
+            }
+        });
+
 
         // Modais
         const modalProduto = document.getElementById('modal-editar-produto');
@@ -188,49 +224,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (activeContent) activeContent.classList.add('active');
     }
 
-    // Função para carregar ícones nos formulários
-    function carregarIcones() {
-        const iconesGrid = document.getElementById('icones-grid');
-        const editarIconesGrid = document.getElementById('editar-icones-grid');
-        
-        if (iconesGrid) {
-            iconesGrid.innerHTML = '';
-            iconesConfeitaria.forEach(icone => {
-                const iconeElement = criarElementoIcone(icone, 'produto-icone');
-                iconesGrid.appendChild(iconeElement);
-            });
-        }
-        
-        if (editarIconesGrid) {
-            editarIconesGrid.innerHTML = '';
-            iconesConfeitaria.forEach(icone => {
-                const iconeElement = criarElementoIcone(icone, 'editar-produto-icone');
-                editarIconesGrid.appendChild(iconeElement);
-            });
-        }
-    }
-
-    function criarElementoIcone(icone, campoId) {
-        const div = document.createElement('div');
-        div.className = 'icone-option';
-        div.innerHTML = `
-            <i class="fas ${icone.classe}"></i>
-            <span>${icone.nome}</span>
-        `;
-        
-        div.addEventListener('click', () => {
-            // Remover seleção de outros ícones
-            document.querySelectorAll(`.${campoId.replace('-', '-')}-container .icone-option`).forEach(opt => {
-                opt.classList.remove('selected');
-            });
-            
-            // Selecionar este ícone
-            div.classList.add('selected');
-            document.getElementById(campoId).value = icone.classe;
-        });
-        
-        return div;
-    }
+    // REMOVIDAS: Funções originais de carregarIcones e criarElementoIcone
 
     // Funções para Categorias
     async function carregarCategorias() {
@@ -497,7 +491,11 @@ document.addEventListener('DOMContentLoaded', function() {
             const statusEstoque = getStatusEstoque(produto.estoque_atual, produto.estoque_minimo);
             
             tr.innerHTML = `
-                <td class="icone-tabela"><i class="fas ${produto.icone || 'fa-cube'}"></i></td>
+                <td class="foto-tabela">
+                    ${produto.icone ? 
+                        `<img src="${produto.icone}" alt="${produto.nome}">` : 
+                        `<i class="fas fa-camera" style="font-size: 24px; color: #ff69b4;"></i>`}
+                </td>
                 <td>${produto.nome}</td>
                 <td>${produto.categoria?.nome || 'Sem categoria'}</td>
                 <td>R$ ${produto.preco_venda ? produto.preco_venda.toFixed(2) : '0.00'}</td>
@@ -543,17 +541,25 @@ document.addEventListener('DOMContentLoaded', function() {
         const estoqueAtual = parseInt(document.getElementById('produto-estoque-atual').value);
         const estoqueMinimo = parseInt(document.getElementById('produto-estoque-minimo').value);
         const descricao = document.getElementById('produto-descricao').value.trim();
-        const icone = document.getElementById('produto-icone').value;
+        const fotoFile = document.getElementById('produto-foto-file').files[0];
         const ativo = document.getElementById('produto-ativo').checked;
 
         // Validações
-        if (!nome || !categoriaId || isNaN(precoVenda) || isNaN(estoqueAtual) || isNaN(estoqueMinimo) || !icone) {
-            mostrarMensagem('Preencha todos os campos obrigatórios', 'error');
+        if (!nome || !categoriaId || isNaN(precoVenda) || isNaN(estoqueAtual) || isNaN(estoqueMinimo) || !fotoFile) {
+            mostrarMensagem('Preencha todos os campos obrigatórios e anexe uma foto.', 'error');
             return;
         }
 
         if (estoqueMinimo < 0) {
             mostrarMensagem('O estoque mínimo não pode ser negativo', 'error');
+            return;
+        }
+        
+        // PASSO 1: UPLOAD DA FOTO
+        mostrarMensagem('Fazendo upload da foto, por favor aguarde...', 'info');
+        const fotoUrl = await uploadFotoProduto(fotoFile, nome);
+
+        if (!fotoUrl) {
             return;
         }
 
@@ -567,7 +573,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     estoque_atual: estoqueAtual,
                     estoque_minimo: estoqueMinimo,
                     descricao: descricao,
-                    icone: icone,
+                    icone: fotoUrl, // Salva a URL real na coluna 'icone'
                     ativo: ativo
                 })
                 .select()
@@ -581,7 +587,7 @@ document.addEventListener('DOMContentLoaded', function() {
             switchTab('lista-produtos');
 
         } catch (error) {
-            console.error('Erro ao criar produto:', error);
+            console.error('❌ Erro ao criar produto:', error);
             mostrarMensagem('Erro ao criar produto: ' + error.message, 'error');
         }
     }
@@ -600,9 +606,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Carregar categorias no modal
             await carregarCategorias();
             
-            // Carregar ícones no modal de edição
-            carregarIcones();
-
+            // Preencher campos
             document.getElementById('editar-produto-id').value = produto.id;
             document.getElementById('editar-produto-nome').value = produto.nome || '';
             document.getElementById('editar-produto-categoria').value = produto.categoria_id;
@@ -610,17 +614,19 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('editar-produto-estoque-atual').value = produto.estoque_atual;
             document.getElementById('editar-produto-estoque-minimo').value = produto.estoque_minimo;
             document.getElementById('editar-produto-descricao').value = produto.descricao || '';
-            document.getElementById('editar-produto-icone').value = produto.icone || '';
-            document.getElementById('editar-produto-ativo').checked = produto.ativo;
-
-            // Selecionar ícone atual
+            
+            // Lógica de Preview da Foto Atual
+            const preview = document.getElementById('editar-foto-preview');
             if (produto.icone) {
-                const iconeOption = document.querySelector(`.editar-produto-icone-container .icone-option i.fas.${produto.icone}`)?.closest('.icone-option');
-                if (iconeOption) {
-                    iconeOption.classList.add('selected');
-                }
+                preview.src = produto.icone;
+                preview.style.display = 'block';
+            } else {
+                preview.style.display = 'none';
             }
 
+
+            document.getElementById('editar-produto-ativo').checked = produto.ativo;
+            
             document.getElementById('modal-editar-produto').style.display = 'block';
 
         } catch (error) {
@@ -639,28 +645,47 @@ document.addEventListener('DOMContentLoaded', function() {
         const estoqueAtual = parseInt(document.getElementById('editar-produto-estoque-atual').value);
         const estoqueMinimo = parseInt(document.getElementById('editar-produto-estoque-minimo').value);
         const descricao = document.getElementById('editar-produto-descricao').value.trim();
-        const icone = document.getElementById('editar-produto-icone').value;
+        const fotoFile = document.getElementById('editar-produto-foto-file').files[0];
         const ativo = document.getElementById('editar-produto-ativo').checked;
 
         // Validações
-        if (!nome || !categoriaId || isNaN(precoVenda) || isNaN(estoqueAtual) || isNaN(estoqueMinimo) || !icone) {
-            mostrarMensagem('Preencha todos os campos obrigatórios', 'error');
+        if (!nome || !categoriaId || isNaN(precoVenda) || isNaN(estoqueAtual) || isNaN(estoqueMinimo)) {
+            mostrarMensagem('Preencha todos os campos obrigatórios.', 'error');
             return;
         }
+        
+        let novaFotoUrl = null;
+
+        // PASSO 1: SE HOUVER NOVO ARQUIVO, FAZER UPLOAD
+        if (fotoFile) {
+            mostrarMensagem('Fazendo upload da nova foto, por favor aguarde...', 'info');
+            novaFotoUrl = await uploadFotoProduto(fotoFile, nome);
+            
+            if (!novaFotoUrl) {
+                return;
+            }
+        }
+        
+        // PASSO 2: PREPARAR DADOS PARA ATUALIZAÇÃO
+        const dadosAtualizacao = {
+            nome: nome,
+            categoria_id: categoriaId,
+            preco_venda: precoVenda,
+            estoque_atual: estoqueAtual,
+            estoque_minimo: estoqueMinimo,
+            descricao: descricao,
+            ativo: ativo
+        };
+        
+        if (novaFotoUrl) {
+            dadosAtualizacao.icone = novaFotoUrl; // Salva a nova URL
+        }
+
 
         try {
             const { error } = await supabase
                 .from('produtos')
-                .update({
-                    nome: nome,
-                    categoria_id: categoriaId,
-                    preco_venda: precoVenda,
-                    estoque_atual: estoqueAtual,
-                    estoque_minimo: estoqueMinimo,
-                    descricao: descricao,
-                    icone: icone,
-                    ativo: ativo
-                })
+                .update(dadosAtualizacao)
                 .eq('id', produtoId);
 
             if (error) throw error;
@@ -753,6 +778,9 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('modal-editar-produto').style.display = 'none';
         document.getElementById('modal-nova-categoria').style.display = 'none';
         document.getElementById('modal-editar-categoria').style.display = 'none';
+        
+        // Limpar o campo de arquivo para que a mudança funcione na próxima vez
+        document.getElementById('editar-produto-foto-file').value = null;
     }
 
     function mostrarMensagem(mensagem, tipo) {
@@ -784,8 +812,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Exportar funções para uso global
     window.fecharModais = fecharModais;
     window.mostrarMensagem = mostrarMensagem;
-
-    // js/estoque.js - ADICIONAR NO FINAL
 
 // Configurar logout
 function configurarLogoutEstoque() {
