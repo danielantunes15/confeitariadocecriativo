@@ -1,10 +1,10 @@
-// js/pedido.js - Sistema Completo de Pedidos Mobile App (Login por Telefone)
+// js/pedido.js - Sistema Completo de Pedidos Mobile (INTEGRADO COM NOVO DESIGN)
 
 document.addEventListener('DOMContentLoaded', async function() {
     
     // --- CONFIGURAÇÕES E VARIÁVEIS ---
-    const NUMERO_WHATSAPP = '5573991964394'; 
-    const AREA_COBERTURA_INICIAL = ['45', '46']; // Exemplo: Apenas para CEPs que começam com 45 ou 46 (Bahia)
+    const NUMERO_WHATSAPP = '5573991964394'; // SEU NÚMERO DE WHATSAPP AQUI
+    const AREA_COBERTURA_INICIAL = ['45', '46']; // Prefixo de CEP (Ex: Bahia)
     
     let clienteLogado = null;
     let clientePerfil = { nome: null, telefone: null, endereco: null }; 
@@ -15,9 +15,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     const mobileNav = document.getElementById('mobile-bottom-nav');
     const navItems = document.querySelectorAll('.nav-item-app');
     
-    // Elementos de Pesquisa e Carrinho
+    // Elementos de Carrinho/Checkout
     const carrinhoBadge = document.getElementById('carrinho-badge'); 
-    const filtroBuscaProdutos = document.getElementById('filtro-busca-produtos'); 
     const pedidoObservacoes = document.getElementById('pedido-observacoes'); 
     const trocoParaInput = document.getElementById('troco-para'); 
     
@@ -28,7 +27,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     const cadastroTelefoneHidden = document.getElementById('cadastro-telefone-hidden');
     const cadastroNomeInput = document.getElementById('cadastro-nome');
     
-    // NOVOS ELEMENTOS DE ENDEREÇO
     const cadastroCepInput = document.getElementById('cadastro-cep');
     const cadastroRuaInput = document.getElementById('cadastro-rua');
     const cadastroNumeroInput = document.getElementById('cadastro-numero');
@@ -39,16 +37,12 @@ document.addEventListener('DOMContentLoaded', async function() {
     const btnFinalizarCadastro = document.getElementById('btn-finalizar-cadastro');
     
     // Elementos do App Logado
-    const profileDisplay = document.getElementById('profile-display');
-    const profileNameSpan = document.getElementById('profile-name');
     const logoutBtnApp = document.getElementById('logout-btn-app');
     const homeClienteNome = document.getElementById('home-cliente-nome');
     const statusUltimoPedido = document.getElementById('status-ultimo-pedido');
     const homeEndereco = document.getElementById('home-endereco');
 
-    // Elementos do Carrinho
-    const categoriasContainer = document.getElementById('categorias-container');
-    const produtosContainer = document.getElementById('produtos-container');
+    // Elementos do Carrinho (View de Checkout)
     const carrinhoItens = document.getElementById('carrinho-itens');
     const totalCarrinho = document.getElementById('total-carrinho');
     const finalizarDiretoBtn = document.getElementById('finalizar-pedido-direto');
@@ -57,7 +51,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     const carrinhoEnderecoInput = document.getElementById('carrinho-endereco-input');
     const pagamentoOpcoesContainer = document.querySelector('#view-carrinho .opcoes-pagamento'); 
     
-    // Elementos do Modal de Edição de Endereço (NOVOS)
+    // Elementos do Modal de Edição de Endereço
     const modalEditarEndereco = document.getElementById('modal-editar-endereco');
     const formEditarEndereco = document.getElementById('form-editar-endereco');
     const modalCepInput = document.getElementById('modal-cep');
@@ -72,21 +66,25 @@ document.addEventListener('DOMContentLoaded', async function() {
     const detalhesPrecoModal = document.getElementById('detalhes-preco-modal');
     const btnAdicionarModal = document.getElementById('btn-adicionar-modal');
     
-    // Elementos de Repetição de Compra (NOVOS)
-    const repetirCompraContainer = document.getElementById('repetir-compra-container');
-    const btnRepetirCompra = document.getElementById('btn-repetir-compra');
-    
-    // Elementos do Modal de Detalhes do Pedido (NOVOS)
+    // Elementos do Modal de Detalhes do Pedido
     const modalDetalhesPedido = document.getElementById('modal-detalhes-pedido');
     const detalhesPedidoId = document.getElementById('detalhes-pedido-id');
     const detalhesPedidoContent = document.getElementById('detalhes-pedido-content');
 
+    // Elementos do NOVO Layout (Cardápio)
+    const storeStatusIndicator = document.querySelector('.store-status .status-indicator');
+    const storeStatusText = document.querySelector('.store-status .status-text');
+    const storeAttentionBar = document.querySelector('.store-status .attention-bar');
+    const categoriesScroll = document.getElementById('categorias-container');
+    const popularScroll = document.getElementById('popular-scroll');
+    const productsSection = document.getElementById('products-section');
+    const searchIcon = document.querySelector('.header .search-icon');
+    const shareIcon = document.querySelector('.header .share-icon');
+    const cartCountNav = document.querySelector('.bottom-nav .cart-count'); // Contador do novo nav
 
     let categorias = [];
     let produtos = [];
     let carrinho = [];
-    let categoriaSelecionada = 'todos';
-    // Armazena os pedidos do histórico para consulta no modal
     let historicoPedidos = []; 
 
     // --- FUNÇÕES DE UTENSÍLIOS ---
@@ -94,7 +92,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     const mostrarMensagem = (mensagem, tipo = 'info') => {
         const alertContainer = document.getElementById('alert-container');
-        if (!alertContainer) return; // CORRIGIDO: 'container' foi trocado para 'alertContainer'
+        if (!alertContainer) return;
         const alertDiv = document.createElement('div');
         alertDiv.className = `alert alert-${tipo}`;
         alertDiv.innerHTML = `<span>${mensagem}</span><button class="alert-close" onclick="this.parentElement.remove()">&times;</button>`;
@@ -102,29 +100,29 @@ document.addEventListener('DOMContentLoaded', async function() {
         setTimeout(() => { if (alertDiv.parentNode) alertDiv.remove(); }, 5000);
     };
     
-    // CORREÇÃO DE ESCOPO: Função alternarView exposta globalmente
     window.alternarView = function(viewId) {
-        
-        // CORREÇÃO DE ROBUSTEZ: Adiciona verificação de null na iteração
         document.querySelectorAll('.app-view').forEach(view => {
-            if (view) {
-                view.classList.remove('active');
-            }
+            if (view) view.classList.remove('active');
         });
         
         const targetView = document.getElementById(viewId);
-        
-        // CORREÇÃO DE ROBUSTEZ: Verifica se a view de destino existe
         if (targetView) {
             targetView.classList.add('active');
         } else {
-             console.error(`❌ ERRO: View com ID "${viewId}" não encontrada. A navegação falhou.`);
+             console.error(`❌ ERRO: View com ID "${viewId}" não encontrada.`);
         }
         
+        // Sincroniza os dois menus (o antigo e o novo)
         navItems.forEach(item => {
-            if (item) { 
-                 item.classList.toggle('active', item.getAttribute('data-view') === viewId);
-            }
+            if (item) item.classList.toggle('active', item.getAttribute('data-view') === viewId);
+        });
+        document.querySelectorAll('.bottom-nav .nav-item').forEach(item => {
+             // Sincroniza o menu do novo design (pelo índice, por enquanto)
+             if(viewId === 'view-cardapio' && item.querySelector('span').textContent === 'Início') item.classList.add('active');
+             else if(viewId === 'view-carrinho' && item.querySelector('span').textContent === 'Carrinho') item.classList.add('active');
+             else if(viewId === 'view-inicio' && item.querySelector('span').textContent === 'Pedidos') item.classList.add('active'); // Mapeando 'Pedidos' para 'Meu Perfil'
+             else if(viewId === 'view-promocoes' && item.querySelector('span').textContent === 'Promos') item.classList.add('active');
+             else item.classList.remove('active');
         });
         
         if (viewId === 'view-carrinho') {
@@ -140,35 +138,28 @@ document.addEventListener('DOMContentLoaded', async function() {
         return digitos.length >= 12 ? digitos : '55' + digitos;
     }
 
-    // --- FUNÇÃO DE VALIDAÇÃO DE ÁREA ---
     function validarAreaEntrega(cep) {
         if (!cep) return false;
         const prefixo = cep.substring(0, 2);
         return AREA_COBERTURA_INICIAL.includes(prefixo);
     }
     
-    // --- FUNÇÃO DE BUSCA POR CEP (Para Cadastro e Modal de Edição) ---
     window.buscarCep = async function(cep) {
         const cepLimpo = cep.replace(/\D/g, ''); 
-        
         if (cepLimpo.length !== 8) return;
-
         mostrarMensagem('Buscando endereço...', 'info');
 
         if (!validarAreaEntrega(cepLimpo)) {
             mostrarMensagem('❌ Não entregamos nesse CEP. Por favor, verifique a área de cobertura.', 'error');
             return;
         }
-
         try {
             const response = await fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`);
             const data = await response.json();
-
             if (data.erro) {
                 mostrarMensagem('CEP não encontrado ou inválido.', 'error');
                 return;
             }
-            
             if (document.getElementById('cadastro-form').style.display === 'block') {
                 cadastroRuaInput.value = data.logradouro || '';
                 cadastroBairroInput.value = data.bairro || '';
@@ -180,15 +171,76 @@ document.addEventListener('DOMContentLoaded', async function() {
                 modalBairroInput.value = data.bairro || '';
                 modalNumeroInput.focus();
             }
-
             mostrarMensagem('Endereço preenchido automaticamente.', 'success');
-
         } catch (error) {
-            mostrarMensagem('Erro ao buscar o CEP. Preencha manualmente.', 'error');
+            mostrarMensagem('Erro ao buscar o CEP. Preencha manually.', 'error');
         }
     }
 
-    // --- FUNÇÕES CORE ---
+    // --- FUNÇÕES DO NOVO DESIGN ---
+
+    function updateStoreStatus() {
+        const now = new Date();
+        const currentHour = now.getHours();
+        
+        if (!storeStatusIndicator || !storeStatusText || !storeAttentionBar) return;
+
+        if (currentHour >= 8 && currentHour < 22) {
+            storeStatusIndicator.className = 'status-indicator open';
+            storeStatusText.textContent = 'Aberto';
+            if (currentHour >= 21) {
+                storeAttentionBar.style.display = 'block';
+                storeAttentionBar.querySelector('p').textContent = `⚠️ Fechando em ${22 - currentHour} hora(s) e ${60 - now.getMinutes()} minutos!`;
+            } else {
+                storeAttentionBar.style.display = 'none';
+            }
+        } else {
+            storeStatusIndicator.className = 'status-indicator closed';
+            storeStatusText.textContent = 'Fechado';
+            storeAttentionBar.style.display = 'none';
+        }
+    }
+
+    function setupShare() {
+        if (!shareIcon) return;
+        shareIcon.addEventListener('click', async () => {
+            if (navigator.share) {
+                try {
+                    await navigator.share({
+                        title: 'Confeitaria Doce Criativo',
+                        text: 'Confira os deliciosos doces da Confeitaria Doce Criativo!',
+                        url: window.location.href
+                    });
+                } catch (error) { console.log('Erro ao compartilhar:', error); }
+            } else {
+                navigator.clipboard.writeText(window.location.href).then(() => {
+                    mostrarMensagem('Link copiado para a área de transferência!', 'success');
+                });
+            }
+        });
+    }
+
+    function setupSearch() {
+        if (!searchIcon) return;
+        searchIcon.addEventListener('click', () => {
+            const searchTerm = prompt('O que você está procurando?');
+            if (searchTerm) {
+                // Lógica de busca simples: filtra os produtos já carregados
+                const produtosFiltrados = produtos.filter(p => p.nome.toLowerCase().includes(searchTerm.toLowerCase()));
+                exibirProdutos(produtosFiltrados); // Re-renderiza a lista de produtos
+                
+                // Desativa a categoria ativa
+                document.querySelectorAll('.category-item').forEach(cat => cat.classList.remove('active'));
+                
+                // Mostra todos os containers de categoria
+                document.querySelectorAll('.category-products').forEach(section => {
+                    section.style.display = 'block';
+                });
+            }
+        });
+    }
+
+    // --- FUNÇÕES CORE (CARRINHO E SUPABASE) ---
 
     function adicionarAoCarrinho(produto) {
         if (produto.estoque_atual <= 0) {
@@ -232,15 +284,15 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
     
     function atualizarCarrinho() {
+        let total = 0;
+        let totalItens = 0; 
+            
         if (carrinho.length === 0) {
             carrinhoItens.innerHTML = `<p style="text-align: center; color: #666;">Sua sacola está vazia.</p>`;
             totalCarrinho.textContent = '0,00';
             if (finalizarDiretoBtn) finalizarDiretoBtn.disabled = true; 
-            if (carrinhoBadge) carrinhoBadge.style.display = 'none';
         } else {
             carrinhoItens.innerHTML = '';
-            let total = 0;
-            let totalItens = 0; 
             carrinho.forEach((item, index) => {
                 const itemSubtotal = item.produto.preco_venda * item.quantidade;
                 total += itemSubtotal;
@@ -265,12 +317,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
             totalCarrinho.textContent = total.toFixed(2).replace('.', ',');
             
-            // Atualiza o badge
-            if (carrinhoBadge) {
-                carrinhoBadge.textContent = totalItens;
-                carrinhoBadge.style.display = 'block';
-            }
-
             // Verifica se está logado para habilitar botões de finalização
             const isReady = carrinho.length > 0 && clienteLogado; 
             if (finalizarDiretoBtn) finalizarDiretoBtn.disabled = !isReady; 
@@ -282,23 +328,41 @@ document.addEventListener('DOMContentLoaded', async function() {
                 aumentarQuantidade(parseInt(this.getAttribute('data-index')));
             }));
         }
+        
+        // Atualiza os dois contadores de carrinho
+        if (carrinhoBadge) { // Badge do menu antigo
+            carrinhoBadge.textContent = totalItens;
+            carrinhoBadge.style.display = totalItens > 0 ? 'block' : 'none';
+        }
+        if (cartCountNav) { // Badge do menu novo
+            cartCountNav.textContent = totalItens;
+            cartCountNav.style.display = totalItens > 0 ? 'flex' : 'none';
+        }
     }
     
     function limparFormularioECarrinho() { 
         carrinho = [];
         atualizarCarrinho();
-        carrinhoEnderecoInput.value = clientePerfil.endereco || '';
-        cadastroForm.reset();
-        document.querySelectorAll('.opcoes-pagamento input[name="pagamento"]').checked = true;
-        document.querySelectorAll('.opcoes-pagamento .pagamento-opcao').forEach(op => op.classList.remove('selected'));
-        if (document.querySelector('.opcoes-pagamento .pagamento-opcao')) document.querySelector('.opcoes-pagamento .pagamento-opcao').classList.add('selected');
+        if (carrinhoEnderecoInput) carrinhoEnderecoInput.value = clientePerfil.endereco || '';
+        if (cadastroForm) cadastroForm.reset();
         
-        pedidoObservacoes.value = ''; 
-        trocoParaInput.value = ''; 
+        document.querySelectorAll('.opcoes-pagamento input[name="pagamento"]').forEach(input => input.checked = false);
+        document.querySelector('.opcoes-pagamento input[value="Dinheiro"]').checked = true;
+        
+        document.querySelectorAll('.opcoes-pagamento .pagamento-opcao').forEach(op => op.classList.remove('selected'));
+        if (document.querySelector('.opcoes-pagamento .pagamento-opcao')) {
+            document.querySelector('.opcoes-pagamento .pagamento-opcao').classList.add('selected');
+        }
+        
+        if (pedidoObservacoes) pedidoObservacoes.value = ''; 
+        if (trocoParaInput) trocoParaInput.value = ''; 
     }
+
+    // --- CARREGAMENTO DE DADOS (SUPABASE) ---
 
     async function carregarCategorias() {
         try {
+            // Usando a função do supabase-vendas.js
             categorias = await window.vendasSupabase.buscarCategorias();
             exibirCategorias();
         } catch (error) {
@@ -308,132 +372,209 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     async function carregarProdutos() {
         try {
-            // Consulta de produtos completa
             const { data: produtosData, error } = await supabase
                 .from('produtos')
                 .select('*, categoria:categorias(nome)')
+                .eq('ativo', true) // Apenas produtos ativos
                 .order('nome');
 
             if (error) throw error;
             
             produtos = produtosData || [];
-            exibirProdutos();
+            exibirProdutos(produtos); // Exibe todos por padrão
         } catch (error) {
             mostrarMensagem('Erro ao carregar produtos.', 'error');
         }
     }
 
+    async function carregarMaisPedidos() {
+        if (!popularScroll) return;
+        popularScroll.innerHTML = '<p>Carregando...</p>';
+        try {
+            // Lógica de "Mais Pedidos" (ex: 5 mais caros ou mais em estoque)
+            // Vou usar os 5 com maior estoque como "destaque"
+            const { data, error } = await supabase
+                .from('produtos')
+                .select('*')
+                .eq('ativo', true)
+                .order('estoque_atual', { ascending: false })
+                .limit(5);
+            
+            if (error) throw error;
+            
+            popularScroll.innerHTML = '';
+            if (data.length === 0) {
+                 popularScroll.innerHTML = '<p>Nenhum destaque no momento.</p>';
+                 return;
+            }
+
+            data.forEach(produto => {
+                const popularItem = document.createElement('div');
+                popularItem.className = 'popular-item';
+                popularItem.innerHTML = `
+                    <img src="https://via.placeholder.com/140x140?text=${produto.nome.substring(0,10)}" alt="${produto.nome}">
+                    <h3>${produto.nome}</h3>
+                    <p>${formatarMoeda(produto.preco_venda)}</p>
+                `;
+                // Adiciona o clique para adicionar ao carrinho
+                popularItem.addEventListener('click', () => adicionarAoCarrinho(produto));
+                popularScroll.appendChild(popularItem);
+            });
+
+        } catch (error) {
+             popularScroll.innerHTML = '<p>Erro ao carregar destaques.</p>';
+        }
+    }
+
     function exibirCategorias() { 
-        categoriasContainer.innerHTML = ''; 
-        const categoriaTodos = document.createElement('button');
-        categoriaTodos.className = `categoria-btn active`;
-        categoriaTodos.setAttribute('data-categoria', 'todos');
-        categoriaTodos.innerHTML = `<span>Todos</span>`; // <--- MODIFICADO (sem ícone)
+        if (!categoriesScroll) return;
+        categoriesScroll.innerHTML = ''; 
+        
+        const categoriaTodos = document.createElement('div');
+        categoriaTodos.className = `category-item active`;
+        categoriaTodos.textContent = 'Todos';
         categoriaTodos.addEventListener('click', () => selecionarCategoria('todos'));
-        categoriasContainer.appendChild(categoriaTodos);
+        categoriesScroll.appendChild(categoriaTodos);
 
         categorias.forEach(categoria => {
-            const categoriaBtn = document.createElement('button');
-            categoriaBtn.className = `categoria-btn`;
-            categoriaBtn.setAttribute('data-categoria', categoria.id);
-            categoriaBtn.innerHTML = `<span>${categoria.nome}</span>`; // <--- MODIFICADO (sem ícone)
+            const categoriaBtn = document.createElement('div');
+            categoriaBtn.className = `category-item`;
+            categoriaBtn.textContent = categoria.nome;
+            categoriaBtn.setAttribute('data-id', categoria.id);
             categoriaBtn.addEventListener('click', () => selecionarCategoria(categoria.id));
-            categoriasContainer.appendChild(categoriaBtn);
+            categoriesScroll.appendChild(categoriaBtn);
+        });
+        
+        // Adiciona a lógica de navegação/scroll
+        setupCategoryNavigationJS();
+    }
+
+    // Lógica de clique da categoria (scroll/filtro)
+    function setupCategoryNavigationJS() {
+        const categoryItems = document.querySelectorAll('.category-item');
+        const categorySections = document.querySelectorAll('.category-products');
+        const productsSectionEl = document.querySelector('.products-section');
+        
+        categoryItems.forEach(item => {
+            item.addEventListener('click', () => {
+                const categoryName = item.textContent;
+                
+                categoryItems.forEach(cat => cat.classList.remove('active'));
+                item.classList.add('active');
+                
+                if (categoryName === 'Todos') {
+                    categorySections.forEach(section => section.style.display = 'block');
+                    productsSectionEl.scrollIntoView({ behavior: 'smooth' });
+                    return;
+                }
+                
+                let targetSection = null;
+                categorySections.forEach(section => {
+                    const title = section.querySelector('.category-title').textContent;
+                    if (title === categoryName) {
+                        section.style.display = 'block';
+                        targetSection = section;
+                    } else {
+                        section.style.display = 'none';
+                    }
+                });
+                
+                if (targetSection) {
+                    // Espera a UI atualizar antes de rolar
+                    setTimeout(() => {
+                        targetSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }, 100);
+                }
+            });
         });
     }
 
-    function selecionarCategoria(categoriaId) {
-        categoriaSelecionada = categoriaId;
-        document.querySelectorAll('.categoria-btn').forEach(botao => {
-            botao.classList.toggle('active', botao.getAttribute('data-categoria') === categoriaId);
+
+    // Modificado para aceitar uma lista filtrada (para busca) ou usar a lista global
+    function exibirProdutos(listaParaExibir) {
+        if (!productsSection) return;
+        productsSection.innerHTML = ''; 
+        
+        const produtosAtivos = listaParaExibir || produtos.filter(p => p.ativo);
+        
+        // Agrupa por categoria
+        const produtosPorCategoria = {};
+        produtosAtivos.forEach(produto => {
+            const catId = produto.categoria_id || 'sem-categoria';
+            const catNome = produto.categoria?.nome || 'Outros';
+            
+            if (!produtosPorCategoria[catId]) {
+                produtosPorCategoria[catId] = {
+                    nome: catNome,
+                    produtos: []
+                };
+            }
+            produtosPorCategoria[catId].produtos.push(produto);
         });
-        exibirProdutos();
-    }
-    
-    // Abre o modal de detalhes do produto
-    function abrirModalDetalhesProduto(produto) {
-        detalhesTitulo.textContent = produto.nome;
-        detalhesPrecoModal.textContent = formatarMoeda(produto.preco_venda);
         
-        let estoqueStatus = '';
-        if (produto.estoque_atual <= 0) {
-            estoqueStatus = '<span style="color: var(--error-color); font-weight: bold;">ESGOTADO</span>';
-        } else if (produto.estoque_atual <= produto.estoque_minimo) {
-            estoqueStatus = `<span style="color: var(--warning-color); font-weight: bold;">ÚLTIMAS UNID. (${produto.estoque_atual})</span>`;
-        } else {
-             estoqueStatus = `<span style="color: var(--success-color); font-weight: bold;">Em Estoque</span>`;
-        }
+        // Ordena as categorias (opcional, mas bom)
+        const categoriasOrdenadas = Object.keys(produtosPorCategoria).sort((a, b) => {
+            return produtosPorCategoria[a].nome.localeCompare(produtosPorCategoria[b].nome);
+        });
 
-        detalhesProdutoContent.innerHTML = `
-            <p>${produto.descricao || 'Nenhuma descrição disponível.'}</p>
-            <p><strong>Preço:</strong> ${formatarMoeda(produto.preco_venda)}</p>
-            <p><strong>Disponibilidade:</strong> ${estoqueStatus}</p>
-        `;
-        
-        btnAdicionarModal.disabled = produto.estoque_atual <= 0;
-        btnAdicionarModal.onclick = () => {
-            adicionarAoCarrinho(produto);
-            modalDetalhesProduto.style.display = 'none';
-        };
-        
-        modalDetalhesProduto.style.display = 'flex';
-    }
-
-
-    function exibirProdutos() {
-        produtosContainer.innerHTML = ''; 
-        let produtosParaExibir = produtos.filter(p => p.ativo); 
-        const termoBusca = filtroBuscaProdutos.value.toLowerCase().trim();
-
-        if (categoriaSelecionada !== 'todos') {
-            produtosParaExibir = produtosParaExibir.filter(p => p.categoria_id === categoriaSelecionada);
-        }
-        
-        if (termoBusca) {
-             produtosParaExibir = produtosParaExibir.filter(p => p.nome.toLowerCase().includes(termoBusca));
-        }
-
-        if (produtosParaExibir.length === 0) {
-            produtosContainer.innerHTML = `<p style="text-align: center; color: #666; grid-column: 1 / -1;">Nenhum produto encontrado nesta categoria.</p>`;
+        if (categoriasOrdenadas.length === 0) {
+            productsSection.innerHTML = '<p style="padding: 20px; text-align: center;">Nenhum produto encontrado.</p>';
             return;
         }
 
-        produtosParaExibir.forEach(produto => {
-            const produtoCard = document.createElement('div');
-            produtoCard.className = `produto-card ${produto.estoque_atual <= 0 ? 'out-of-stock' : ''}`;
+        // Renderiza cada seção de categoria
+        categoriasOrdenadas.forEach(catId => {
+            const categoria = produtosPorCategoria[catId];
             
-            produtoCard.innerHTML = `
-                <div class="produto-imagem">
-                    <i class="fas ${produto.icone || 'fa-cube'}"></i>
-                    ${produto.estoque_atual <= 0 ? '<div class="out-of-stock-badge">ESGOTADO</div>' : ''}
-                    ${(produto.estoque_atual > 0 && produto.estoque_atual <= produto.estoque_minimo) ? '<div class="low-stock-badge">ÚLTIMAS UNID.</div>' : ''}
-                </div>
-                <div class="produto-info">
-                    <div class="produto-nome">${produto.nome}</div>
-                    <div class="produto-categoria">${produto.categoria?.nome || 'Sem categoria'}</div>
-                    <div class="produto-preco">R$ ${produto.preco_venda?.toFixed(2).replace('.', ',')}</div>
-                    <button class="btn-adicionar" data-id="${produto.id}" ${produto.estoque_atual <= 0 ? 'disabled' : ''}>
-                        ${produto.estoque_atual <= 0 ? 'Esgotado' : '<i class="fas fa-plus"></i> Adicionar'}
-                    </button>
-                </div>
-            `;
+            const categorySectionDiv = document.createElement('div');
+            categorySectionDiv.className = 'category-products';
             
-            // Altera o comportamento do clique no Card para abrir o modal
-            produtoCard.addEventListener('click', (e) => {
-                if (!e.target.closest('.btn-adicionar')) {
-                    abrirModalDetalhesProduto(produto);
-                }
-            });
-            
-            produtoCard.querySelector('.btn-adicionar').addEventListener('click', (e) => {
-                e.stopPropagation(); 
-                adicionarAoCarrinho(produto);
+            let productListHtml = '';
+            categoria.produtos.forEach(produto => {
+                const esgotado = produto.estoque_atual <= 0;
+                
+                productListHtml += `
+                    <div class="product-item ${esgotado ? 'out-of-stock' : ''}">
+                        <div class="product-info">
+                            <h4 class="product-name">${produto.nome}</h4>
+                            <p class="product-description">${produto.descricao || 'Sem descrição'}</p>
+                            <p class="product-price">${formatarMoeda(produto.preco_venda)}</p>
+                        </div>
+                        <div class="product-image">
+                            <img src="https://via.placeholder.com/90x90?text=${produto.nome.substring(0,3)}" alt="${produto.nome}">
+                            <button class="add-cart" data-id="${produto.id}" ${esgotado ? 'disabled' : ''}>
+                                ${esgotado ? '<i class="fas fa-times"></i>' : '+'}
+                            </button>
+                        </div>
+                    </div>
+                `;
             });
 
-            produtosContainer.appendChild(produtoCard);
+            categorySectionDiv.innerHTML = `
+                <h3 class="category-title">${categoria.nome}</h3>
+                <div class="products-list">
+                    ${productListHtml}
+                </div>
+            `;
+            productsSection.appendChild(categorySectionDiv);
+        });
+        
+        // Adiciona os event listeners aos novos botões
+        document.querySelectorAll('.add-cart').forEach(button => {
+            button.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const produtoId = e.currentTarget.getAttribute('data-id');
+                const produto = produtos.find(p => p.id === produtoId);
+                if (produto) {
+                    adicionarAoCarrinho(produto);
+                }
+            });
         });
     }
     
+    // --- FUNÇÕES DE AUTH, CHECKOUT E PERFIL (LÓGICA ANTIGA ADAPTADA) ---
+
     function obterDadosCliente() {
         const endereco = carrinhoEnderecoInput.value.trim();
         const trocoPara = parseFloat(trocoParaInput.value) || 0; 
@@ -473,9 +614,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             return null;
         }
         
-        if (!dadosCliente) {
-             return null;
-        }
+        if (!dadosCliente) return null;
         
         if (!dadosCliente.nome || !dadosCliente.telefone || !dadosCliente.endereco) {
             mostrarMensagem('Dados do cliente ou endereço incompletos. Verifique o Login/Cadastro.', 'error');
@@ -485,7 +624,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         const totalPedido = carrinho.reduce((sum, item) => sum + (item.produto.preco_venda * item.quantidade), 0);
         
         if (formaPagamentoEl.value === 'Dinheiro' && dadosCliente.trocoPara > 0 && dadosCliente.trocoPara < totalPedido) {
-             mostrarMensagem('O valor do troco deve ser igual ou maior que o total do pedido. Ajuste o campo "Troco Para".', 'error');
+             mostrarMensagem('O valor do troco deve ser igual ou maior que o total do pedido.', 'error');
              trocoParaInput.focus();
              return null;
         }
@@ -510,6 +649,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         } else if (formaPagamentoEl.value === 'Dinheiro') {
              obsCompleta += `\nTROCO NECESSÁRIO: Não`;
         }
+        // Remove a lista de itens da observação principal, o JS do delivery vai ler do banco
         obsCompleta = listaItens + `\nTotal: R$ ${totalPedido.toFixed(2)}\n\nOBSERVAÇÕES ADICIONAIS:\n` + obsCompleta;
 
 
@@ -517,91 +657,29 @@ document.addEventListener('DOMContentLoaded', async function() {
             ...dadosCliente,
             formaPagamento: formaPagamentoEl.value,
             total: totalPedido,
-            observacoes: obsCompleta
+            observacoes: obsCompleta,
+            itens: carrinho.map(item => ({ // Adiciona os itens para salvar no banco
+                produto_id: item.produto.id,
+                quantidade: item.quantidade,
+                preco_unitario: item.produto.preco_venda,
+                nome_produto: item.produto.nome // Facilita a exibição no delivery
+            }))
         };
     }
 
-    // --- LÓGICA DE REPETIÇÃO DE COMPRA ---
-    async function repetirUltimaCompra(e) {
-        e.preventDefault();
-        
-        if (!clienteLogado) return;
-        if (!confirm('Deseja limpar o carrinho atual e adicionar os itens da sua última compra?')) return;
-        
-        btnRepetirCompra.disabled = true;
-        btnRepetirCompra.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adicionando...';
-
-        try {
-            // 1. Buscar a última venda com os itens
-            // ATENÇÃO: A busca é feita na tabela VENDAS, onde os itens são detalhados.
-            const { data, error } = await supabase.from('vendas')
-                .select(`id, itens:vendas_itens(produto_id, quantidade)`)
-                .eq('cliente_id', clientePerfil.telefone) 
-                .order('created_at', { ascending: false })
-                .limit(1); 
-            
-            if (error || !data || data.length === 0) {
-                mostrarMensagem('Não foi possível encontrar a última compra.', 'error');
-                return;
-            }
-
-            const itensUltimaVenda = data[0].itens;
-            
-            if (!itensUltimaVenda || itensUltimaVenda.length === 0) {
-                mostrarMensagem('A última compra não continha itens válidos.', 'error');
-                return;
-            }
-
-            // 2. Limpar o carrinho atual
-            carrinho = [];
-
-            // 3. Adicionar itens ao carrinho (Verificando estoque)
-            for (const item of itensUltimaVenda) {
-                const produtoCompleto = produtos.find(p => p.id === item.produto_id);
-                
-                if (produtoCompleto && produtoCompleto.estoque_atual >= item.quantidade) {
-                    carrinho.push({
-                        produto: produtoCompleto,
-                        quantidade: item.quantidade
-                    });
-                } else if (produtoCompleto) {
-                     mostrarMensagem(`⚠️ ${produtoCompleto.nome} não foi adicionado: estoque insuficiente.`, 'warning');
-                }
-            }
-            
-            if (carrinho.length > 0) {
-                atualizarCarrinho();
-                window.alternarView('view-carrinho');
-                mostrarMensagem('Itens da última compra adicionados ao carrinho!', 'success');
-            } else {
-                 mostrarMensagem('Nenhum item da última compra pôde ser adicionado (sem estoque).', 'error');
-            }
-
-        } catch (error) {
-            console.error('Erro ao repetir compra:', error);
-            mostrarMensagem('Erro ao tentar repetir a compra.', 'error');
-        } finally {
-             btnRepetirCompra.disabled = false;
-             btnRepetirCompra.innerHTML = '<i class="fas fa-redo"></i> Repetir Última Compra';
-        }
-    }
-
-
-    // --- FUNÇÕES DE AUTHENTICAÇÃO E CADASTRO ---
-
     async function buscarClientePorTelefone(telefone) {
-        // ... (mantido o código de busca)
         try {
             const { data, error } = await supabase.from('clientes_delivery')
                 .select('*')
-                .eq('telefone', telefone);
+                .eq('telefone', telefone)
+                .single(); // Espera um único resultado
             
-            if (error) throw error;
+            if (error && error.code !== 'PGRST116') throw error; // Ignora erro "nenhuma linha"
             
-            return data.length > 0 ? data[0] : null;
+            return data || null; // Retorna o cliente ou null
         } catch (error) {
             console.error('Erro ao buscar cliente:', error);
-            mostrarMensagem('Erro ao consultar banco de dados. Verifique a RLS.', 'error');
+            mostrarMensagem('Erro ao consultar banco de dados.', 'error');
             return null;
         }
     }
@@ -669,8 +747,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 nome: nome,
                 telefone: telefone,
                 endereco: enderecoCompleto, 
-                auth_id: 'guest-' + telefone 
-            }).select();
+                auth_id: 'guest-' + telefone // ID simples
+            }).select().single();
 
             if (error) {
                 if (error.code === '23505') {
@@ -679,9 +757,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                 throw error;
             }
 
-            clientePerfil.nome = novoCliente[0].nome;
-            clientePerfil.telefone = novoCliente[0].telefone;
-            clientePerfil.endereco = novoCliente[0].endereco;
+            clientePerfil.nome = novoCliente.nome;
+            clientePerfil.telefone = novoCliente.telefone;
+            clientePerfil.endereco = novoCliente.endereco;
             
             mostrarMensagem(`Cadastro de ${nome.split(' ')[0]} concluído!`, 'success');
             logarClienteManual();
@@ -704,8 +782,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         window.alternarView('view-cardapio');
         
-        document.querySelector('.nav-item-app[data-view="view-inicio"]')?.classList.remove('active');
-        document.querySelector('.nav-item-app[data-view="view-cardapio"]')?.classList.add('active');
+        // Ativa o item "Início" no novo menu
+        document.querySelectorAll('.bottom-nav .nav-item').forEach(item => item.classList.remove('active'));
+        document.querySelector('.bottom-nav .nav-item[data-view="view-cardapio"]')?.classList.add('active');
 
         atualizarPerfilUI();
     }
@@ -724,18 +803,15 @@ document.addEventListener('DOMContentLoaded', async function() {
         window.alternarView('auth-screen');
     }
 
-    // FUNÇÃO CORRIGIDA: Lendo pedidos do 'pedidos_online' para mostrar status
     async function carregarStatusUltimoPedido() {
         statusUltimoPedido.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Buscando histórico...';
         
         if (!clienteLogado || !clientePerfil.telefone) {
             statusUltimoPedido.innerHTML = '<p>Faça login para ver o status e o histórico de pedidos.</p>';
-            repetirCompraContainer.style.display = 'none';
             return;
         }
 
         try {
-            // CORREÇÃO CRÍTICA: Busca os pedidos na tabela 'pedidos_online' (onde são salvos)
             const { data, error } = await supabase.from('pedidos_online')
                 .select(`id, created_at, total, forma_pagamento, status, observacoes, telefone_cliente, endereco_entrega, nome_cliente`)
                 .eq('telefone_cliente', clientePerfil.telefone) 
@@ -745,8 +821,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (error) throw error;
             
             const pedidos = data || [];
-            
-            // Armazena no estado global para o modal de detalhes
             historicoPedidos = pedidos;
             
             let htmlHistorico = '';
@@ -754,18 +828,17 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (pedidos.length > 0) {
                  htmlHistorico += '<h4>Últimos Pedidos:</h4>';
                  
-                 // Desabilita a repetição de compra que depende da tabela 'vendas_itens'
-                 repetirCompraContainer.style.display = 'none'; 
-                 
-                 pedidos.forEach((p, index) => {
+                 pedidos.forEach((p) => {
                      const dataPedido = new Date(p.created_at).toLocaleDateString('pt-BR');
+                     const status = (p.status || 'novo').toUpperCase();
                      
-                    // NOVO: Lógica para extrair itens da string de observações (que contém a lista formatada)
-                    let listaItens = '';
+                     // Tenta extrair itens da observação
+                    let listaItens = 'Itens não detalhados';
                     const obsLines = p.observacoes.split('\n');
                     let isItemList = false;
                     for (const line of obsLines) {
                         if (line.includes('Itens:')) {
+                            listaItens = ''; // Limpa para começar a adicionar
                             isItemList = true;
                             continue;
                         }
@@ -774,23 +847,16 @@ document.addEventListener('DOMContentLoaded', async function() {
                             break;
                         }
                         if (isItemList && line.trim() !== '') {
-                            // Remove o asterisco inicial e o espaço
                             listaItens += line.replace('*', '').trim() + ', ';
                         }
                     }
-                    if (listaItens.endsWith(', ')) {
-                        listaItens = listaItens.slice(0, -2);
-                    }
-                    
-                    // Status da tabela pedidos_online
-                    const status = (p.status || 'novo').toUpperCase();
+                    if(listaItens.endsWith(', ')) listaItens = listaItens.slice(0, -2);
                     
                      htmlHistorico += `
                          <div class="card-pedido-historico" 
-                              style="padding: 10px; border-bottom: 1px dashed #ccc; margin-bottom: 5px; cursor: pointer;"
                               onclick="abrirModalDetalhesPedido(${p.id})">
                              <p style="font-weight: bold; margin: 0;">Pedido #${p.id} - ${dataPedido}</p>
-                             <p style="font-size: 0.9rem; margin: 0;">Itens: ${listaItens || 'N/A'}</p>
+                             <p style="font-size: 0.9rem; margin: 0; color: #555;">${listaItens}</p>
                              <p style="font-size: 0.9rem; margin: 0;">Status: 
                                  <span class="status-badge-history status-${status}">
                                      ${status}
@@ -802,7 +868,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                  });
             } else {
                  htmlHistorico = 'Você ainda não fez nenhum pedido conosco!';
-                 repetirCompraContainer.style.display = 'none';
             }
             
             homeEndereco.innerHTML = `<strong>Endereço Atual:</strong><br>${clientePerfil.endereco || 'Endereço não cadastrado.'}`;
@@ -814,7 +879,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
 
-    // --- FUNÇÃO DE ABRIR O MODAL DE DETALHES DO PEDIDO ---
     window.abrirModalDetalhesPedido = function(pedidoId) {
         const pedido = historicoPedidos.find(p => p.id === pedidoId);
         if (!pedido) {
@@ -825,7 +889,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         const dataPedido = new Date(pedido.created_at).toLocaleString('pt-BR');
         const status = (pedido.status || 'novo').toUpperCase();
         
-        // 1. Extrair a lista de itens e as observações adicionais
         const obsLines = pedido.observacoes.split('\n');
         let itensListHtml = '';
         let obsAdicionais = '';
@@ -840,23 +903,17 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (line.includes('Total:') || line.includes('OBSERVAÇÕES ADICIONAIS:')) {
                 isItemList = false;
                 if (line.includes('OBSERVAÇÕES ADICIONAIS:')) {
-                    // Captura as observações a partir desta linha
                     obsAdicionais = obsLines.slice(i).join('\n');
                 }
                 continue;
             }
             if (isItemList && line.trim() !== '') {
-                // Formato: * 1x Produto (R$ X.XX)
-                const item = line.replace('*', '').trim();
-                itensListHtml += `<p style="margin: 3px 0; font-size: 0.9rem;">- ${item}</p>`;
+                itensListHtml += `<p style="margin: 3px 0; font-size: 0.9rem;">- ${line.replace('*', '').trim()}</p>`;
             }
         }
         
-        // Remove 'OBSERVAÇÕES ADICIONAIS:' do início da string, se houver.
         const cleanedObsAdicionais = obsAdicionais.replace('OBSERVAÇÕES ADICIONAIS:', '').trim();
 
-
-        // 2. Montar o conteúdo HTML do modal
         detalhesPedidoId.textContent = `#${pedido.id}`;
         detalhesPedidoContent.innerHTML = `
             <div style="text-align: center; margin-bottom: 15px;">
@@ -869,39 +926,28 @@ document.addEventListener('DOMContentLoaded', async function() {
             <h5 style="border-bottom: 1px dashed #eee; padding-bottom: 5px; margin-top: 15px; font-weight: bold;">Detalhes da Entrega</h5>
             <p style="margin: 5px 0; font-size: 0.9rem;"><strong>Data/Hora:</strong> ${dataPedido}</p>
             <p style="margin: 5px 0; font-size: 0.9rem;"><strong>Cliente:</strong> ${pedido.nome_cliente}</p>
-            <p style="margin: 5px 0; font-size: 0.9rem;"><strong>Telefone:</strong> ${pedido.telefone_cliente}</p>
             <p style="margin: 5px 0; font-size: 0.9rem;"><strong>Endereço:</strong> ${pedido.endereco_entrega}</p>
             <p style="margin: 5px 0; font-size: 0.9rem;"><strong>Pagamento:</strong> ${pedido.forma_pagamento}</p>
             
             <h5 style="border-bottom: 1px dashed #eee; padding-bottom: 5px; margin-top: 15px; font-weight: bold;">Itens Solicitados</h5>
-            ${itensListHtml || '<p style="font-size: 0.9rem; color: #999;">Nenhum item detalhado encontrado.</p>'}
+            ${itensListHtml || '<p style="font-size: 0.9rem; color: #999;">Nenhum item detalhado.</p>'}
             
             ${cleanedObsAdicionais ? 
                 `<h5 style="border-bottom: 1px dashed #eee; padding-bottom: 5px; margin-top: 15px; font-weight: bold;">Observações</h5>
                  <pre style="white-space: pre-wrap; font-size: 0.85rem; color: #555; background: #f9f9f9; padding: 10px; border-radius: 5px;">${cleanedObsAdicionais}</pre>` 
                 : ''}
         `;
-
-        // 3. Abrir o modal
         modalDetalhesPedido.style.display = 'flex';
     }
 
-
     function atualizarPerfilUI() {
         if (clienteLogado) {
-            profileNameSpan.textContent = clientePerfil.nome.split(' ')[0];
             homeClienteNome.textContent = clientePerfil.nome.split(' ')[0];
             carrinhoClienteNomeDisplay.textContent = clientePerfil.nome || 'N/A';
             carrinhoEnderecoDisplay.textContent = clientePerfil.endereco || 'N/A';
             carrinhoEnderecoInput.value = clientePerfil.endereco || '';
         } else {
-            profileNameSpan.textContent = 'Visitante';
             homeClienteNome.textContent = 'Visitante';
-        }
-        
-        const opcoesPagamentoOriginal = document.querySelector('.pagamento .opcoes-pagamento');
-        if (pagamentoOpcoesContainer.children.length === 0 && opcoesPagamentoOriginal) {
-            pagamentoOpcoesContainer.innerHTML = opcoesPagamentoOriginal.innerHTML;
         }
     }
 
@@ -910,30 +956,23 @@ document.addEventListener('DOMContentLoaded', async function() {
         atualizarCarrinho();
     }
     
-    // --- NOVAS FUNÇÕES DE EDIÇÃO DE ENDEREÇO ---
-    
     function abrirModalEditarEndereco() {
         if (!clienteLogado) {
              window.alternarView('auth-screen');
              mostrarMensagem('Faça login para editar seu endereço.', 'error');
              return;
         }
-        
-        const cepMatch = clientePerfil.endereco ? clientePerfil.endereco.match(/\(CEP:\s?(\d{5}-\d{3})\)/) : null;
+        const cepMatch = clientePerfil.endereco ? clientePerfil.endereco.match(/\(CEP:\s?(\d{5}-?\d{3})\)/) : null;
         modalCepInput.value = cepMatch ? cepMatch[1] : '';
-
         modalRuaInput.value = '';
         modalNumeroInput.value = '';
         modalBairroInput.value = '';
-
         modalEditarEndereco.style.display = 'flex';
     }
 
     async function salvarEdicaoEndereco(e) {
         e.preventDefault();
-        
         const telefone = clientePerfil.telefone;
-        
         const cep = modalCepInput.value.trim();
         const rua = modalRuaInput.value.trim();
         const numero = modalNumeroInput.value.trim();
@@ -942,22 +981,32 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (!rua || !numero || !bairro || !cep) {
             return mostrarMensagem('Preencha a Rua, Número, Bairro e CEP.', 'error');
         }
-        
         if (!validarAreaEntrega(cep)) {
             return mostrarMensagem('❌ Não entregamos no novo CEP fornecido.', 'error');
         }
 
-        const enderecoCompleto = `${rua}, ${numero}, ${bairro} (CEP: ${cep})`;
+        // Busca cidade/estado pelo CEP para endereço completo
+        const cepLimpo = cep.replace(/\D/g, '');
+        let cidade = '';
+        let estado = '';
+        try {
+            const response = await fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`);
+            const data = await response.json();
+            if (!data.erro) {
+                cidade = data.localidade;
+                estado = data.uf;
+            }
+        } catch (e) { console.warn("Não foi possível buscar cidade/estado do CEP"); }
+        
+        const enderecoCompleto = `${rua}, ${numero}, ${bairro} - ${cidade}/${estado} (CEP: ${cep})`;
 
         try {
             const { error } = await supabase.from('clientes_delivery')
                 .update({ endereco: enderecoCompleto })
                 .eq('telefone', telefone);
-
             if (error) throw error;
             
             clientePerfil.endereco = enderecoCompleto;
-
             mostrarMensagem('✅ Endereço atualizado com sucesso!', 'success');
             modalEditarEndereco.style.display = 'none';
             atualizarPerfilUI(); 
@@ -969,27 +1018,27 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
     
-    // --- FINALIZAÇÃO DE PEDIDOS (FUNÇÃO UNIFICADA) ---
+    // --- FINALIZAÇÃO DE PEDIDOS (CONEXÃO COM DELIVERY) ---
 
     async function finalizarPedidoEEnviarWhatsApp() { 
         const dados = validarDados();
-
         if (!dados) return;
 
         mostrarMensagem('Processando pedido...', 'info');
         finalizarDiretoBtn.disabled = true;
 
         try {
-            // 1. Criar o pedido_online (DB)
-            const { error } = await supabase.from('pedidos_online').insert({
+            // 1. Criar o pedido_online (para o painel de delivery)
+            const { data: novoPedido, error } = await supabase.from('pedidos_online').insert({
                 nome_cliente: dados.nome,
                 telefone_cliente: dados.telefone,
                 endereco_entrega: dados.endereco,
                 forma_pagamento: dados.formaPagamento,
                 total: dados.total,
                 status: 'novo',
-                observacoes: dados.observacoes
-            });
+                observacoes: dados.observacoes, // Já contém os itens e observações
+                itens_pedido: dados.itens // Salva os itens estruturados (se a coluna existir)
+            }).select().single();
 
             if (error) throw error;
             
@@ -999,27 +1048,33 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const quantidade = item.quantidade;
                 const novoEstoque = item.produto.estoque_atual - quantidade;
 
-                await supabase.from('produtos').update({ estoque_atual: novoEstoque }).eq('id', produtoId);
+                // Usando a função de supabase-vendas.js (se disponível) ou direto
+                if (window.vendasSupabase && window.vendasSupabase.actualizarEstoque) {
+                     await window.vendasSupabase.actualizarEstoque(produtoId, novoEstoque);
+                } else {
+                     await supabase.from('produtos').update({ estoque_atual: novoEstoque }).eq('id', produtoId);
+                }
             }
 
-            // 3. ENVIAR MENSAGEM VIA WHATSAPP (Ação automática após finalizar)
+            // 3. ENVIAR MENSAGEM VIA WHATSAPP
             let mensagem = `*PEDIDO ONLINE - DOCE CRIATIVO*\n\n`;
             mensagem += `*Cliente:* ${dados.nome}\n`;
             mensagem += `*Telefone:* ${dados.telefone}\n`;
             mensagem += `*Endereço:* ${dados.endereco}\n`;
             mensagem += `*Pagamento:* ${dados.formaPagamento}\n`;
             mensagem += `*TOTAL:* ${formatarMoeda(dados.total)}\n\n`;
-            
             mensagem += `--- DETALHES ---\n`;
             mensagem += dados.observacoes;
 
             const url = `https://wa.me/${NUMERO_WHATSAPP}?text=${encodeURIComponent(mensagem)}`;
             window.open(url, '_blank');
-            
-            // Fim do envio WhatsApp
 
-            mostrarMensagem('✅ Pedido registrado e mensagem enviada via WhatsApp!', 'success');
+            mostrarMensagem('✅ Pedido registrado! Você será redirecionado para o WhatsApp.', 'success');
             limparFormularioECarrinho();
+            
+            // Recarrega os produtos para atualizar o estoque visualmente
+            await carregarProdutos();
+            
             window.alternarView('view-inicio');
             carregarStatusUltimoPedido();
 
@@ -1039,12 +1094,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (logoutBtnApp) logoutBtnApp.addEventListener('click', fazerLogoutApp);
         if (formEditarEndereco) formEditarEndereco.addEventListener('submit', salvarEdicaoEndereco); 
         
-        if (filtroBuscaProdutos) filtroBuscaProdutos.addEventListener('input', exibirProdutos);
-        
-        if (btnRepetirCompra) btnRepetirCompra.addEventListener('click', repetirUltimaCompra);
-        
         document.getElementById('abrir-modal-editar-endereco')?.addEventListener('click', abrirModalEditarEndereco);
         
+        // Listeners do Menu Inferior (Antigo)
         navItems.forEach(item => {
             item.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -1052,14 +1104,31 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
         });
         
-        // NOVO: Apenas um listener para o botão de finalizar
+        // Listeners do Menu Inferior (Novo Design)
+        document.querySelectorAll('.bottom-nav .nav-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                document.querySelectorAll('.bottom-nav .nav-item').forEach(i => i.classList.remove('active'));
+                item.classList.add('active');
+                
+                const spanText = item.querySelector('span').textContent;
+                if (spanText === 'Início') window.alternarView('view-cardapio');
+                if (spanText === 'Pedidos') window.alternarView('view-inicio'); // Mapeado para Perfil/Histórico
+                if (spanText === 'Promos') window.alternarView('view-promocoes');
+                if (spanText === 'Carrinho') window.alternarView('view-carrinho');
+            });
+        });
+        
+        // Botão de Finalizar (Tela do Carrinho)
         if (finalizarDiretoBtn) finalizarDiretoBtn.addEventListener('click', finalizarPedidoEEnviarWhatsApp);
         
+        // Listener de Endereço (Tela do Carrinho)
         carrinhoEnderecoInput.addEventListener('change', (e) => {
              clientePerfil.endereco = e.target.value.trim();
              carrinhoEnderecoDisplay.textContent = clientePerfil.endereco;
         });
         
+        // Listeners de Pagamento (Tela do Carrinho)
         document.querySelectorAll('.opcoes-pagamento .pagamento-opcao').forEach(opcao => {
             opcao.addEventListener('click', () => {
                 document.querySelectorAll('.opcoes-pagamento .pagamento-opcao').forEach(op => op.classList.remove('selected'));
@@ -1069,7 +1138,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
 
-
     // --- Inicialização da Página (IIFE) ---
     
     (async function() {
@@ -1077,15 +1145,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (!window.vendasSupabase) {
                  throw new Error('Módulo de vendas (supabase-vendas.js) não carregado.');
             }
-            const conexaoOk = await window.vendasSupabase.testarConexao();
-            if (!conexaoOk) {
-                throw new Error('Não foi possível conectar ao cardápio');
-            }
             
             const telefoneSalvo = localStorage.getItem('clienteTelefone');
             let clienteEncontrado = false;
             
-            // 1. Tenta carregar o perfil logado
             if (telefoneSalvo) {
                 const cliente = await buscarClientePorTelefone(telefoneSalvo);
                 if (cliente) {
@@ -1099,26 +1162,35 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
             }
             
-            // 2. Configuração inicial da UI
-            authScreen.classList.remove('active');
-            mobileNav.style.display = 'flex';
+            if(clienteEncontrado) {
+                authScreen.classList.remove('active');
+                mobileNav.style.display = 'flex';
+                window.alternarView('view-cardapio');
+            } else {
+                // Força o Login se não houver cliente salvo
+                authScreen.classList.add('active');
+                mobileNav.style.display = 'none';
+            }
             
-            // >> ALTERAÇÃO SOLICITADA: Pula a tela de boas-vindas
-            window.alternarView('view-cardapio');
-            // << FIM DA ALTERAÇÃO
-            
-            // 3. Carrega os dados para renderizar
+            // Carrega os dados do cardápio
             await carregarCategorias(); 
-            await carregarProdutos();
+            await carregarProdutos(); // Popula a lista principal
+            await carregarMaisPedidos(); // Popula o scroll "Mais Pedidos"
             
-            // 4. Finaliza a configuração
+            // Configura funções do novo design
+            updateStoreStatus();
+            setupShare();
+            setupSearch();
+            setInterval(updateStoreStatus, 60000); // Atualiza status da loja
+
+            // Configura listeners do sistema antigo
+            configurarEventListeners();
+            
             if (clienteEncontrado) {
                 atualizarPerfilUI();
-            } else {
-                 mostrarMensagem('Faça login para salvar seu pedido e ver o histórico.', 'info');
             }
-            configurarEventListeners();
-            atualizarCarrinho();
+            
+            atualizarCarrinho(); // Inicializa o contador do carrinho
 
         } catch (error) {
             console.error('❌ Erro na inicialização:', error);
