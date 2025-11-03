@@ -104,11 +104,27 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     // CORREÇÃO DE ESCOPO: Função alternarView exposta globalmente
     window.alternarView = function(viewId) {
-        document.querySelectorAll('.app-view').forEach(view => view.classList.remove('active'));
-        document.getElementById(viewId).classList.add('active');
+        
+        // CORREÇÃO DE ROBUSTEZ: Adiciona verificação de null na iteração
+        document.querySelectorAll('.app-view').forEach(view => {
+            if (view) {
+                view.classList.remove('active');
+            }
+        });
+        
+        const targetView = document.getElementById(viewId);
+        
+        // CORREÇÃO DE ROBUSTEZ: Verifica se a view de destino existe
+        if (targetView) {
+            targetView.classList.add('active');
+        } else {
+             console.error(`❌ ERRO: View com ID "${viewId}" não encontrada. A navegação falhou.`);
+        }
         
         navItems.forEach(item => {
-            item.classList.toggle('active', item.getAttribute('data-view') === viewId);
+            if (item) { 
+                 item.classList.toggle('active', item.getAttribute('data-view') === viewId);
+            }
         });
         
         if (viewId === 'view-carrinho') {
@@ -836,6 +852,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
         }
         
+        // Remove 'OBSERVAÇÕES ADICIONAIS:' do início da string, se houver.
+        const cleanedObsAdicionais = obsAdicionais.replace('OBSERVAÇÕES ADICIONAIS:', '').trim();
+
+
         // 2. Montar o conteúdo HTML do modal
         detalhesPedidoId.textContent = `#${pedido.id}`;
         detalhesPedidoContent.innerHTML = `
@@ -856,9 +876,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             <h5 style="border-bottom: 1px dashed #eee; padding-bottom: 5px; margin-top: 15px; font-weight: bold;">Itens Solicitados</h5>
             ${itensListHtml || '<p style="font-size: 0.9rem; color: #999;">Nenhum item detalhado encontrado.</p>'}
             
-            ${obsAdicionais.trim() ? 
+            ${cleanedObsAdicionais ? 
                 `<h5 style="border-bottom: 1px dashed #eee; padding-bottom: 5px; margin-top: 15px; font-weight: bold;">Observações</h5>
-                 <pre style="white-space: pre-wrap; font-size: 0.85rem; color: #555; background: #f9f9f9; padding: 10px; border-radius: 5px;">${obsAdicionais.trim()}</pre>` 
+                 <pre style="white-space: pre-wrap; font-size: 0.85rem; color: #555; background: #f9f9f9; padding: 10px; border-radius: 5px;">${cleanedObsAdicionais}</pre>` 
                 : ''}
         `;
 
