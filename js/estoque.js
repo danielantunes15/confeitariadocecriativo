@@ -348,6 +348,377 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
+    // --- FUNÇÃO MELHORADA PARA RECUPERAR IMAGENS ---
+    window.recuperarImagensMelhorado = async function() {
+        try {
+            console.log('🔍 RECUPERAÇÃO MELHORADA DE IMAGENS...');
+            
+            // 1. Buscar arquivos do storage
+            const { data: files, error: storageError } = await supabase
+                .storage
+                .from('fotos-produtos')
+                .list('produtos');
+                
+            if (storageError) throw storageError;
+            
+            console.log('📁 ARQUIVOS ENCONTRADOS:', files);
+            
+            // 2. Buscar todos os produtos
+            const { data: produtos, error: produtosError } = await supabase
+                .from('produtos')
+                .select('id, nome')
+                .order('nome');
+                
+            if (produtosError) throw produtosError;
+            
+            console.log('📦 PRODUTOS ENCONTRADOS:', produtos);
+            
+            let atualizacoes = 0;
+            const resultados = [];
+            
+            // 3. Algoritmo de match melhorado
+            for (const file of files) {
+                const fileName = file.name;
+                console.log(`\n🔍 Processando: ${fileName}`);
+                
+                // Extrair nome base do arquivo (mais agressivo)
+                const nomeBase = fileName
+                    .replace(/-\d+\.\w+$/, '') // Remove timestamp e extensão
+                    .replace(/_/g, ' ') // Substitui _ por espaços
+                    .replace(/\.(jpg|jpeg|png|webp|gif)$/i, '') // Remove extensão se ainda existir
+                    .trim();
+                
+                console.log(`📝 Nome base: "${nomeBase}"`);
+                
+                // Buscar produto correspondente (match mais flexível)
+                const produtoCorrespondente = produtos.find(produto => {
+                    const nomeProduto = produto.nome.toLowerCase();
+                    const nomeArquivo = nomeBase.toLowerCase();
+                    
+                    // Diferentes estratégias de match
+                    return (
+                        nomeProduto === nomeArquivo || // Match exato
+                        nomeProduto.includes(nomeArquivo) || // Arquivo contém no produto
+                        nomeArquivo.includes(nomeProduto) || // Produto contém no arquivo
+                        nomeProduto.replace(/\s+/g, '') === nomeArquivo.replace(/\s+/g, '') || // Sem espaços
+                        calcularSimilaridade(nomeProduto, nomeArquivo) > 0.7 // Similaridade > 70%
+                    );
+                });
+                
+                if (produtoCorrespondente) {
+                    console.log(`✅ MATCH: ${produtoCorrespondente.nome}`);
+                    
+                    // Gerar URL pública
+                    const { data: urlData } = supabase
+                        .storage
+                        .from('fotos-produtos')
+                        .getPublicUrl(`produtos/${fileName}`);
+                    
+                    // Atualizar produto
+                    const { error: updateError } = await supabase
+                        .from('produtos')
+                        .update({ icone: urlData.publicUrl })
+                        .eq('id', produtoCorrespondente.id);
+                    
+                    if (!updateError) {
+                        atualizacoes++;
+                        resultados.push(`✅ ${produtoCorrespondente.nome} -> ${fileName}`);
+                        console.log(`✅ Vinculado: ${produtoCorrespondente.nome}`);
+                    } else {
+                        resultados.push(`❌ Erro em ${produtoCorrespondente.nome}: ${updateError.message}`);
+                    }
+                } else {
+                    console.log(`❌ Nenhum match para: ${nomeBase}`);
+                    resultados.push(`❌ Sem match: ${fileName} (${nomeBase})`);
+                    
+                    // Tentar match manual para "Água Com Gás"
+                    if (nomeBase.toLowerCase().includes('agua') && nomeBase.toLowerCase().includes('gas')) {
+                        const produtoAgua = produtos.find(p => p.nome.toLowerCase().includes('água') && p.nome.toLowerCase().includes('gás'));
+                        if (produtoAgua) {
+                            console.log(`🎯 MATCH MANUAL ENCONTRADO: ${produtoAgua.nome}`);
+                            
+                            const { data: urlData } = supabase
+                                .storage
+                                .from('fotos-produtos')
+                                .getPublicUrl(`produtos/${fileName}`);
+                            
+                            const { error: updateError } = await supabase
+                                .from('produtos')
+                                .update({ icone: urlData.publicUrl })
+                                .eq('id', produtoAgua.id);
+                            
+                            if (!updateError) {
+                                atualizacoes++;
+                                resultados.push(`🎯 MATCH MANUAL: ${produtoAgua.nome} -> ${fileName}`);
+                            }
+                        }
+                    }
+                }
+            }
+            
+            console.log(`\n📊 RESUMO MELHORADO:`);
+            console.log(`✅ Atualizações: ${atualizacoes}`);
+            console.log(`📁 Processados: ${files.length}`);
+            
+            // Mostrar resultados detalhados
+            if (resultados.length > 0) {
+                const resultadoHTML = `
+                    <div style="background: white; padding: 20px; border-radius: 8px; max-width: 600px; max-height: 400px; overflow-y: auto;">
+                        <h3>📊 Resultado da Recuperação</h3>
+                        <p><strong>Atualizações bem-sucedidas:</strong> ${atualizacoes}</p>
+                        <p><strong>Arquivos processados:</strong> ${files.length}</p>
+                        <div style="margin-top: 15px;">
+                            ${resultados.map(r => `<p style="margin: 5px 0; font-family: monospace; font-size: 12px;">${r}</p>`).join('')}
+                        </div>
+                        <button onclick="this.parentElement.parentElement.remove(); carregarListaProdutos();" 
+                                style="margin-top: 15px; padding: 10px 20px; background: #ff69b4; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                            Fechar e Recarregar
+                        </button>
+                    </div>
+                `;
+                
+                const modal = document.createElement('div');
+                modal.style.cssText = `
+                    position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+                    background: rgba(0,0,0,0.5); z-index: 10000; display: flex; 
+                    justify-content: center; align-items: center;
+                `;
+                modal.innerHTML = resultadoHTML;
+                document.body.appendChild(modal);
+            }
+            
+            if (atualizacoes > 0) {
+                mostrarMensagem(`✅ ${atualizacoes} imagens recuperadas!`, 'success');
+                setTimeout(() => carregarListaProdutos(), 2000);
+            } else {
+                mostrarMensagem('❌ Nenhuma imagem recuperada. Use a vinculação manual.', 'error');
+            }
+            
+        } catch (error) {
+            console.error('❌ Erro na recuperação melhorada:', error);
+            mostrarMensagem('Erro: ' + error.message, 'error');
+        }
+    };
+
+    // --- FUNÇÃO AUXILIAR: CALCULAR SIMILARIDADE ---
+    window.calcularSimilaridade = function(str1, str2) {
+        // Algoritmo simples de similaridade
+        const longer = str1.length > str2.length ? str1 : str2;
+        const shorter = str1.length > str2.length ? str2 : str1;
+        
+        if (longer.length === 0) return 1.0;
+        
+        return (longer.length - calcularDistancia(longer, shorter)) / parseFloat(longer.length);
+    };
+
+    window.calcularDistancia = function(str1, str2) {
+        // Distância de Levenshtein simplificada
+        if (str1 === str2) return 0;
+        if (str1.length === 0) return str2.length;
+        if (str2.length === 0) return str1.length;
+        
+        let v0 = [], v1 = [];
+        
+        for (let i = 0; i <= str2.length; i++) v0[i] = i;
+        
+        for (let i = 0; i < str1.length; i++) {
+            v1[0] = i + 1;
+            
+            for (let j = 0; j < str2.length; j++) {
+                const cost = str1[i] === str2[j] ? 0 : 1;
+                v1[j + 1] = Math.min(v1[j] + 1, v0[j + 1] + 1, v0[j] + cost);
+            }
+            
+            for (let j = 0; j <= str2.length; j++) v0[j] = v1[j];
+        }
+        
+        return v1[str2.length];
+    };
+
+    // --- FUNÇÃO ESPECÍFICA PARA ÁGUA COM GÁS ---
+    window.vincularAguaGas = async function() {
+        try {
+            console.log('💧 VINCULANDO ESPECIFICAMENTE ÁGUA COM GÁS...');
+            
+            // Buscar produto "Água Com Gás"
+            const { data: produtos, error } = await supabase
+                .from('produtos')
+                .select('id, nome')
+                .ilike('nome', '%água%gás%');
+                
+            if (error) throw error;
+            
+            if (!produtos || produtos.length === 0) {
+                mostrarMensagem('❌ Produto "Água Com Gás" não encontrado', 'error');
+                return;
+            }
+            
+            const produto = produtos[0];
+            console.log(`🎯 Produto encontrado: ${produto.nome} (ID: ${produto.id})`);
+            
+            // Buscar arquivos de água com gás
+            const { data: files } = await supabase
+                .storage
+                .from('fotos-produtos')
+                .list('produtos');
+            
+            const arquivosAguaGas = files.filter(f => f.name.toLowerCase().includes('agua') && f.name.toLowerCase().includes('gas'));
+            
+            if (arquivosAguaGas.length === 0) {
+                mostrarMensagem('❌ Nenhum arquivo de Água Com Gás encontrado', 'error');
+                return;
+            }
+            
+            // Usar o primeiro arquivo
+            const arquivo = arquivosAguaGas[0];
+            const { data: urlData } = supabase
+                .storage
+                .from('fotos-produtos')
+                .getPublicUrl(`produtos/${arquivo.name}`);
+            
+            // Atualizar produto
+            const { error: updateError } = await supabase
+                .from('produtos')
+                .update({ icone: urlData.publicUrl })
+                .eq('id', produto.id);
+                
+            if (updateError) throw updateError;
+            
+            console.log(`✅ ${produto.nome} vinculado à imagem: ${arquivo.name}`);
+            mostrarMensagem(`✅ ${produto.nome} vinculado com sucesso!`, 'success');
+            
+            setTimeout(() => carregarListaProdutos(), 1000);
+            
+        } catch (error) {
+            console.error('❌ Erro ao vincular Água Com Gás:', error);
+            mostrarMensagem('Erro: ' + error.message, 'error');
+        }
+    };
+
+    // --- FUNÇÃO PARA VINCULAR MANUALMENTE IMAGENS A PRODUTOS ---
+    window.vincularImagensManual = async function() {
+        try {
+            console.log('🔗 VINCULAÇÃO MANUAL DE IMAGENS...');
+            
+            // 1. Buscar arquivos do storage
+            const { data: files, error: storageError } = await supabase
+                .storage
+                .from('fotos-produtos')
+                .list('produtos');
+                
+            if (storageError) throw storageError;
+            
+            console.log('📁 ARQUIVOS PARA VINCULAR:', files);
+            
+            // 2. Mostrar interface para vincular manualmente
+            let html = `
+                <div style="background: white; padding: 20px; border-radius: 8px; max-height: 80vh; overflow-y: auto;">
+                    <h3>🔗 Vincular Imagens Manualmente</h3>
+                    <p>Arquivos encontrados no storage: ${files.length}</p>
+            `;
+            
+            files.forEach((file, index) => {
+                const url = supabase.storage.from('fotos-produtos').getPublicUrl(`produtos/${file.name}`).publicUrl;
+                html += `
+                    <div style="border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 8px;">
+                        <h4>Arquivo ${index + 1}: ${file.name}</h4>
+                        <img src="${url}" style="max-width: 100px; max-height: 100px; border-radius: 4px;">
+                        <p><strong>URL:</strong> ${url}</p>
+                        <div>
+                            <label><strong>Vincular ao produto:</strong></label>
+                            <select id="produto-${index}" style="margin-left: 10px;">
+                                <option value="">Selecione um produto...</option>
+                            </select>
+                            <button onclick="vincularArquivo('${file.name}', 'produto-${index}')" 
+                                    style="margin-left: 10px; padding: 5px 10px; background: #ff69b4; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                                Vincular
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += `</div>`;
+            
+            // Abrir modal com a interface
+            const modal = document.createElement('div');
+            modal.id = 'modal-vincular-imagens';
+            modal.style.cssText = `
+                position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+                background: rgba(0,0,0,0.5); z-index: 10000; display: flex; 
+                justify-content: center; align-items: center;
+            `;
+            modal.innerHTML = html;
+            document.body.appendChild(modal);
+            
+            // Carregar produtos nos selects
+            const { data: produtos } = await supabase
+                .from('produtos')
+                .select('id, nome')
+                .order('nome');
+                
+            files.forEach((file, index) => {
+                const select = document.getElementById(`produto-${index}`);
+                produtos.forEach(produto => {
+                    const option = document.createElement('option');
+                    option.value = produto.id;
+                    option.textContent = produto.nome;
+                    select.appendChild(option);
+                });
+            });
+            
+            // Fechar modal ao clicar fora
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.remove();
+                }
+            });
+            
+        } catch (error) {
+            console.error('Erro na vinculação manual:', error);
+            mostrarMensagem('Erro: ' + error.message, 'error');
+        }
+    };
+
+    // --- FUNÇÃO PARA VINCULAR UM ARQUIVO ESPECÍFICO ---
+    window.vincularArquivo = async function(fileName, selectId) {
+        try {
+            const select = document.getElementById(selectId);
+            const produtoId = select.value;
+            
+            if (!produtoId) {
+                alert('Selecione um produto primeiro!');
+                return;
+            }
+            
+            // Obter URL pública
+            const { data: urlData } = supabase
+                .storage
+                .from('fotos-produtos')
+                .getPublicUrl(`produtos/${fileName}`);
+            
+            // Atualizar produto
+            const { error } = await supabase
+                .from('produtos')
+                .update({ icone: urlData.publicUrl })
+                .eq('id', produtoId);
+                
+            if (error) throw error;
+            
+            console.log(`✅ Arquivo ${fileName} vinculado ao produto ${produtoId}`);
+            mostrarMensagem('✅ Imagem vinculada com sucesso!', 'success');
+            
+            // Recarregar lista após 1 segundo
+            setTimeout(() => {
+                carregarListaProdutos();
+            }, 1000);
+            
+        } catch (error) {
+            console.error('Erro ao vincular arquivo:', error);
+            mostrarMensagem('Erro ao vincular: ' + error.message, 'error');
+        }
+    };
+
     async function inicializarEstoque() {
         try {
             // Mostrar loading
