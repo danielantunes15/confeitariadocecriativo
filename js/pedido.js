@@ -65,7 +65,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     const modalNumeroInput = document.getElementById('modal-numero');
     const modalBairroInput = document.getElementById('modal-bairro');
     
-    // Elementos do Modal de Detalhes (NOVOS)
+    // Elementos do Modal de Detalhes de Produto
     const modalDetalhesProduto = document.getElementById('modal-detalhes-produto');
     const detalhesTitulo = document.getElementById('detalhes-titulo');
     const detalhesProdutoContent = document.getElementById('detalhes-produto-content');
@@ -75,11 +75,19 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Elementos de Repetição de Compra (NOVOS)
     const repetirCompraContainer = document.getElementById('repetir-compra-container');
     const btnRepetirCompra = document.getElementById('btn-repetir-compra');
+    
+    // Elementos do Modal de Detalhes do Pedido (NOVOS)
+    const modalDetalhesPedido = document.getElementById('modal-detalhes-pedido');
+    const detalhesPedidoId = document.getElementById('detalhes-pedido-id');
+    const detalhesPedidoContent = document.getElementById('detalhes-pedido-content');
+
 
     let categorias = [];
     let produtos = [];
     let carrinho = [];
     let categoriaSelecionada = 'todos';
+    // Armazena os pedidos do histórico para consulta no modal
+    let historicoPedidos = []; 
 
     // --- FUNÇÕES DE UTENSÍLIOS ---
     const formatarMoeda = (valor) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor || 0);
@@ -713,7 +721,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         try {
             // CORREÇÃO CRÍTICA: Busca os pedidos na tabela 'pedidos_online' (onde são salvos)
             const { data, error } = await supabase.from('pedidos_online')
-                .select(`id, created_at, total, forma_pagamento, status, observacoes`)
+                .select(`id, created_at, total, forma_pagamento, status, observacoes, telefone_cliente, endereco_entrega, nome_cliente`)
                 .eq('telefone_cliente', clientePerfil.telefone) 
                 .order('created_at', { ascending: false })
                 .limit(3); 
@@ -722,20 +730,21 @@ document.addEventListener('DOMContentLoaded', async function() {
             
             const pedidos = data || [];
             
+            // Armazena no estado global para o modal de detalhes
+            historicoPedidos = pedidos;
+            
             let htmlHistorico = '';
             
             if (pedidos.length > 0) {
                  htmlHistorico += '<h4>Últimos Pedidos:</h4>';
                  
-                 // Como a tabela 'pedidos_online' não tem a relação de itens, 
-                 // desabilita a repetição de compra que depende da tabela 'vendas_itens'
+                 // Desabilita a repetição de compra que depende da tabela 'vendas_itens'
                  repetirCompraContainer.style.display = 'none'; 
-                 // ^ Se você implementar o detalhamento de itens em pedidos_online, reabilite isso.
                  
                  pedidos.forEach((p, index) => {
                      const dataPedido = new Date(p.created_at).toLocaleDateString('pt-BR');
                      
-                     // NOVO: Lógica para extrair itens da string de observações (que contém a lista formatada)
+                    // NOVO: Lógica para extrair itens da string de observações (que contém a lista formatada)
                     let listaItens = '';
                     const obsLines = p.observacoes.split('\n');
                     let isItemList = false;
@@ -761,7 +770,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                     const status = (p.status || 'novo').toUpperCase();
                     
                      htmlHistorico += `
-                         <div class="card-pedido-historico" style="padding: 10px; border-bottom: 1px dashed #ccc; margin-bottom: 5px;">
+                         <div class="card-pedido-historico" 
+                              style="padding: 10px; border-bottom: 1px dashed #ccc; margin-bottom: 5px; cursor: pointer;"
+                              onclick="abrirModalDetalhesPedido(${p.id})">
                              <p style="font-weight: bold; margin: 0;">Pedido #${p.id} - ${dataPedido}</p>
                              <p style="font-size: 0.9rem; margin: 0;">Itens: ${listaItens || 'N/A'}</p>
                              <p style="font-size: 0.9rem; margin: 0;">Status: 
@@ -786,6 +797,75 @@ document.addEventListener('DOMContentLoaded', async function() {
             console.error('Erro ao carregar status do pedido:', error);
         }
     }
+
+    // --- FUNÇÃO DE ABRIR O MODAL DE DETALHES DO PEDIDO ---
+    window.abrirModalDetalhesPedido = function(pedidoId) {
+        const pedido = historicoPedidos.find(p => p.id === pedidoId);
+        if (!pedido) {
+            mostrarMensagem('Detalhes do pedido não encontrados.', 'error');
+            return;
+        }
+
+        const dataPedido = new Date(pedido.created_at).toLocaleString('pt-BR');
+        const status = (pedido.status || 'novo').toUpperCase();
+        
+        // 1. Extrair a lista de itens e as observações adicionais
+        const obsLines = pedido.observacoes.split('\n');
+        let itensListHtml = '';
+        let obsAdicionais = '';
+        let isItemList = false;
+
+        for (let i = 0; i < obsLines.length; i++) {
+            const line = obsLines[i];
+            if (line.includes('Itens:')) {
+                isItemList = true;
+                continue;
+            }
+            if (line.includes('Total:') || line.includes('OBSERVAÇÕES ADICIONAIS:')) {
+                isItemList = false;
+                if (line.includes('OBSERVAÇÕES ADICIONAIS:')) {
+                    // Captura as observações a partir desta linha
+                    obsAdicionais = obsLines.slice(i).join('\n');
+                }
+                continue;
+            }
+            if (isItemList && line.trim() !== '') {
+                // Formato: * 1x Produto (R$ X.XX)
+                const item = line.replace('*', '').trim();
+                itensListHtml += `<p style="margin: 3px 0; font-size: 0.9rem;">- ${item}</p>`;
+            }
+        }
+        
+        // 2. Montar o conteúdo HTML do modal
+        detalhesPedidoId.textContent = `#${pedido.id}`;
+        detalhesPedidoContent.innerHTML = `
+            <div style="text-align: center; margin-bottom: 15px;">
+                <h4 style="margin: 0; font-size: 1.5rem;">${formatarMoeda(pedido.total)}</h4>
+                <span class="status-badge-history status-${status}" style="margin-top: 5px;">
+                    <i class="fas fa-info-circle"></i> STATUS: ${status}
+                </span>
+            </div>
+            
+            <h5 style="border-bottom: 1px dashed #eee; padding-bottom: 5px; margin-top: 15px; font-weight: bold;">Detalhes da Entrega</h5>
+            <p style="margin: 5px 0; font-size: 0.9rem;"><strong>Data/Hora:</strong> ${dataPedido}</p>
+            <p style="margin: 5px 0; font-size: 0.9rem;"><strong>Cliente:</strong> ${pedido.nome_cliente}</p>
+            <p style="margin: 5px 0; font-size: 0.9rem;"><strong>Telefone:</strong> ${pedido.telefone_cliente}</p>
+            <p style="margin: 5px 0; font-size: 0.9rem;"><strong>Endereço:</strong> ${pedido.endereco_entrega}</p>
+            <p style="margin: 5px 0; font-size: 0.9rem;"><strong>Pagamento:</strong> ${pedido.forma_pagamento}</p>
+            
+            <h5 style="border-bottom: 1px dashed #eee; padding-bottom: 5px; margin-top: 15px; font-weight: bold;">Itens Solicitados</h5>
+            ${itensListHtml || '<p style="font-size: 0.9rem; color: #999;">Nenhum item detalhado encontrado.</p>'}
+            
+            ${obsAdicionais.trim() ? 
+                `<h5 style="border-bottom: 1px dashed #eee; padding-bottom: 5px; margin-top: 15px; font-weight: bold;">Observações</h5>
+                 <pre style="white-space: pre-wrap; font-size: 0.85rem; color: #555; background: #f9f9f9; padding: 10px; border-radius: 5px;">${obsAdicionais.trim()}</pre>` 
+                : ''}
+        `;
+
+        // 3. Abrir o modal
+        modalDetalhesPedido.style.display = 'flex';
+    }
+
 
     function atualizarPerfilUI() {
         if (clienteLogado) {

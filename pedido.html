@@ -275,7 +275,7 @@
                     <button id="finalizar-pedido-direto" class="btn-login-app" style="background: var(--rosa-escuro); width: 100%;">
                         <i class="fas fa-check-circle"></i> Finalizar Pedido
                     </button>
-                    </div>
+                 </div>
             </footer>
         </div>
         
@@ -354,6 +354,17 @@
                     <i class="fas fa-cart-plus"></i> Adicionar
                 </button>
             </div>
+        </div>
+    </div>
+
+    <div id="modal-detalhes-pedido" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 400px; margin-top: 10vh;">
+            <div class="modal-header">
+                <h3 id="detalhes-modal-titulo"><i class="fas fa-receipt"></i> Detalhes do Pedido <span id="detalhes-pedido-id"></span></h3>
+                <span class="close" onclick="document.getElementById('modal-detalhes-pedido').style.display='none';">&times;</span>
+            </div>
+            <div id="detalhes-pedido-content" class="modal-detalhes-produto-body">
+                </div>
         </div>
     </div>
     
