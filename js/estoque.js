@@ -25,11 +25,11 @@ document.addEventListener('DOMContentLoaded', function() {
                    .replace(/[\s-]+/g, '_'); 
     };
 
-    // --- FUNÇÃO DE UPLOAD PARA SUPABASE STORAGE (CÓDIGO FINAL DE UPLOAD) ---
+    // --- FUNÇÃO DE UPLOAD PARA SUPABASE STORAGE ---
     async function uploadFotoProduto(file, nomeProduto) {
         if (!file) return null;
         
-        const nomeBucket = 'fotos-produtos'; // <--- SUBSTITUA SE USOU OUTRO NOME EXATO
+        const nomeBucket = 'fotos-produtos';
         
         // Sanitiza o nome do produto para evitar o erro 'Invalid key'
         const sanitizedName = sanitizeFilename(nomeProduto);
@@ -46,8 +46,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const { error: uploadError } = await window.supabase.storage
                 .from(nomeBucket) 
                 .upload(storagePath, file, {
-                    cacheControl: '3600', 
-                    upsert: false 
+                    cacheControl: '3600', // Cache de 1 hora
+                    upsert: false // Não substitui
                 });
                 
             if (uploadError) {
@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 throw new Error(uploadError.message || 'Falha ao enviar a foto. Verifique a permissão "INSERT" do Storage.');
             }
 
-            // 2. OBTER A URL PÚBLICA SALVA NO BANCO (A URL REAL)
+            // 2. OBTER A URL PÚBLICA
             const { data: urlData } = window.supabase.storage
                 .from(nomeBucket) 
                 .getPublicUrl(storagePath);
@@ -72,6 +72,114 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    // --- FUNÇÃO DE DIAGNÓSTICO PARA IMAGENS ---
+    window.debugImagensProdutos = async function() {
+        try {
+            console.log('🔍 INICIANDO DIAGNÓSTICO DE IMAGENS...');
+            
+            // 1. Verificar produtos no banco
+            const { data: produtos, error } = await supabase
+                .from('produtos')
+                .select('id, nome, icone, categoria_id');
+                
+            if (error) throw error;
+            
+            console.log('📦 PRODUTOS NO BANCO:', produtos);
+            
+            // 2. Verificar storage
+            console.log('🪣 VERIFICANDO STORAGE...');
+            const { data: files, error: storageError } = await supabase
+                .storage
+                .from('fotos-produtos')
+                .list('produtos');
+                
+            console.log('📁 ARQUIVOS NO STORAGE:', files);
+            console.log('❌ ERRO STORAGE:', storageError);
+            
+            // 3. Testar URLs das imagens
+            if (produtos && produtos.length > 0) {
+                console.log('🔗 TESTANDO URLs DAS IMAGENS:');
+                for (let produto of produtos) {
+                    if (produto.icone) {
+                        console.log(`\n📸 Produto: ${produto.nome}`);
+                        console.log(`URL: ${produto.icone}`);
+                        
+                        // Testar se a URL é acessível
+                        try {
+                            const response = await fetch(produto.icone, { method: 'HEAD' });
+                            console.log(`Status: ${response.status} ${response.statusText}`);
+                            console.log(`Acessível: ${response.ok}`);
+                        } catch (fetchError) {
+                            console.log(`❌ Erro ao acessar URL: ${fetchError.message}`);
+                        }
+                    } else {
+                        console.log(`\n📸 Produto: ${produto.nome} - SEM IMAGEM`);
+                    }
+                }
+            }
+            
+        } catch (error) {
+            console.error('Erro no diagnóstico:', error);
+        }
+    }
+
+    // --- FUNÇÃO TESTAR BUCKET ---
+    window.testarBucketStorage = async function() {
+        try {
+            console.log('🧪 TESTANDO CONFIGURAÇÃO DO STORAGE...');
+            
+            // Tentar listar buckets disponíveis
+            const { data: buckets, error: bucketsError } = await supabase
+                .storage
+                .listBuckets();
+                
+            console.log('🪣 BUCKETS DISPONÍVEIS:', buckets);
+            console.log('❌ ERRO BUCKETS:', bucketsError);
+            
+            // Testar bucket específico
+            const { data: testFiles, error: testError } = await supabase
+                .storage
+                .from('fotos-produtos')
+                .list();
+                
+            console.log('📁 CONTEÚDO DO BUCKET:', testFiles);
+            console.log('❌ ERRO BUCKET:', testError);
+            
+        } catch (error) {
+            console.error('Erro no teste do storage:', error);
+        }
+    }
+
+    // --- FUNÇÃO VERIFICAR PERMISSÕES ---
+    window.verificarPermissoesStorage = async function() {
+        try {
+            console.log('🔐 VERIFICANDO PERMISSÕES DO STORAGE...');
+            
+            // Testar upload de um arquivo pequeno
+            const testBlob = new Blob(['test'], { type: 'text/plain' });
+            const testFile = new File([testBlob], 'test-permissions.txt');
+            
+            const { data: uploadData, error: uploadError } = await supabase
+                .storage
+                .from('fotos-produtos')
+                .upload('test-permissions.txt', testFile);
+                
+            console.log('📤 TESTE DE UPLOAD:', uploadData);
+            console.log('❌ ERRO UPLOAD:', uploadError);
+            
+            // Testar listagem
+            const { data: listData, error: listError } = await supabase
+                .storage
+                .from('fotos-produtos')
+                .list();
+                
+            console.log('📋 TESTE DE LISTAGEM:', listData);
+            console.log('❌ ERRO LISTAGEM:', listError);
+            
+        } catch (error) {
+            console.error('Erro na verificação de permissões:', error);
+        }
+    }
 
     async function inicializarEstoque() {
         try {
@@ -95,9 +203,6 @@ document.addEventListener('DOMContentLoaded', function() {
             await carregarListaProdutos();
             await carregarListaCategorias();
             
-            // Adicionado: Chamadas originais de ícones, mas que agora usarão a lógica de foto (HTML foi substituído)
-            carregarIcones(); 
-
             console.log('✅ Módulo de estoque inicializado com sucesso!');
 
         } catch (error) {
@@ -188,7 +293,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-
         // Modais
         const modalProduto = document.getElementById('modal-editar-produto');
         const modalCategoria = document.getElementById('modal-nova-categoria');
@@ -223,8 +327,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (activeBtn) activeBtn.classList.add('active');
         if (activeContent) activeContent.classList.add('active');
     }
-
-    // REMOVIDAS: Funções originais de carregarIcones e criarElementoIcone
 
     // Funções para Categorias
     async function carregarCategorias() {
@@ -380,7 +482,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         } catch (error) {
             console.error('Erro ao carregar categoria para edição:', error);
-            mostrarMensagem('Erro ao carregar categoria: ' + error.message, 'error');
+            mostrarMensagem('Erro ao carregar dados da conta: ' + error.message, 'error');
         }
     };
 
@@ -469,6 +571,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (error) throw error;
 
+            // 🆕 CHAMAR DIAGNÓSTICO APÓS CARREGAR PRODUTOS
+            console.log('🎯 PRODUTOS CARREGADOS PARA EXIBIÇÃO:', produtos);
+            debugImagensProdutos();
+            testarBucketStorage();
+
             exibirProdutos(produtosBody, produtos);
 
         } catch (error) {
@@ -490,11 +597,36 @@ document.addEventListener('DOMContentLoaded', function() {
             const tr = document.createElement('tr');
             const statusEstoque = getStatusEstoque(produto.estoque_atual, produto.estoque_minimo);
             
+            // 🆕 DEBUG DETALHADO
+            console.log(`🎨 EXIBINDO PRODUTO: ${produto.nome}`, {
+                icone: produto.icone,
+                temIcone: !!produto.icone,
+                startsWithHttp: produto.icone?.startsWith('http'),
+                categoria: produto.categoria?.nome
+            });
+            
+            let imagemHTML = '';
+            if (produto.icone && produto.icone.startsWith('http')) {
+                // Adiciona timestamp para evitar cache
+                const urlComTimestamp = `${produto.icone}?t=${Date.now()}`;
+                imagemHTML = `
+                    <div class="imagem-container" style="position: relative;">
+                        <img src="${urlComTimestamp}" 
+                             alt="${produto.nome}" 
+                             onload="console.log('✅ Imagem carregada:', '${produto.nome}')"
+                             onerror="console.log('❌ Erro ao carregar imagem:', '${produto.nome}', this.src); this.style.display='none'; this.nextElementSibling.style.display='inline';"
+                             style="max-width: 40px; max-height: 40px; object-fit: cover; border-radius: 4px; border: 1px solid #eee;">
+                        <i class="fas fa-camera" style="display: none; font-size: 24px; color: #ff69b4;"></i>
+                    </div>
+                `;
+            } else {
+                imagemHTML = '<i class="fas fa-camera" style="font-size: 24px; color: #ff69b4;"></i>';
+                console.log(`📭 Produto ${produto.nome} sem URL de imagem válida`);
+            }
+            
             tr.innerHTML = `
-                <td class="foto-tabela">
-                    ${produto.icone ? 
-                        `<img src="${produto.icone}" alt="${produto.nome}">` : 
-                        `<i class="fas fa-camera" style="font-size: 24px; color: #ff69b4;"></i>`}
+                <td class="foto-tabela" style="text-align: center;">
+                    ${imagemHTML}
                 </td>
                 <td>${produto.nome}</td>
                 <td>${produto.categoria?.nome || 'Sem categoria'}</td>
@@ -624,7 +756,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 preview.style.display = 'none';
             }
 
-
             document.getElementById('editar-produto-ativo').checked = produto.ativo;
             
             document.getElementById('modal-editar-produto').style.display = 'block';
@@ -680,7 +811,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (novaFotoUrl) {
             dadosAtualizacao.icone = novaFotoUrl; // Salva a nova URL
         }
-
 
         try {
             const { error } = await supabase
@@ -809,29 +939,27 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // Configurar logout
+    function configurarLogoutEstoque() {
+        const logoutBtn = document.getElementById('logout-btn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (confirm('Deseja realmente sair do sistema?')) {
+                    if (window.sistemaAuth) {
+                        window.sistemaAuth.fazerLogout();
+                    } else {
+                        window.fazerLogoutGlobal();
+                    }
+                }
+            });
+        }
+    }
+
+    // Chamar quando o DOM carregar
+    configurarLogoutEstoque();
+
     // Exportar funções para uso global
     window.fecharModais = fecharModais;
     window.mostrarMensagem = mostrarMensagem;
-
-// Configurar logout
-function configurarLogoutEstoque() {
-    const logoutBtn = document.getElementById('logout-btn');
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            if (confirm('Deseja realmente sair do sistema?')) {
-                if (window.sistemaAuth) {
-                    window.sistemaAuth.fazerLogout();
-                } else {
-                    window.fazerLogoutGlobal();
-                }
-            }
-        });
-    }
-}
-
-// Chamar quando o DOM carregar
-document.addEventListener('DOMContentLoaded', function() {
-    configurarLogoutEstoque();
-});
 });

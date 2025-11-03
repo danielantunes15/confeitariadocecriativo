@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestão de Estoque - Confeitaria Doces Criativos</title>
     <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/estoque.css"> <link rel="stylesheet" href="css/responsive.css"> 
+    <link rel="stylesheet" href="css/estoque.css">
+    <link rel="stylesheet" href="css/responsive.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -206,6 +207,17 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Área de Diagnóstico -->
+                <div class="card" style="margin-top: 1rem; background: #fff3cd; border-color: #ffeaa7;">
+                    <h3 style="color: #856404;">🔧 Diagnóstico de Imagens</h3>
+                    <p style="color: #856404;">Se as imagens não aparecem, clique nos botões abaixo e verifique o console (F12)</p>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button onclick="debugImagensProdutos()" class="btn btn-warning">Executar Diagnóstico</button>
+                        <button onclick="testarBucketStorage()" class="btn btn-secondary">Testar Storage</button>
+                        <button onclick="verificarPermissoesStorage()" class="btn btn-info">Verificar Permissões</button>
+                    </div>
+                </div>
             </div>
 
             <div id="error-message" class="card" style="display: none;">
@@ -310,6 +322,36 @@
         </div>
     </div>
 
+    <div id="modal-editar-categoria" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Editar Categoria</h3>
+                <span class="close">&times;</span>
+            </div>
+            <form id="form-editar-categoria">
+                <input type="hidden" id="editar-categoria-id" />
+                <div class="form-group">
+                    <label for="editar-categoria-nome">Nome da Categoria *</label>
+                    <input id="editar-categoria-nome" type="text" required />
+                </div>
+                <div class="form-group">
+                    <label for="editar-categoria-descricao">Descrição</label>
+                    <textarea id="editar-categoria-descricao" rows="3" placeholder="Descrição da categoria"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="editar-categoria-ativa" />
+                        Categoria Ativa
+                    </label>
+                </div>
+                <div class="form-actions">
+                    <button class="btn btn-primary" type="submit">Salvar Alterações</button>
+                    <button class="btn btn-secondary" type="button" id="fechar-modal-editar-categoria">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         // Configuração do Supabase
         const SUPABASE_URL = 'https://jdfijbhlujoiuraoxivb.supabase.co';
@@ -322,68 +364,39 @@
     <script src="js/auth.js"></script>
     <script src="js/estoque.js"></script>
 
-    <div id="modal-editar-categoria" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3>Editar Categoria</h3>
-            <span class="close">&times;</span>
-        </div>
-        <form id="form-editar-categoria">
-            <input type="hidden" id="editar-categoria-id" />
-            <div class="form-group">
-                <label for="editar-categoria-nome">Nome da Categoria *</label>
-                <input id="editar-categoria-nome" type="text" required />
-            </div>
-            <div class="form-group">
-                <label for="editar-categoria-descricao">Descrição</label>
-                <textarea id="editar-categoria-descricao" rows="3" placeholder="Descrição da categoria"></textarea>
-            </div>
-            <div class="form-group">
-                <label>
-                    <input type="checkbox" id="editar-categoria-ativa" />
-                    Categoria Ativa
-                </label>
-            </div>
-            <div class="form-actions">
-                <button class="btn btn-primary" type="submit">Salvar Alterações</button>
-                <button class="btn btn-secondary" type="button" id="fechar-modal-editar-categoria">Cancelar</button>
-            </div>
-        </form>
-    </div>
-</div>
-<script>
-// Script para o menu mobile
-document.addEventListener('DOMContentLoaded', function() {
-    const menuToggle = document.getElementById('menuToggle');
-    const mainNav = document.getElementById('mainNav');
-    
-    if (menuToggle && mainNav) {
-        menuToggle.addEventListener('click', function() {
-            mainNav.classList.toggle('show');
+    <script>
+    // Script para o menu mobile
+    document.addEventListener('DOMContentLoaded', function() {
+        const menuToggle = document.getElementById('menuToggle');
+        const mainNav = document.getElementById('mainNav');
+        
+        if (menuToggle && mainNav) {
+            menuToggle.addEventListener('click', function() {
+                mainNav.classList.toggle('show');
+            });
+        }
+        
+        // Fechar menu ao clicar fora
+        document.addEventListener('click', function(event) {
+            if (!event.target.closest('.header-content') && mainNav.classList.contains('show')) {
+                mainNav.classList.remove('show');
+            }
         });
-    }
-    
-    // Fechar menu ao clicar fora
-    document.addEventListener('click', function(event) {
-        if (!event.target.closest('.header-content') && mainNav.classList.contains('show')) {
-            mainNav.classList.remove('show');
-        }
-    });
 
-    // Destacar página atual no menu
-    const currentPage = window.location.pathname.split('/').pop() || 'index.html';
-    const navLinks = document.querySelectorAll('.nav-link');
-    
-    navLinks.forEach(link => {
-        const href = link.getAttribute('href');
-        if (href === currentPage) {
-            link.classList.add('active');
-        } else {
-            link.classList.remove('active');
-        }
+        // Destacar página atual no menu
+        const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+        const navLinks = document.querySelectorAll('.nav-link');
+        
+        navLinks.forEach(link => {
+            const href = link.getAttribute('href');
+            if (href === currentPage) {
+                link.classList.add('active');
+            } else {
+                link.classList.remove('active');
+            }
+        });
     });
-});
-</script>
+    </script>
 
 </body>
 </html>
