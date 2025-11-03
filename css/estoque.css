@@ -160,49 +160,6 @@ tr:hover {
     background-color: rgba(255, 105, 180, 0.05);
 }
 
-/* Estilo para a célula da foto na tabela */
-.foto-tabela {
-    text-align: center;
-    width: 60px;
-}
-
-/* Container da imagem */
-.imagem-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 40px;
-}
-
-/* Estilo para a imagem de produto na tabela */
-.foto-tabela img {
-    width: 40px;
-    height: 40px;
-    object-fit: cover;
-    border-radius: 4px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    border: 1px solid #eee;
-    background: white;
-    transition: all 0.3s ease;
-}
-
-.foto-tabela img:hover {
-    transform: scale(1.1);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-}
-
-/* Fallback para imagem quebrada */
-.foto-tabela img:not([src]), 
-.foto-tabela img[src=""],
-.foto-tabela img[src*="undefined"] {
-    display: none;
-}
-
-.foto-tabela .fa-camera {
-    font-size: 24px;
-    color: #ff69b4;
-}
-
 /* Ícone na tabela */
 .icone-tabela {
     font-size: 24px;
@@ -402,12 +359,16 @@ tr:hover {
         padding: 8px 10px;
     }
     
-    .icone-option span {
-        font-size: 9px;
+    .icones-grid {
+        grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
+        gap: 8px;
     }
     
-    .foto-tabela img {
-        width: 30px;
-        height: 30px;
+    .icone-option i {
+        font-size: 20px;
+    }
+    
+    .icone-option span {
+        font-size: 9px;
     }
 }

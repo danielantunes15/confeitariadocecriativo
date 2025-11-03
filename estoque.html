@@ -5,8 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestão de Estoque - Confeitaria Doces Criativos</title>
     <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/estoque.css">
-    <link rel="stylesheet" href="css/responsive.css">
+    <link rel="stylesheet" href="css/estoque.css"> <link rel="stylesheet" href="css/responsive.css"> 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -106,7 +105,7 @@
                             <table>
                                 <thead>
                                     <tr>
-                                        <th>Foto</th>
+                                        <th>Ícone</th>
                                         <th>Produto</th>
                                         <th>Categoria</th>
                                         <th>Preço Venda (R$)</th>
@@ -147,8 +146,12 @@
                                     <input id="produto-preco-venda" type="number" step="0.01" min="0" required />
                                 </div>
                                 <div class="form-group">
-                                    <label for="produto-foto-file">Anexar Foto do Produto *</label>
-                                    <input type="file" id="produto-foto-file" accept="image/*" required>
+                                    <label for="produto-icone">Ícone do Produto *</label>
+                                    <div class="icones-container">
+                                        <div class="icones-grid" id="icones-grid">
+                                            </div>
+                                        <input type="hidden" id="produto-icone" required />
+                                    </div>
                                 </div>
                             </div>
                             
@@ -207,30 +210,6 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- Área de Diagnóstico -->
-                <div class="card" style="margin-top: 1rem; background: #fff3cd; border-color: #ffeaa7;">
-                    <h3 style="color: #856404;">🔧 Diagnóstico de Imagens</h3>
-                    <p style="color: #856404;">Se as imagens não aparecem, clique nos botões abaixo e verifique o console (F12)</p>
-                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                        <button onclick="debugImagensProdutos()" class="btn btn-warning">Executar Diagnóstico</button>
-                        <button onclick="testarBucketStorage()" class="btn btn-secondary">Testar Storage</button>
-                        <button onclick="verificarPermissoesStorage()" class="btn btn-info">Verificar Permissões</button>
-                    </div>
-                </div>
-
-                <!-- Área de Recuperação de Imagens -->
-                <div class="card" style="margin-top: 1rem; background: #e8f5e8; border-color: #c8e6c9;">
-                    <h3 style="color: #2e7d32;">🔄 Recuperação de Imagens</h3>
-                    <p style="color: #2e7d32;">As imagens estão no storage mas não estão vinculadas aos produtos.</p>
-                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                        <button onclick="recuperarImagensProdutos()" class="btn btn-success">🔄 Recuperação Básica</button>
-                        <button onclick="recuperarImagensMelhorado()" class="btn btn-success">🔍 Recuperação Inteligente</button>
-                        <button onclick="vincularAguaGas()" class="btn btn-primary">💧 Vincular Água com Gás</button>
-                        <button onclick="vincularImagensManual()" class="btn btn-info">🔗 Vincular Manualmente</button>
-                        <button onclick="verDetalhesArquivosStorage()" class="btn btn-secondary">📋 Ver Detalhes</button>
-                    </div>
-                </div>
             </div>
 
             <div id="error-message" class="card" style="display: none;">
@@ -268,10 +247,12 @@
                         <input id="editar-produto-preco-venda" type="number" step="0.01" min="0" required />
                     </div>
                     <div class="form-group">
-                        <label for="editar-produto-foto-file">Anexar Nova Foto (Opcional)</label>
-                        <input type="file" id="editar-produto-foto-file" accept="image/*">
-                        <p style="font-size: 0.8em; margin-top: 5px;">Deixe vazio para manter a foto atual.</p>
-                        <img id="editar-foto-preview" src="" alt="Foto Atual" style="max-width: 100px; max-height: 100px; margin-top: 10px; display: none; border-radius: 4px;">
+                        <label for="editar-produto-icone">Ícone do Produto *</label>
+                        <div class="icones-container">
+                            <div class="icones-grid" id="editar-icones-grid">
+                                </div>
+                            <input type="hidden" id="editar-produto-icone" required />
+                        </div>
                     </div>
                 </div>
                 
@@ -335,36 +316,6 @@
         </div>
     </div>
 
-    <div id="modal-editar-categoria" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Editar Categoria</h3>
-                <span class="close">&times;</span>
-            </div>
-            <form id="form-editar-categoria">
-                <input type="hidden" id="editar-categoria-id" />
-                <div class="form-group">
-                    <label for="editar-categoria-nome">Nome da Categoria *</label>
-                    <input id="editar-categoria-nome" type="text" required />
-                </div>
-                <div class="form-group">
-                    <label for="editar-categoria-descricao">Descrição</label>
-                    <textarea id="editar-categoria-descricao" rows="3" placeholder="Descrição da categoria"></textarea>
-                </div>
-                <div class="form-group">
-                    <label>
-                        <input type="checkbox" id="editar-categoria-ativa" />
-                        Categoria Ativa
-                    </label>
-                </div>
-                <div class="form-actions">
-                    <button class="btn btn-primary" type="submit">Salvar Alterações</button>
-                    <button class="btn btn-secondary" type="button" id="fechar-modal-editar-categoria">Cancelar</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
     <script>
         // Configuração do Supabase
         const SUPABASE_URL = 'https://jdfijbhlujoiuraoxivb.supabase.co';
@@ -377,39 +328,68 @@
     <script src="js/auth.js"></script>
     <script src="js/estoque.js"></script>
 
-    <script>
-    // Script para o menu mobile
-    document.addEventListener('DOMContentLoaded', function() {
-        const menuToggle = document.getElementById('menuToggle');
-        const mainNav = document.getElementById('mainNav');
-        
-        if (menuToggle && mainNav) {
-            menuToggle.addEventListener('click', function() {
-                mainNav.classList.toggle('show');
-            });
+    <div id="modal-editar-categoria" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Editar Categoria</h3>
+            <span class="close">&times;</span>
+        </div>
+        <form id="form-editar-categoria">
+            <input type="hidden" id="editar-categoria-id" />
+            <div class="form-group">
+                <label for="editar-categoria-nome">Nome da Categoria *</label>
+                <input id="editar-categoria-nome" type="text" required />
+            </div>
+            <div class="form-group">
+                <label for="editar-categoria-descricao">Descrição</label>
+                <textarea id="editar-categoria-descricao" rows="3" placeholder="Descrição da categoria"></textarea>
+            </div>
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="editar-categoria-ativa" />
+                    Categoria Ativa
+                </label>
+            </div>
+            <div class="form-actions">
+                <button class="btn btn-primary" type="submit">Salvar Alterações</button>
+                <button class="btn btn-secondary" type="button" id="fechar-modal-editar-categoria">Cancelar</button>
+            </div>
+        </form>
+    </div>
+</div>
+<script>
+// Script para o menu mobile
+document.addEventListener('DOMContentLoaded', function() {
+    const menuToggle = document.getElementById('menuToggle');
+    const mainNav = document.getElementById('mainNav');
+    
+    if (menuToggle && mainNav) {
+        menuToggle.addEventListener('click', function() {
+            mainNav.classList.toggle('show');
+        });
+    }
+    
+    // Fechar menu ao clicar fora
+    document.addEventListener('click', function(event) {
+        if (!event.target.closest('.header-content') && mainNav.classList.contains('show')) {
+            mainNav.classList.remove('show');
         }
-        
-        // Fechar menu ao clicar fora
-        document.addEventListener('click', function(event) {
-            if (!event.target.closest('.header-content') && mainNav.classList.contains('show')) {
-                mainNav.classList.remove('show');
-            }
-        });
-
-        // Destacar página atual no menu
-        const currentPage = window.location.pathname.split('/').pop() || 'index.html';
-        const navLinks = document.querySelectorAll('.nav-link');
-        
-        navLinks.forEach(link => {
-            const href = link.getAttribute('href');
-            if (href === currentPage) {
-                link.classList.add('active');
-            } else {
-                link.classList.remove('active');
-            }
-        });
     });
-    </script>
+
+    // Destacar página atual no menu
+    const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+    const navLinks = document.querySelectorAll('.nav-link');
+    
+    navLinks.forEach(link => {
+        const href = link.getAttribute('href');
+        if (href === currentPage) {
+            link.classList.add('active');
+        } else {
+            link.classList.remove('active');
+        }
+    });
+});
+</script>
 
 </body>
 </html>
