@@ -181,6 +181,173 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    // --- FUNÇÃO PARA RECUPERAR E ATUALIZAR IMAGENS EXISTENTES ---
+    window.recuperarImagensProdutos = async function() {
+        try {
+            console.log('🔄 INICIANDO RECUPERAÇÃO DE IMAGENS...');
+            
+            // 1. Buscar todos os arquivos do storage
+            const { data: files, error: storageError } = await supabase
+                .storage
+                .from('fotos-produtos')
+                .list('produtos');
+                
+            if (storageError) throw storageError;
+            
+            console.log('📁 ARQUIVOS ENCONTRADOS NO STORAGE:', files);
+            
+            // 2. Buscar todos os produtos
+            const { data: produtos, error: produtosError } = await supabase
+                .from('produtos')
+                .select('id, nome');
+                
+            if (produtosError) throw produtosError;
+            
+            console.log('📦 PRODUTOS PARA ATUALIZAR:', produtos);
+            
+            let atualizacoes = 0;
+            let erros = 0;
+            
+            // 3. Para cada arquivo no storage, tentar encontrar o produto correspondente
+            for (const file of files) {
+                const fileName = file.name;
+                console.log(`\n🔍 Processando arquivo: ${fileName}`);
+                
+                // Extrair nome do produto do filename (remove timestamp e extensão)
+                const nomeProduto = fileName
+                    .replace(/-\d+\.\w+$/, '') // Remove -timestamp.extensao
+                    .replace(/_/g, ' ') // Substitui _ por espaços
+                    .trim();
+                    
+                console.log(`📝 Nome extraído: "${nomeProduto}"`);
+                
+                // Buscar produto correspondente
+                const produtoCorrespondente = produtos.find(produto => 
+                    produto.nome.toLowerCase().includes(nomeProduto.toLowerCase()) ||
+                    nomeProduto.toLowerCase().includes(produto.nome.toLowerCase())
+                );
+                
+                if (produtoCorrespondente) {
+                    console.log(`✅ Produto encontrado: ${produtoCorrespondente.nome}`);
+                    
+                    // Gerar URL pública
+                    const { data: urlData } = supabase
+                        .storage
+                        .from('fotos-produtos')
+                        .getPublicUrl(`produtos/${fileName}`);
+                    
+                    // Atualizar produto com a URL
+                    const { error: updateError } = await supabase
+                        .from('produtos')
+                        .update({ icone: urlData.publicUrl })
+                        .eq('id', produtoCorrespondente.id);
+                        
+                    if (updateError) {
+                        console.error(`❌ Erro ao atualizar ${produtoCorrespondente.nome}:`, updateError);
+                        erros++;
+                    } else {
+                        console.log(`✅ Imagem atualizada para: ${produtoCorrespondente.nome}`);
+                        console.log(`🔗 URL: ${urlData.publicUrl}`);
+                        atualizacoes++;
+                    }
+                } else {
+                    console.log(`❌ Nenhum produto encontrado para: ${nomeProduto}`);
+                    erros++;
+                }
+            }
+            
+            console.log(`\n📊 RESUMO DA RECUPERAÇÃO:`);
+            console.log(`✅ Atualizações bem-sucedidas: ${atualizacoes}`);
+            console.log(`❌ Erros: ${erros}`);
+            console.log(`📁 Total de arquivos processados: ${files.length}`);
+            
+            if (atualizacoes > 0) {
+                mostrarMensagem(`✅ ${atualizacoes} imagens recuperadas com sucesso! Recarregue a página.`, 'success');
+                // Recarregar lista após 2 segundos
+                setTimeout(() => {
+                    carregarListaProdutos();
+                }, 2000);
+            } else {
+                mostrarMensagem('❌ Nenhuma imagem pôde ser recuperada automaticamente.', 'error');
+            }
+            
+        } catch (error) {
+            console.error('❌ Erro na recuperação de imagens:', error);
+            mostrarMensagem('Erro ao recuperar imagens: ' + error.message, 'error');
+        }
+    };
+
+    // --- FUNÇÃO PARA VER DETALHES DOS ARQUIVOS DO STORAGE ---
+    window.verDetalhesArquivosStorage = async function() {
+        try {
+            console.log('📋 DETALHES DOS ARQUIVOS NO STORAGE:');
+            
+            const { data: files, error } = await supabase
+                .storage
+                .from('fotos-produtos')
+                .list('produtos');
+                
+            if (error) throw error;
+            
+            console.log('📁 ARQUIVOS:', files);
+            
+            // Mostrar URLs públicas de cada arquivo
+            for (const file of files) {
+                const { data: urlData } = supabase
+                    .storage
+                    .from('fotos-produtos')
+                    .getPublicUrl(`produtos/${file.name}`);
+                
+                console.log(`\n📸 Arquivo: ${file.name}`);
+                console.log(`🔗 URL: ${urlData.publicUrl}`);
+                console.log(`📏 Tamanho: ${file.metadata?.size} bytes`);
+                console.log(`📅 Modificado: ${file.updated_at}`);
+            }
+            
+        } catch (error) {
+            console.error('Erro ao ver detalhes:', error);
+        }
+    };
+
+    // --- FUNÇÃO PARA TESTAR UPLOAD MANUAL ---
+    window.testarUploadManual = async function() {
+        try {
+            console.log('🧪 TESTANDO UPLOAD MANUAL...');
+            
+            // Criar um arquivo de teste
+            const testBlob = new Blob(['test image content'], { type: 'image/png' });
+            const testFile = new File([testBlob], 'test-product-123.png');
+            
+            // Fazer upload
+            const { data: uploadData, error: uploadError } = await supabase
+                .storage
+                .from('fotos-produtos')
+                .upload('produtos/test-product-123.png', testFile);
+                
+            if (uploadError) {
+                console.error('❌ Erro no upload teste:', uploadError);
+                return;
+            }
+            
+            console.log('✅ Upload teste bem-sucedido:', uploadData);
+            
+            // Obter URL pública
+            const { data: urlData } = supabase
+                .storage
+                .from('fotos-produtos')
+                .getPublicUrl('produtos/test-product-123.png');
+                
+            console.log('🔗 URL pública do teste:', urlData.publicUrl);
+            
+            // Testar se a URL é acessível
+            const response = await fetch(urlData.publicUrl, { method: 'HEAD' });
+            console.log('🌐 Teste de acesso à URL:', response.status, response.ok);
+            
+        } catch (error) {
+            console.error('❌ Erro no teste manual:', error);
+        }
+    };
+
     async function inicializarEstoque() {
         try {
             // Mostrar loading

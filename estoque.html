@@ -218,6 +218,17 @@
                         <button onclick="verificarPermissoesStorage()" class="btn btn-info">Verificar Permissões</button>
                     </div>
                 </div>
+
+                <!-- Área de Recuperação de Imagens -->
+                <div class="card" style="margin-top: 1rem; background: #e8f5e8; border-color: #c8e6c9;">
+                    <h3 style="color: #2e7d32;">🔄 Recuperação de Imagens</h3>
+                    <p style="color: #2e7d32;">As imagens estão no storage mas não estão vinculadas aos produtos.</p>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button onclick="recuperarImagensProdutos()" class="btn btn-success">🔄 Recuperar Imagens Automaticamente</button>
+                        <button onclick="verDetalhesArquivosStorage()" class="btn btn-info">📋 Ver Detalhes dos Arquivos</button>
+                        <button onclick="testarUploadManual()" class="btn btn-warning">🧪 Testar Upload Manual</button>
+                    </div>
+                </div>
             </div>
 
             <div id="error-message" class="card" style="display: none;">
