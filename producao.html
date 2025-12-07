@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Produção - Estoque de Ingredientes</title>
+    <link rel="stylesheet" href="css/layout.css">
+    <link rel="stylesheet" href="css/navegacao.css">
+    <link rel="stylesheet" href="css/componentes.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-wrapper">
+        
+        <div id="sidebar-placeholder"></div>
+        
+        <div class="main-content-wrapper">
+
+            <div id="header-placeholder"></div>
+
+            <main class="main">
+                <div class="container">
+                    <div id="alert-container"></div>
+                    
+                    <div id="loading" class="card loading-card">
+                        <div class="spinner-moderno"></div>
+                        <p>Carregando controle de produção...</p>
+                    </div>
+
+                    <div id="content" style="display: none;">
+                        
+                        <header class="new-dashboard-header" style="background: var(--primary-color);">
+                            <h2><i class="fas fa-cubes"></i> Controle de Estoque de Produção</h2>
+                            <p>Gerencie seus ingredientes, níveis mínimos e acione alertas de compra.</p>
+                        </header>
+                        
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>Ingredientes Cadastrados</h3>
+                                <div class="action-buttons">
+                                    <button id="abrir-modal-ingrediente" class="btn btn-primary btn-sm">
+                                        <i class="fas fa-plus-circle"></i> Novo Ingrediente
+                                    </button>
+                                    <button id="recarregar-estoque-producao" class="btn btn-secondary btn-sm">
+                                        <i class="fas fa-sync-alt"></i> Recarregar
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div id="alerta-estoque-producao">
+                                </div>
+                            
+                            <div class="table-container">
+                                <table class="table-moderna">
+                                    <thead>
+                                        <tr>
+                                            <th>Ingrediente</th>
+                                            <th>Unidade</th>
+                                            <th>Estoque Atual</th>
+                                            <th>Estoque Mínimo</th>
+                                            <th>Status</th>
+                                            <th>Ações</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="estoque-producao-body">
+                                        <tr><td colspan="6" style="text-align:center;">Carregando estoque...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="acesso-negado" class="card" style="display: none; text-align: center; padding: 2rem;">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 3rem; color: #dc3545;"></i>
+                        <h2 style="color: #dc3545;">Acesso Negado</h2>
+                        <p>Você não tem permissão para visualizar esta área.</p>
+                    </div>
+                    
+                </div>
+            </main>
+            
+            <div id="modal-estoque-producao" class="modal">
+                <div class="modal-content" style="max-width: 550px;">
+                    <div class="modal-header">
+                        <h3 id="modal-titulo-estoque"><i class="fas fa-plus-circle"></i> Novo Ingrediente</h3>
+                        <span class="close" id="fechar-modal-estoque">&times;</span>
+                    </div>
+                    <form id="form-ingrediente" class="form">
+                        <input type="hidden" id="ingrediente-id-edicao" />
+
+                        <div class="form-group">
+                            <label for="ingrediente-nome">Nome do Ingrediente *</label>
+                            <input id="ingrediente-nome" type="text" required placeholder="Ex: Leite Condensado, Açúcar, Manteiga" />
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="ingrediente-unidade">Unidade de Medida *</label>
+                                <select id="ingrediente-unidade" required>
+                                    <option value="un">Unidade (un)</option>
+                                    <option value="kg">Quilograma (kg)</option>
+                                    <option value="l">Litro (l)</option>
+                                    <option value="g">Grama (g)</option>
+                                    <option value="ml">Mililitro (ml)</option>
+                                    <option value="cx">Caixa (cx)</option>
+                                    <option value="pct">Pacote (pct)</option>
+                                    <option value="dz">Dúzia (dz)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="ingrediente-atual">Estoque Atual</label>
+                                <input id="ingrediente-atual" type="number" step="0.01" min="0" value="0.00" required />
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="ingrediente-minimo">Estoque Mínimo (Alerta) *</label>
+                                <input id="ingrediente-minimo" type="number" step="0.01" min="0" value="5.00" required />
+                            </div>
+                            <div class="form-group">
+                                <label class="checkbox-label" style="margin-top: 1rem;">
+                                    <input type="checkbox" id="ingrediente-ativo" checked />
+                                    <span class="checkmark"></span>
+                                    <i class="fas fa-check-circle"></i> Item Ativo
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button id="salvar-ingrediente" class="btn btn-primary" type="submit">
+                                <i class="fas fa-save"></i> Salvar Ingrediente
+                            </button>
+                            <button class="btn btn-secondary" type="button" onclick="fecharModalEstoque()">
+                                <i class="fas fa-times"></i> Cancelar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <footer>
+            </footer>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <script src="js/supabase-config.js"></script>
+
+    <script>
+        function fecharModalEstoque() {
+            const modal = document.getElementById('modal-estoque-producao');
+            if (modal) modal.style.display = 'none';
+            const form = document.getElementById('form-ingrediente');
+            if (form) form.reset();
+            document.getElementById('ingrediente-id-edicao').value = '';
+            document.getElementById('modal-titulo-estoque').innerHTML = '<i class="fas fa-plus-circle"></i> Novo Ingrediente';
+        }
+        window.fecharModalEstoque = fecharModalEstoque;
+        
+        document.addEventListener('DOMContentLoaded', function() {
+             document.getElementById('abrir-modal-ingrediente')?.addEventListener('click', () => {
+                fecharModalEstoque();
+                document.getElementById('modal-estoque-producao').style.display = 'flex';
+            });
+            document.getElementById('fechar-modal-estoque')?.addEventListener('click', fecharModalEstoque);
+            window.addEventListener('click', (event) => {
+                const modal = document.getElementById('modal-estoque-producao');
+                if (event.target === modal) fecharModalEstoque();
+            });
+        });
+    </script>
+    
+    <script src="js/auth.js"></script>
+    <script src="js/layout-loader.js" defer></script>
+    
+    <script src="js/producao.js" defer></script>
+    
+</body>
+</html>

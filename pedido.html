@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Doce Criativo App</title>
+    
+    <link rel="stylesheet" href="pedido/css/style.css">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="app-body">
+    
+    <main id="app-container">
+        <div id="alert-container"></div>
+
+        <div id="auth-screen" class="app-view" style="padding-top: 15vh;">
+            <div class="login-card-app">
+                <h1 class="logo-app">Doce Criativo</h1>
+                <p class="slogan-app">Bem-vindo(a)! Faça seu login ou cadastro rápido.</p>
+                
+                <div id="login-form-group">
+                    <div class="form-group">
+                        <label for="auth-telefone">Seu WhatsApp/Telefone *</label>
+                        <input type="tel" id="auth-telefone" placeholder="(99) 99999-9999" required>
+                    </div>
+                    <button id="btn-iniciar-sessao" class="btn-login-app">
+                        <i class="fas fa-sign-in-alt"></i> Entrar ou Cadastrar
+                    </button>
+                    <p class="auth-note">O login é feito pelo seu número. Se for seu primeiro acesso, faremos um cadastro rápido!</p>
+                </div>
+                
+                <form id="cadastro-form" style="display: none; margin-top: 2rem;">
+                    <h3><i class="fas fa-user-plus"></i> Cadastro Rápido</h3>
+                    <input type="hidden" id="cadastro-telefone-hidden">
+                    
+                    <div class="form-group">
+                        <label for="cadastro-nome">Nome Completo *</label>
+                        <input type="text" id="cadastro-nome" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="cadastro-cidade-select">Cidade (Onde você mora) *</label>
+                        <select id="cadastro-cidade-select" required>
+                            <option value="">Carregando cidades...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="cadastro-bairro-select">Bairro (Onde entregaremos) *</label>
+                        <select id="cadastro-bairro-select" required>
+                            <option value="">Selecione uma cidade primeiro</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-row-cadastro">
+                        <div class="form-group">
+                            <label for="cadastro-rua">Rua/Avenida *</label>
+                            <input type="text" id="cadastro-rua" required>
+                        </div>
+                        <div class="form-group" style="max-width: 100px;">
+                            <label for="cadastro-numero">Nº *</label>
+                            <input type="text" id="cadastro-numero" required>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" id="btn-finalizar-cadastro" class="btn-login-app">
+                        Finalizar Cadastro
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        <div id="view-inicio" class="app-view">
+            <div class="app-content-scroll" style="padding-top: 70px;"> 
+                
+                <section class="card-app" id="rastreamento-pedido-ativo" style="display: none;">
+                    <h2><i class="fas fa-truck"></i> Acompanhe seu Pedido</h2>
+                    <p>Seu pedido <strong id="rastreamento-pedido-id">#...</strong> <span id="rastreamento-subtitulo"></span></p>
+                    <div class="rastreamento-status-bar">
+                        <div class="status-step active" id="step-novo">
+                            <i class="fas fa-box-open"></i>
+                            <span>Novo</span>
+                        </div>
+                        <div class="status-line"></div>
+                        <div class="status-step" id="step-preparando">
+                            <i class="fas fa-fire-alt"></i>
+                            <span>Preparando</span>
+                        </div>
+                        <div class="status-line"></div>
+                        <div class="status-step" id="step-pronto">
+                            <i class="fas fa-truck-loading"></i>
+                            <span>Pronto</span>
+                        </div>
+                        <div class="status-line"></div>
+                        <div class="status-step" id="step-entregue">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Entregue</span>
+                        </div>
+                    </div>
+                    <p id="rastreamento-status-texto" style="text-align: center; margin-top: 10px; font-weight: bold;"></p>
+                    
+                    <button id="ver-detalhes-pedido-ativo" class="btn-link" style="display: block; text-align: center; margin-top: 10px; font-size: 0.9rem;">
+                        <i class="fas fa-eye"></i> Ver Detalhes do Pedido
+                    </button>
+                    </section>
+
+                <section class="card-app">
+                    <h2>👋 Olá, <span id="home-cliente-nome">Cliente</span>!</h2>
+                    <p>Gerencie seus dados e pedidos anteriores.</p>
+                    <button id="logout-btn-app" class="btn-login-app" style="background: var(--error-color, #f44336); margin-top: 1rem;">
+                        <i class="fas fa-sign-out-alt"></i> Sair
+                    </button>
+                </section>
+                
+                <section class="card-app" id="historico-pedidos-section">
+                    <h2><i class="fas fa-history"></i> Meu Histórico de Pedidos</h2>
+                    <div id="status-ultimo-pedido"></div>
+                </section>
+                
+                <section class="card-app">
+                    <h2><i class="fas fa-map-marker-alt"></i> Endereço de Entrega</h2>
+                    <div id="home-endereco"></div>
+                </section>
+                
+                <div id="edit-endereco-btn-container" class="card-app">
+                    <button id="abrir-modal-editar-endereco" class="btn-login-app" style="background: #8a2be2; margin-top: 0;">
+                        <i class="fas fa-map-marker-alt"></i> Editar Meu Endereço
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-cardapio" class="app-view">
+            
+            <header class="header-v2" id="header-v2">
+                <div class="header-v2-content">
+                    <h1 class="header-v2-logo" id="header-v2-logo">Confeitaria Doce Criativo</h1>
+                    
+                    <div class="header-v2-search-container" id="header-v2-search-container">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="header-search-input" placeholder="Busque por item ou loja">
+                    </div>
+                    
+                    <div class="header-v2-actions" id="header-v2-actions">
+                        <div class="header-v2-address" id="header-v2-address-btn" title="Mudar Endereço">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <span id="header-v2-address-text">Seu Endereço</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        
+                        <button class="header-v2-icon-btn header-v2-search-toggle" id="header-v2-search-toggle" title="Buscar">
+                            <i class="fas fa-search"></i>
+                        </button>
+                        
+                        <button class="header-v2-icon-btn" id="header-v2-login-btn" title="Minha Conta">
+                            <i class="fas fa-user"></i>
+                        </button>
+                        
+                        <button class="header-v2-cart-btn" id="header-v2-cart-btn" title="Ver Carrinho">
+                            <i class="fas fa-shopping-bag"></i>
+                            <div class="header-v2-cart-summary">
+                                <span id="header-v2-cart-total">R$ 0,00</span>
+                                <span id="header-v2-cart-items">0 itens</span>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+            </header>
+            <div class="app-content-scroll">
+                <section class="store-status">
+                    <div class="status-content">
+                        <div class="status-indicator">
+                            <i class="fas fa-store"></i>
+                            <span class="status-text">Carregando...</span>
+                        </div>
+                        <div class="store-hours">
+                            <p id="store-hours-text">Horário: --:-- - --:--</p>
+                        </div>
+                    </div>
+                    <div class="attention-bar" style="display: none;">
+                        <p>⚠️ Fechando em 30 minutos!</p>
+                    </div>
+                    <div class="store-closed-message" id="store-closed-message" style="display: none;">
+                        <p>A loja está fechada no momento. Você pode navegar pelo cardápio, mas não poderá finalizar o pedido.</p>
+                    </div>
+                </section>
+
+                <section class="categories-section">
+                    <h2>Categorias</h2>
+                    <div class="categories-container">
+                        <div class="categories-scroll" id="categorias-container">
+                            <div class="category-item active">Todos</div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="popular-section">
+                    <h2>Os Mais Pedidos</h2>
+                    <div class="popular-scroll" id="popular-scroll">
+                    </div>
+                </section>
+
+                <section class="products-section" id="products-section">
+                    <div class="category-products">
+                        <h3 class="category-title">Carregando...</h3>
+                        <div class="products-list">
+                        </div>
+                    </div>
+                </section>
+            </div>
+            
+        </div>
+        
+        <div id="view-promocoes" class="app-view">
+             <div class="app-content-scroll" style="padding-top: 70px;">
+                 <section class="card-app" id="promocoes-list">
+                    <h2>🔥 Ofertas do Dia</h2>
+                    <p>Em breve!</p>
+                    <div id="promocoes-grid">
+                        <p style="text-align: center; color: #666;">Nenhuma promoção definida.</p>
+                    </div>
+                 </section>
+            </div>
+        </div>
+
+        <div id="view-carrinho" class="app-view">
+            <div class="app-content-scroll"> 
+                
+                <section id="pedido-confirmado-section" class="card-app" style="display: none; padding-top: 20px;">
+                    <div class="final-success-container">
+                        <i class="fas fa-check-circle"></i>
+                        <h3>Pedido #<span id="final-pedido-id"></span> Finalizado!</h3>
+                        <p>Obrigado pelo seu pedido! Ele foi registrado e está em preparo.</p>
+                        <p style="font-weight: bold; color: #db7093;">Total Final: <span id="final-total">R$ 0,00</span></p>
+
+                        <p>Deseja enviar os detalhes do pedido para o WhatsApp da loja para acompanhamento?</p>
+                        <a href="#" id="final-whatsapp-link" target="_blank" class="btn-whatsapp-final">
+                            <i class="fab fa-whatsapp"></i> Enviar Pedido no WhatsApp
+                        </a>
+                        <button id="final-novo-pedido-btn" class="btn-login-app" style="background: #8a2be2; margin-top: 1rem;">
+                            <i class="fas fa-arrow-left"></i> Voltar ao Cardápio
+                        </button>
+                    </div>
+                </section>
+                
+                <section id="checkout-main-view">
+                    
+                    <header class="cart-header-minimal card-app">
+                        <h2>🛒 Sacola</h2>
+                        <button id="limpar-carrinho-btn" class="limpar-carrinho-btn">
+                            <i class="fas fa-trash-alt"></i> Limpar
+                        </button>
+                    </header>
+
+                    <div id="step-carrinho" class="checkout-step active card-app">
+                        
+                        <div id="carrinho-itens-container">
+                            <div class="carrinho-itens" id="carrinho-itens">
+                                </div>
+                        </div>
+
+                        <button id="add-more-items-btn" class="add-more-items-btn">
+                            <i class="fas fa-plus"></i> Adicionar mais itens
+                        </button>
+                        
+                        <div class="cupom-area">
+                            <h4 style="font-size: 1rem; color: #db7093;"><i class="fas fa-tag"></i> Cupom de Desconto (Opcional)</h4>
+                            <div class="form-group">
+                                <input type="text" id="cupom-input" placeholder="Digite o código do cupom" maxlength="15" style="text-transform: uppercase;">
+                                <button id="aplicar-cupom-btn" class="btn-login-app" style="width: 100px; margin: 0; padding: 10px 5px; font-size: 0.85rem;">
+                                    Aplicar
+                                </button>
+                            </div>
+                            <p id="cupom-message" style="font-size: 0.8rem; margin-top: 5px; color: #999;">
+                                <i class="fas fa-info-circle"></i> Nenhum cupom aplicado.
+                            </p>
+                        </div>
+
+                        <div class="resumo-valores-cart">
+                            <div class="total-linha">
+                                <span>Subtotal Bruto</span>
+                                <span id="subtotal-carrinho">R$ 0,00</span>
+                            </div>
+                            <div class="total-linha" id="resumo-desconto-linha" style="display: none;">
+                                <span>Desconto (<span id="desconto-tipo-display"></span>)</span>
+                                <span id="desconto-valor-display">- R$ 0,00</span>
+                            </div>
+                            <div class="total-linha" id="resumo-subtotal-liquido-linha" style="display: none; font-weight: bold;">
+                                <span>Subtotal Ajustado</span>
+                                <span id="subtotal-ajustado-carrinho">R$ 0,00</span>
+                            </div>
+                            <div class="total-linha">
+                                <span>Taxa de Entrega</span>
+                                <span id="taxa-entrega-carrinho">R$ 0,00</span>
+                            </div>
+                            <div class="total-linha final">
+                                <strong>Total (Com Entrega):</strong>
+                                <strong>R$ <span id="total-carrinho">0,00</span></strong>
+                            </div>
+                        </div>
+                        
+                        <h3 style="margin-top: 2rem;"><i class="fas fa-truck"></i> Opção de Entrega</h3>
+
+                        <div id="delivery-options-container" class="delivery-options-group">
+                            
+                            <label class="delivery-option-radio selected" for="delivery-option-entrega">
+                                <input type="radio" name="delivery-option" id="delivery-option-entrega" value="entrega" checked>
+                                
+                                <div class="delivery-option-content">
+                                    <i class="fas fa-motorcycle"></i>
+                                    <div>
+                                        <span class="delivery-option-title">Entrega Padrão</span>
+                                        <span class="delivery-option-detail">Tempo: <span id="tempo-entrega-display">...</span></span>
+                                        <span class="delivery-option-detail">Taxa: <span id="taxa-entrega-display">...</span></span>
+                                    </div>
+                                </div>
+
+                                <div id="entrega-address-info" style="display: block;"> <h4 style="font-size: 1.1rem; color: #db7093; margin-top: 1rem;">Seu Endereço</h4>
+                                    <div class="carrinho-list-card" style="padding: 15px; margin-top: 0.5rem; border: 1px dashed #ffb6c1;">
+                                        <p style="font-size: 1rem;">
+                                            Entregar em: 
+                                            <strong id="carrinho-endereco-display">N/A</strong>
+                                        </p>
+                                        <p style="font-size: 0.9rem; color: #666;">
+                                            Cliente: <span id="carrinho-cliente-nome">N/A</span>
+                                        </p>
+                                        <input type="hidden" id="carrinho-endereco-input" value="">
+
+                                        <button id="trocar-endereco-btn" class="btn-link" style="margin-top: 5px; font-size: 0.9rem;">
+                                            <i class="fas fa-edit"></i> Trocar Endereço
+                                        </button>
+                                    </div>
+                                </div>
+
+                            </label>
+
+                            <label class="delivery-option-radio" for="delivery-option-retirada">
+                                <input type="radio" name="delivery-option" id="delivery-option-retirada" value="retirada">
+                                <div class="delivery-option-content">
+                                    <i class="fas fa-store"></i>
+                                    <div>
+                                        <span class="delivery-option-title">Retirar na Loja</span>
+                                        <span class="delivery-option-detail">Tempo: Entre 10 - 30 min</span>
+                                        <span class="delivery-option-detail" style="color: #2e7d32; font-weight: bold;">Taxa: Grátis</span>
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+
+                        <div id="retirada-address-info" style="display: none; font-size: 0.9rem; background: #fff0f5; padding: 10px; border-radius: 8px; margin-top: 10px; border: 1px dashed #ffb6c1;">
+                            <strong><i class="fas fa-map-marker-alt"></i> Endereço de Retirada:</strong><br>
+                            Rua São Lourenço, 326, Rua do Meu salgado Favorito, Centro, NANUQUE - MG
+                        </div>
+                        
+                        <h3 style="margin-top: 2rem;"><i class="fas fa-credit-card"></i> Pagamento</h3>
+
+                        <h4 style="font-size: 1.1rem; color: #db7093;">Forma de Pagamento</h4>
+                        <div class="opcoes-pagamento">
+                            <label class="pagamento-opcao selected">
+                                <input type="radio" name="pagamento" value="Dinheiro" checked style="display: none;">
+                                <span class="pagamento-icone">💵</span>
+                                <span class="pagamento-texto">
+                                    <span class="pagamento-titulo">Dinheiro</span>
+                                    <span class="pagamento-descricao">Pagar na entrega</span>
+                                </span>
+                            </label>
+                            <label class="pagamento-opcao">
+                                <input type="radio" name="pagamento" value="PIX" style="display: none;">
+                                <span class="pagamento-icone">📱</span>
+                                <span class="pagamento-texto">
+                                    <span class="pagamento-titulo">PIX</span>
+                                    <span class="pagamento-descricao">Pagar na entrega</span>
+                                </span>
+                            </label>
+                            <label class="pagamento-opcao">
+                                <input type="radio" name="pagamento" value="Cartão (Maquininha)" style="display: none;">
+                                <span class="pagamento-icone">💳</span>
+                                <span class="pagamento-texto">
+                                    <span class="pagamento-titulo">Cartão (Maquininha)</span>
+                                    <span class="pagamento-descricao">Débito ou Crédito na entrega</span>
+                                </span>
+                            </label>
+                        </div>
+                        
+                        <h4 style="font-size: 1.1rem; color: #db7093; margin-top: 2rem;">Detalhes Adicionais</h4>
+                        <div class="form-group" style="margin-top: 1rem;">
+                            <label for="pedido-observacoes">Observações do Pedido (Opcional)</label>
+                            <textarea id="pedido-observacoes" rows="2" placeholder="Ex: Entregar para o porteiro..."></textarea>
+                        </div>
+                        
+                        <div class="form-group" id="troco-group">
+                            <label for="troco-para">Precisa de Troco? (Para Pagamentos em Dinheiro)</label>
+                            <input type="number" id="troco-para" step="0.01" min="0" placeholder="Ex: 50.00 (Troco para R$50)">
+                        </div>
+                    </div>
+                    
+                </section>
+                
+            </div>
+            
+            <footer class="checkout-footer" id="checkout-footer">
+                 <div class="finalizar-actions">
+                    <button id="finalizar-pedido-direto" class="btn-login-app" style="background: var(--rosa-escuro, #db7093); width: 100%;">
+                        <i class="fas fa-check-circle"></i> Finalizar Pedido
+                    </button>
+                 </div>
+            </footer>
+        </div>
+        
+    </main>
+
+    <nav id="mobile-bottom-nav" class="bottom-nav" style="display: none;">
+        <button class="nav-item-app nav-item active" data-view="view-cardapio">
+            <i class="fas fa-home"></i> <span>Início</span>
+        </button>
+        <button class="nav-item-app nav-item" data-view="view-inicio">
+            <i class="fas fa-receipt"></i> <span>Pedidos</span>
+        </button>
+        <button class="nav-item-app nav-item" data-view="view-promocoes">
+            <i class="fas fa-tag"></i> <span>Promos</span>
+        </button>
+        <button class="nav-item-app nav-item" data-view="view-carrinho" id="nav-carrinho-btn">
+            <i class="fas fa-shopping-cart"></i> 
+            <span>Carrinho 
+                <span id="carrinho-badge" class="badge-app-count cart-count" style="display: none;">0</span>
+            </span>
+        </button>
+    </nav>
+
+    <div id="modal-editar-endereco" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 400px; margin-top: 10vh;">
+            <div class="modal-header">
+                <h3><i class="fas fa-map-marker-alt"></i> Editar Endereço</h3>
+                <span class="close">&times;</span> </div>
+            <form id="form-editar-endereco" class="modal-body">
+                <div class="form-group">
+                    <label for="modal-cidade-select">Cidade (Onde você mora) *</label>
+                    <select id="modal-cidade-select" required>
+                        <option value="">Carregando cidades...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="modal-bairro-select">Bairro (Onde entregaremos) *</label>
+                    <select id="modal-bairro-select" required>
+                        <option value="">Selecione uma cidade primeiro</option>
+                    </select>
+                </div>
+                
+                <div class="form-row-cadastro">
+                    <div class="form-group">
+                        <label for="modal-rua">Rua/Avenida *</label>
+                        <input type="text" id="modal-rua" required>
+                    </div>
+                    <div class="form-group" style="max-width: 100px;">
+                        <label for="modal-numero">Nº *</label>
+                        <input type="text" id="modal-numero" required>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn-login-app">Salvar Novo Endereço</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="modal-detalhes-pedido" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 400px; margin-top: 10vh;">
+            <div class="modal-header">
+                <h3 id="detalhes-modal-titulo"><i class="fas fa-receipt"></i> Detalhes do Pedido <span id="detalhes-pedido-id"></span></h3>
+                <span class="close">&times;</span> </div>
+            <div id="detalhes-pedido-content" class="modal-detalhes-produto-body">
+            </div>
+        </div>
+    </div>
+    
+    <div id="modal-opcoes-produto" class="modal">
+        <div class="modal-content" style="max-width: 450px; margin-top: 5vh; max-height: 90vh; display: flex; flex-direction: column;">
+            <div class="modal-header">
+                <h3 id="opcoes-titulo">Personalize seu item</h3>
+                <span class="close">&times;</span> </div>
+            <div class="modal-body" style="overflow-y: auto; flex-grow: 1;">
+                
+                <div class="modal-product-image-container">
+                    <img id="opcoes-imagem-produto" src="" alt="Imagem do Produto" />
+                    <div class="modal-product-image-placeholder" id="opcoes-imagem-placeholder">
+                        <i class="fas fa-cube"></i>
+                    </div>
+                </div>
+                
+                <p id="opcoes-descricao" style="font-size: 0.9rem; color: #666; margin-bottom: 1rem;"></p>
+                
+                <div id="opcoes-container"></div>
+                <div id="complementos-container"></div>
+                
+                <div class="form-group" style="margin-top: 1rem;">
+                    <label for="opcoes-observacao">Observações (ex: sem nozes, etc)</label>
+                    <textarea id="opcoes-observacao" rows="2" placeholder="Alguma observação para este item?"></textarea>
+                </div>
+            </div>
+            
+            <div class="modal-footer" style="flex-direction: column; align-items: stretch; gap: 0.5rem;">
+                <div class="opcoes-quantidade-preco">
+                    <div class="opcoes-quantidade">
+                        <button id="opcoes-btn-remover" class="btn-remover"><i class="fas fa-minus"></i></button>
+                        <span id="opcoes-quantidade-valor">1</span>
+                        <button id="opcoes-btn-adicionar" class="btn-adicionar-carrinho"><i class="fas fa-plus"></i></button>
+                    </div>
+                    <div class="opcoes-preco-final">
+                        <span id="opcoes-preco-modal">R$ 0,00</span>
+                    </div>
+                </div>
+                <button id="btn-adicionar-opcoes" class="btn-login-app" style="width: 100%; margin: 0; padding: 12px;">
+                    <i class="fas fa-cart-plus"></i> Adicionar ao Carrinho
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuração do Supabase
+        const SUPABASE_URL = 'https://easqngndzkyfbvagnoec.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVhc3FuZ25kemt5ZmJ2YWdub2VjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIyOTA2MjIsImV4cCI6MjA3Nzg2NjYyMn0.gj6q3Z9dKawHWfyDiWek82YXUAGE5FCVw-1CC92fRrw';
+        window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    </script>
+    
+    <script src="js/supabase-vendas.js" defer></script> 
+    <script src="pedido/js/ui.js" defer></script>         
+    <script src="pedido/js/api.js" defer></script>         
+    <script src="pedido/js/auth.js" defer></script>        
+    <script src="pedido/js/carrinho.js" defer></script>    
+    <script src="pedido/js/cardapio.js" defer></script>    
+    <script src="pedido/js/checkout.js" defer></script>    
+    <script src="pedido/js/rastreamento.js" defer></script> 
+    <script src="pedido/js/app.js" defer></script>
+
+</body>
+</html>

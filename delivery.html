@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delivery - Acompanhamento de Pedidos</title>
+    <link rel="stylesheet" href="css/layout.css?v=7">
+    <link rel="stylesheet" href="css/navegacao.css">
+    <link rel="stylesheet" href="css/componentes.css?v=9"> 
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-wrapper">
+        
+        <div id="sidebar-placeholder"></div>
+
+        <div class="main-content-wrapper">
+
+            <div id="header-placeholder"></div>
+
+            <main class="main">
+                <div class="container">
+                    <div id="alert-container"></div>
+
+                    <header class="card">
+                        <div class="delivery-search-bar">
+                            <h2>Meus Pedidos</h2>
+                            <div class="delivery-actions-group">
+                                <div class="search-inputs">
+                                    <div class="search-group-kanban">
+                                        <i class="fas fa-hashtag"></i>
+                                        <input type="text" id="filtro-id-pedido" placeholder="Nº Pedido">
+                                    </div>
+                                    <div class="search-group-kanban">
+                                        <i class="fas fa-user"></i>
+                                        <input type="text" id="filtro-nome-cliente" placeholder="Buscar pelo cliente">
+                                    </div>
+                                </div>
+                                <div class="header-actions">
+                                    <button id="recarregar-pedidos" class="btn btn-secondary btn-sm">
+                                        <i class="fas fa-sync-alt"></i> Recarregar
+                                    </button>
+                                    <a href="pedido.html" target="_blank" class="btn btn-primary btn-sm">
+                                        <i class="fas fa-external-link-alt"></i> Ver Cardápio
+                                    </a>
+                                    <button id="btn-abrir-config" class="btn btn-secondary btn-sm" style="background-color: #6f42c1; color: white;">
+                                        <i class="fas fa-cog"></i> Configurações
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="tabs" style="margin-top: 1.5rem; margin-bottom: 0;">
+                            <button class="tab-btn active" data-tab="tab-kanban">
+                                <i class="fas fa-columns"></i> Painel (Tempo Real)
+                            </button>
+                            <button class="tab-btn" data-tab="tab-historico">
+                                <i class="fas fa-history"></i> Histórico de Pedidos
+                            </button>
+                            <button class="tab-btn" data-tab="tab-promocoes">
+                                <i class="fas fa-tag"></i> Promoções & Cupons
+                            </button>
+                            <button class="tab-btn" data-tab="tab-entrega">
+                                <i class="fas fa-motorcycle"></i> Entrega
+                            </button>
+                        </div>
+                    </header>
+                    
+                    <div id="loading" class="card" style="text-align: center; display: none;">
+                        <div class="spinner"></div>
+                        <p>Carregando pedidos...</p>
+                    </div>
+
+                     <div id="acesso-negado" class="card" style="display: none; text-align: center; padding: 2rem;">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 3rem; color: #dc3545;"></i>
+                        <h2 style="color: #dc3545;">Acesso Negado</h2>
+                        <p>Você não tem permissão para visualizar esta área.</p>
+                    </div>
+
+                    <div class="tab-content active" id="tab-kanban">
+                        <div id="delivery-board" class="delivery-board" style="display: none; padding: 1.5rem 0;">
+                            <div id="col-novo" class="delivery-column">
+                                <h3><i class="fas fa-box-open"></i> Novo (0)</h3>
+                                <div class="card-list"></div>
+                            </div>
+                            <div id="col-preparando" class="delivery-column">
+                                <h3><i class="fas fa-fire-alt"></i> Preparando (0)</h3>
+                                <div class="card-list"></div>
+                            </div>
+                            <div id="col-pronto" class="delivery-column">
+                                <h3><i class="fas fa-truck-loading"></i> Pronto (0)</h3>
+                                <div class="card-list"></div>
+                            </div>
+                            <div id="col-entregue" class="delivery-column" style="display: none;"></div>
+                            <div id="col-cancelado" class="delivery-column" style="display: none;"></div>
+                        </div>
+                    </div>
+
+                    <div class="tab-content" id="tab-promocoes" style="display: none;">
+                        
+                        <div class="card">
+                             <h3><i class="fas fa-list-alt"></i> Cupons Cadastrados</h3>
+                             <button id="btn-novo-cupom" class="btn btn-primary btn-sm" style="margin-bottom: 1rem;">
+                                <i class="fas fa-plus-circle"></i> Novo Cupom
+                            </button>
+
+                             <div class="table-container" style="margin-top: 1rem;">
+                                <table class="table-moderna">
+                                    <thead>
+                                        <tr>
+                                            <th>Código</th>
+                                            <th>Desconto</th>
+                                            <th>Validade</th>
+                                            <th>Usos (Max)</th>
+                                            <th>Status</th>
+                                            <th>Ações</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="cupons-tabela-body">
+                                        <tr><td colspan="6" style="text-align: center; color: #666;">Carregando cupons...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tab-content" id="tab-historico">
+                        <div class="card" style="margin-top: 1.5rem;">
+                            <h3>Histórico de Pedidos (Finalizados e Cancelados)</h3>
+                            
+                            <div class="filtros-data-personalizada" style="margin-bottom: 1.5rem; justify-content: flex-start; gap: 1rem;">
+                                <div class="filtro-item"><label for="hist-data-inicio">De:</label><input type="date" id="hist-data-inicio"></div>
+                                <div class="filtro-item"><label for="hist-data-fim">Até:</label><input type="date" id="hist-data-fim"></div>
+                                <button id="aplicar-filtro-historico" class="btn btn-primary btn-sm"><i class="fas fa-search"></i> Filtrar Histórico</button>
+                            </div>
+                            <div class="table-container">
+                                <table id="historico-tabela">
+                                    <thead>
+                                        <tr>
+                                            <th>Pedido</th>
+                                            <th>Data</th>
+                                            <th>Cliente</th>
+                                            <th>Total</th>
+                                            <th>Pagamento</th>
+                                            <th>Status</th>
+                                            <th>Ações</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="historico-tabela-body">
+                                        </tbody>
+                                </table>
+                            </div>
+                            
+                            <div class="paginacao-controls" id="historico-paginacao">
+                                </div>
+                        </div>
+                    </div>
+                    
+                    <div class="tab-content" id="tab-entrega" style="display: none;">
+                        <div class="card" style="margin-top: 1.5rem;">
+                            
+                            <h3><i class="fas fa-map-marker-alt"></i> Configurações de Entrega</h3>
+                            
+                            <div class="tabs" style="margin-bottom: 1.5rem;">
+                                <button class="tab-btn active" data-tab="tab-gerenciar-bairros"><i class="fas fa-road"></i> Gerenciar Bairros/Taxas</button>
+                                <button class="tab-btn" data-tab="tab-gerenciar-cidades"><i class="fas fa-city"></i> Gerenciar Cidades</button>
+                                <button class="tab-btn" data-tab="tab-gerenciar-retirada"><i class="fas fa-store"></i> Endereço de Retirada</button>
+                            </div>
+
+                            <div id="tab-gerenciar-bairros" class="tab-content active" style="display: block;">
+                                <h4><i class="fas fa-money-bill-wave"></i> Taxas de Entrega por Bairro e Cidade</h4>
+                                
+                                <form id="form-nova-taxa" class="form">
+                                    <input type="hidden" id="taxa-id-edicao">
+                                    
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="taxa-cidade-select">Cidade *</label>
+                                            <select id="taxa-cidade-select" required>
+                                                 <option value="">Carregando Cidades...</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="taxa-bairro">Nome do Bairro *</label>
+                                            <input type="text" id="taxa-bairro" required placeholder="Ex: Centro">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="taxa-valor">Valor da Taxa (R$) *</label>
+                                            <input type="number" id="taxa-valor" step="0.01" min="0" required placeholder="5.00">
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="form-actions" style="justify-content: flex-start;">
+                                        <button type="submit" id="btn-salvar-taxa" class="btn btn-primary"><i class="fas fa-plus-circle"></i> Adicionar/Salvar Taxa</button>
+                                    </div>
+                                </form>
+
+                                 <div class="table-container" style="margin-top: 1rem;">
+                                    <table class="table-moderna">
+                                        <thead>
+                                            <tr>
+                                                <th>Cidade</th>
+                                                <th>Bairro</th>
+                                                <th>Valor da Taxa (R$)</th>
+                                                <th>Ações</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="taxas-tabela-body">
+                                            <tr><td colspan="4" style="text-align: center; color: #666;">Carregando taxas...</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            
+                            <div id="tab-gerenciar-cidades" class="tab-content" style="display: none;">
+                                <h4><i class="fas fa-city"></i> Cadastro de Cidades Atendidas</h4>
+                                
+                                <form id="form-nova-cidade" class="form">
+                                    <input type="hidden" id="cidade-id-edicao">
+                                    <div class="form-row" style="align-items: flex-end;">
+                                        <div class="form-group" style="flex: 1;">
+                                            <label for="cidade-nome-input">Nome da Cidade *</label>
+                                            <input type="text" id="cidade-nome-input" required placeholder="Ex: Nanuque">
+                                        </div>
+                                        <div class="form-group">
+                                             <button type="submit" id="btn-salvar-cidade" class="btn btn-primary"><i class="fas fa-save"></i> Salvar Cidade</button>
+                                        </div>
+                                    </div>
+                                </form>
+                                
+                                <div class="table-container" style="margin-top: 1rem;">
+                                    <table class="table-moderna">
+                                        <thead>
+                                            <tr>
+                                                <th>Cidade</th>
+                                                <th>Ações</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="cidades-tabela-body">
+                                            <tr><td colspan="2" style="text-align: center; color: #666;">Carregando cidades...</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <div id="tab-gerenciar-retirada" class="tab-content" style="display: none;">
+                                <h4><i class="fas fa-store"></i> Endereço para Retirada na Loja</h4>
+                                <p style="font-size: 0.9rem; color: var(--text-light); margin-bottom: 1rem;">
+                                    Este é o endereço que será mostrado ao cliente no app de pedidos quando ele selecionar "Retirar na Loja".
+                                </p>
+                                <div class="form-row">
+                                     <div class="form-group" style="flex: 1;">
+                                         <label for="config-endereco-retirada">Endereço Completo</label>
+                                         <textarea id="config-endereco-retirada" rows="3" placeholder="Rua, número, bairro, cidade..."></textarea>
+                                     </div>
+                                     <div class="form-group" style="align-self: flex-end;">
+                                         <button id="salvar-endereco-retirada" class="btn btn-success btn-sm"><i class="fas fa-save"></i> Salvar Endereço</button>
+                                     </div>
+                                </div>
+                            </div>
+                            </div>
+                    </div>
+                </div>
+            </main>
+            <div id="modal-detalhes" class="modal">
+                <div class="modal-content" style="max-width: 600px;">
+                    <div class="modal-header">
+                        <h3><i class="fas fa-clipboard-list"></i> Detalhes do Pedido <span id="modal-pedido-id"></span></h3>
+                        <span class="close" onclick="document.getElementById('modal-detalhes').style.display='none';">&times;</span>
+                    </div>
+                    <div class="modal-body">
+                        <div id="detalhes-pedido-content"></div>
+                        
+                        <div class="form-actions modal-actions-split" style="border-top: 1px solid #eee; margin-top: 1rem; padding-top: 1rem;">
+                            <div>
+                                <button class="btn btn-success" id="btn-confirmar-whatsapp" style="display: none;">
+                                    <i class="fab fa-whatsapp"></i> Confirmar Pedido
+                                </button>
+                                <button class="btn btn-secondary btn-imprimir" id="btn-imprimir-canhoto">
+                                    <i class="fas fa-print"></i> Imprimir Canhoto
+                                </button>
+                                <button class="btn btn-success" id="btn-confirmar-pagamento" style="display: none;">
+                                    <i class="fas fa-check-double"></i> Pagamento OK
+                                </button>
+                            </div>
+                            <div>
+                                <button class="btn btn-danger" id="btn-cancelar-pedido"><i class="fas fa-trash-alt"></i> Cancelar</button>
+                                <button class="btn btn-primary" id="btn-avancar-status"><i class="fas fa-angle-right"></i> Avançar Status</button>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <div id="modal-configuracoes" class="modal">
+                <div class="modal-content" style="max-width: 700px;">
+                    <div class="modal-header">
+                        <h3><i class="fas fa-cog"></i> Configurações da Loja Delivery</h3>
+                        <span class="close" id="fechar-modal-config">&times;</span>
+                    </div>
+                    <form id="form-config-delivery">
+                        <div class="modal-body">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="config-taxa-entrega">Taxa de Entrega (R$)</label>
+                                    <input type="number" id="config-taxa-entrega" step="0.01" min="0" placeholder="5.00">
+                                </div>
+                                <div class="form-group">
+                                    <label for="config-tempo-entrega">Tempo Médio de Entrega (em minutos)</label>
+                                    <input type="number" id="config-tempo-entrega" min="10" placeholder="60">
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="config-chave-pix">Sua Chave PIX (Para o WhatsApp)</label>
+                                <input type="text" id="config-chave-pix" placeholder="Seu CNPJ, e-mail ou telefone">
+                            </div>
+                            <h4>Horários de Funcionamento</h4>
+                            <div class="config-horarios-grid">
+                                <div class="dia-horario-header">
+                                    <label>Dia da Semana</label>
+                                    <label>Abertura</label>
+                                    <label>Fechamento</label>
+                                    <label>Fechado?</label>
+                                </div>
+                                <div class="dia-horario-group">
+                                    <label>Segunda-feira</label>
+                                    <input type="time" id="seg-abertura" title="Abertura Segunda">
+                                    <input type="time" id="seg-fechamento" title="Fechamento Segunda">
+                                    <input type="checkbox" id="seg-fechado" title="Marcar como Fechado">
+                                </div>
+                                <div class="dia-horario-group">
+                                    <label>Terça-feira</label>
+                                    <input type="time" id="ter-abertura" title="Abertura Terça">
+                                    <input type="time" id="ter-fechamento" title="Fechamento Terça">
+                                    <input type="checkbox" id="ter-fechado" title="Marcar como Fechado">
+                                </div>
+                                <div class="dia-horario-group">
+                                    <label>Quarta-feira</label>
+                                    <input type="time" id="qua-abertura" title="Abertura Quarta">
+                                    <input type="time" id="qua-fechamento" title="Fechamento Quarta">
+                                    <input type="checkbox" id="qua-fechado" title="Marcar como Fechado">
+                                </div>
+                                <div class="dia-horario-group">
+                                    <label>Quinta-feira</label>
+                                    <input type="time" id="qui-abertura" title="Abertura Quinta">
+                                    <input type="time" id="qui-fechamento" title="Fechamento Quinta">
+                                    <input type="checkbox" id="qui-fechado" title="Marcar como Fechado">
+                                </div>
+                                <div class="dia-horario-group">
+                                    <label>Sexta-feira</label>
+                                    <input type="time" id="sex-abertura" title="Abertura Sexta">
+                                    <input type="time" id="sex-fechamento" title="Fechamento Sexta">
+                                    <input type="checkbox" id="sex-fechado" title="Marcar como Fechado">
+                                </div>
+                                <div class="dia-horario-group">
+                                    <label>Sábado</label>
+                                    <input type="time" id="sab-abertura" title="Abertura Sábado">
+                                    <input type="time" id="sab-fechamento" title="Fechamento Sábado">
+                                    <input type="checkbox" id="sab-fechado" title="Marcar como Fechado">
+                                </div>
+                                <div class="dia-horario-group">
+                                    <label>Domingo</label>
+                                    <input type="time" id="dom-abertura" title="Abertura Domingo">
+                                    <input type="time" id="dom-fechamento" title="Fechamento Domingo">
+                                    <input type="checkbox" id="dom-fechado" title="Marcar como Fechado">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Salvar Configurações</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <div id="modal-novo-cupom" class="modal">
+                <div class="modal-content" style="max-width: 550px;">
+                    <div class="modal-header">
+                        <h3 id="modal-cupom-titulo"><i class="fas fa-ticket-alt"></i> Cadastrar Novo Cupom</h3>
+                        <span class="close" id="fechar-modal-cupom">&times;</span>
+                    </div>
+                    <form id="form-novo-cupom" class="form">
+                        <div class="modal-body">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="cupom-codigo">Código do Cupom *</label>
+                                    <input type="text" id="cupom-codigo" required maxlength="15" style="text-transform: uppercase;" placeholder="EX: VERAO20">
+                                </div>
+                                <div class="form-group">
+                                    <label for="cupom-tipo">Tipo de Desconto *</label>
+                                    <select id="cupom-tipo" required>
+                                        <option value="percentual">Percentual (%)</option>
+                                        <option value="valor">Valor Fixo (R$)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="cupom-valor">Valor / Percentual *</label>
+                                    <input type="number" id="cupom-valor" step="0.01" min="0" required placeholder="Ex: 20 ou 10.00">
+                                </div>
+                                <div class="form-group">
+                                    <label for="cupom-validade">Data de Validade (Opcional)</label>
+                                    <input type="date" id="cupom-validade">
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="cupom-usos-maximos">Usos Máximos (0 = Ilimitado)</label>
+                                <input type="number" id="cupom-usos-maximos" min="0" value="0" required>
+                            </div>
+                            <div class="form-group">
+                                <input type="checkbox" id="cupom-ativo" checked />
+                                <label for="cupom-ativo" style="display: inline;">Cupom Ativo</label>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Salvar Cupom</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <footer>
+            </footer>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <script src="js/supabase-config.js"></script>
+
+    <script src="js/auth.js"></script>
+    
+    <script src="js/supabase-vendas.js"></script>
+    <script src="js/delivery.js" defer></script>
+    
+    <script src="js/layout-loader.js" defer></script> 
+    
+</body>
+</html>

@@ -1,0 +1,1769 @@
+/* css/componentes.css */
+
+/* 1. Botões (Unificados) */
+.btn {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    justify-content: center;
+}
+.btn-sm {
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+}
+.btn-primary {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    color: white;
+}
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover);
+}
+.btn-secondary {
+    background-color: var(--bg-light);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+}
+.btn-secondary:hover {
+    background-color: var(--border-color);
+    transform: translateY(-2px);
+}
+.btn-danger {
+    background: linear-gradient(135deg, var(--error-color), #d32f2f);
+    color: white;
+}
+.btn-danger:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover);
+}
+.btn-success {
+    background: linear-gradient(135deg, var(--success-color), #388e3c);
+    color: white;
+}
+.btn-success:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover);
+}
+.btn-warning {
+    background-color: #ffb6c1;
+    color: #333;
+}
+.btn-warning:hover {
+    background-color: #ff91c1;
+    transform: translateY(-2px);
+}
+.btn-edit {
+    /* MODIFICADO: Usar cor da marca para consistência */
+    background-color: var(--secondary-color); 
+    color: white;
+}
+.btn-edit:hover {
+    /* MODIFICADO: Usar cor mais escura da marca */
+    background-color: var(--primary-dark);
+    transform: translateY(-2px);
+}
+.btn-link {
+    background: none;
+    border: none;
+    color: #ff69b4;
+    cursor: pointer;
+    font-size: 12px;
+    text-decoration: underline;
+}
+
+/* 2. Cards (Unificados) */
+.card {
+    background: white;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    border: 1px solid var(--border-color);
+    transition: var(--transition);
+}
+.card:hover {
+    box-shadow: var(--shadow-hover);
+    transform: translateY(-2px);
+}
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid var(--primary-light);
+}
+.card-header h2, .card-header h3 {
+    color: var(--primary-color);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.3rem;
+}
+
+/* 3. Formulários (Unificados) */
+.form-group {
+    margin-bottom: 1rem;
+}
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+/* =================================================== */
+/* === INÍCIO DA CORREÇÃO DE SINTAXE CSS === */
+/* =================================================== */
+input[type="text"],
+input[type="number"],
+input[type="password"],
+input[type="date"],
+input[type="tel"],
+input[type="file"], /* Era input[type."file"] */
+select,
+textarea {
+    /* Estilos do seu .form-group, mas aplicados a todos */
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    font-size: 1rem;
+    transition: var(--transition);
+    background-color: #fff; /* Fundo branco */
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Garante a fonte */
+    color: var(--text-color);
+    height: 48px; /* Altura padrão para alinhar tudo */
+    box-sizing: border-box; /* Garante que o padding não quebre o layout */
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+}
+/* =================================================== */
+/* === FIM DA CORREÇÃO DE SINTAXE CSS === */
+/* =================================================== */
+
+
+/* 2. Mantém o width: 100% para itens dentro de .form-group */
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%; /* Esta regra AGORA só aplica o width */
+}
+
+/* 3. Estilo de Foco (para TODOS) */
+input[type="text"]:focus,
+input[type="number"]:focus,
+input[type="password"]:focus,
+input[type="date"]:focus,
+input[type="tel"]:focus, /* Linha com erro removida */
+input[type="file"]:focus,
+select:focus,
+textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+/* 4. Estilo Específico para <select> (Remove flecha feia) */
+select {
+    /* SVG de flecha (cor rosa) */
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="%23ff69b4"><path fill-rule="evenodd" d="M8 10.646l-4.323-4.323a.75.75 0 111.06-1.061L8 8.525l3.262-3.262a.75.75 0 111.061 1.06L8 10.646z"/></svg>');
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 1.2em;
+    padding-right: 2.5rem; /* Espaço para a flecha */
+}
+
+/* 5. Estilo Específico para <input type="date"> */
+input[type="date"] {
+    position: relative;
+    padding-right: 0.5rem;
+}
+
+/* Tenta esconder o ícone padrão do calendário e substitui (funciona no Chrome) */
+input[type="date"]::-webkit-calendar-picker-indicator {
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="%23ff69b4"><path fill-rule="evenodd" d="M4.75 0a.75.75 0 00-1.5 0V.75H2A.75.75 0 001.25 1.5V3h13.5V1.5A.75.75 0 0014 .75h-1.25V0a.75.75 0 00-1.5 0V.75H4.75V0zM1.25 4.5V14c0 .414.336.75.75.75h12a.75.75 0 00.75-.75V4.5H1.25z"/></svg>');
+    background-size: 1.2em;
+    background-position: center;
+    background-repeat: no-repeat;
+    cursor: pointer;
+    width: 1.5rem;
+}
+
+/* 6. Correção de Layouts Específicos (para não quebrar) */
+
+/* Caixa de Fechamento (Data) */
+.data-selecao {
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+.data-selecao label {
+    font-weight: 600;
+}
+/* Impede o input date de ficar 100% */
+.data-selecao input[type="date"] {
+    width: auto; 
+}
+
+/* Desconto / Acréscimo (Selects e Inputs) */
+.ajuste-group {
+    margin-bottom: 0.5rem;
+}
+.input-group-ajuste {
+    display: flex;
+}
+.input-group-ajuste select {
+    width: 100px;
+    border-right: none;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+.input-group-ajuste input {
+    flex-grow: 1;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+/* Dados do Cliente (Select) */
+.cliente-container select {
+    width: 100%; /* Aqui queremos 100% */
+}
+
+/* 4. Tabelas (Unificadas) */
+.table-container {
+    overflow-x: auto;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-color);
+}
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+table th,
+table td {
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+table th {
+    background-color: var(--primary-light);
+    color: var(--primary-dark);
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+}
+table tr:hover {
+    background-color: rgba(255, 105, 180, 0.05);
+}
+
+/* 5. Abas (Tabs - Unificadas) */
+.tabs {
+    display: flex;
+    border-bottom: 2px solid #e9ecef;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap; /* Adicionado para mobile */
+}
+.tab-btn {
+    background: none;
+    border: none;
+    padding: 1rem 1.5rem;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+    color: var(--text-light);
+    font-size: 1rem;
+}
+.tab-btn:hover {
+    color: var(--primary-dark);
+    background: #f8f9fa;
+}
+.tab-btn.active {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+    font-weight: 700;
+}
+.tab-content {
+    display: none;
+}
+.tab-content.active {
+    display: block;
+    animation: fadeIn 0.3s ease;
+}
+
+/* 6. Modais (Unificados) */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    animation: fadeIn 0.3s ease;
+}
+.modal-content {
+    background-color: white;
+    margin: 5% auto;
+    padding: 0;
+    border-radius: var(--radius);
+    width: 90%;
+    max-width: 600px; /* Aumentado para formulários complexos */
+    position: relative;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    animation: slideUp 0.3s ease;
+    max-height: 85vh; /* Adicionado */
+    overflow-y: auto; /* Adicionado */
+}
+.modal-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky; /* Adicionado */
+    top: 0; /* Adicionado */
+    background: white; /* Adicionado */
+    z-index: 10; /* Adicionado */
+}
+.modal-header h3 {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.close {
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--text-light);
+    transition: var(--transition);
+    background: none;
+    border: none;
+}
+.close:hover {
+    color: var(--text-color);
+}
+.modal-body {
+    padding: 1.5rem;
+}
+.modal-footer {
+    padding: 1.5rem;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+    position: sticky; /* Adicionado */
+    bottom: 0; /* Adicionado */
+    background: #f8f9fa; /* Adicionado */
+}
+
+/* 7. Alertas e Loaders (Unificados) */
+.loading-container {
+    text-align: center;
+    padding: 3rem;
+}
+.spinner {
+    border: 4px solid var(--primary-light);
+    border-left: 4px solid var(--primary-color);
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 1rem;
+}
+.alert {
+    padding: 1rem 1.5rem;
+    border-radius: 10px;
+    margin-bottom: 1rem;
+    animation: slideInRight 0.3s ease;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+}
+.alert-success {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+    border: 1px solid #c8e6c9;
+}
+.alert-error {
+    background-color: #ffebee;
+    color: #c62828;
+    border: 1px solid #ffcdd2;
+}
+.alert-warning {
+    background-color: #fff3e0;
+    color: #ef6c00;
+    border: 1px solid #ffe0b2;
+}
+.alert-info {
+    background-color: #e3f2fd;
+    color: #1565c0;
+    border: 1px solid #bbdefb;
+}
+
+/* 8. Badges (Unificados) */
+.badge {
+    background: var(--primary-color);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+.status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+.status-badge.active, .status-badge.pago {
+    background: #d4edda;
+    color: #155724;
+}
+.status-badge.inactive, .status-badge.vencido {
+    background: #f8d7da;
+    color: #721c24;
+}
+.status-badge.low-stock, .status-badge.pendente {
+    background-color: #fff3cd;
+    color: #856404;
+}
+.status-badge.out-of-stock {
+    background-color: #f8d7da;
+    color: #c62828;
+}
+
+/* =================================================== */
+/* --- CORREÇÃO: Imagens na Tabela de Estoque --- */
+/* =================================================== */
+
+/* Define um tamanho fixo para a primeira célula (Foto) */
+#produtos-body td:first-child {
+    width: 90px; /* Define uma largura fixa para a coluna */
+    padding: 8px;
+    vertical-align: middle; /* Alinha a imagem no meio */
+}
+
+/* Estilo para a IMAGEM (Base64) */
+.produto-imagem-tabela {
+    width: 60px;
+    height: 60px;
+    object-fit: cover; /* Garante que a imagem preencha o espaço sem distorcer */
+    border-radius: var(--radius-sm, 8px); /* Usa a variável do seu CSS */
+    box-shadow: var(--shadow, 0 2px 10px rgba(0, 0, 0, 0.1));
+    display: block; /* Remove espaços extras */
+}
+
+/* Estilo para o 'Sem Imagem' */
+.produto-imagem-tabela-placeholder {
+    width: 60px;
+    height: 60px;
+    background-color: var(--bg-light, #f5f5f5);
+    border: 1px dashed var(--border-color, #e0e0e0);
+    border-radius: var(--radius-sm, 8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--text-light, #666);
+    text-align: center;
+}
+
+/* =================================================== */
+/* --- CORREÇÃO: Padronização de Botões do Site --- */
+/* =================================================== */
+
+/* 1. Correção das Abas (Ex: Abertura de Caixa) */
+/* Adiciona .tab-button ao seletor .tab-btn existente */
+.tabs .tab-btn,
+.tabs-header .tab-button {
+    background: none;
+    border: none;
+    padding: 0.8rem 1.2rem;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+    color: var(--text-light);
+    font-size: 0.95rem;
+    border-radius: 6px 6px 0 0;
+}
+
+.tabs .tab-btn:hover,
+.tabs-header .tab-button:hover {
+    color: var(--primary-dark);
+    background: #f8f9fa;
+}
+
+.tabs .tab-btn.active,
+.tabs-header .tab-button.active {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+    font-weight: 700;
+}
+
+
+/* 2. Estilo para Botões de Tabela (Ex: Editar, Excluir, Desativar) */
+/* Estes botões (btn-edit, btn-danger) já têm cores, 
+  mas faltam os estilos base de .btn e .btn-sm 
+*/
+.btn-edit,
+.btn-danger,
+.btn-success,
+.btn-warning,
+.btn-toggle,
+.btn-detalhes,
+.btn-acao,
+.btn-acao-icon {
+    /* Aplicando estilos do .btn e .btn-sm */
+    padding: 0.5rem 0.8rem;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    justify-content: center;
+    margin: 2px; /* Espaçamento */
+}
+
+/* Cores que já estavam definidas, mas reforçadas */
+.btn-edit { background-color: var(--secondary-color); color: white; }
+.btn-edit:hover { background-color: var(--primary-dark); transform: translateY(-1px); }
+
+.btn-danger { background: linear-gradient(135deg, var(--error-color), #d32f2f); color: white; }
+.btn-danger:hover { background: #d32f2f; transform: translateY(-1px); }
+
+.btn-success { background: linear-gradient(135deg, var(--success-color), #388e3c); color: white; }
+.btn-success:hover { background: #388e3c; transform: translateY(-1px); }
+
+.btn-warning { background-color: var(--warning-color); color: white; }
+.btn-warning:hover { background-color: #f57c00; transform: translateY(-1px); }
+
+.btn-toggle { background-color: #6c757d; color: white; }
+.btn-toggle:hover { background-color: #5a6268; transform: translateY(-1px); }
+
+.btn-detalhes { background-color: var(--secondary-color); color: white; }
+.btn-detalhes:hover { background-color: var(--primary-dark); transform: translateY(-1px); }
+
+/* Botões da tabela de Encomendas */
+.btn-acao { background-color: #6c757d; color: white; }
+.btn-acao:hover { background-color: #5a6268; transform: translateY(-1px); }
+.btn-acao.pago { background-color: var(--success-color); }
+.btn-acao.concluido { background-color: var(--info-color); }
+.btn-acao.editar { background-color: var(--warning-color); color: #333; }
+.btn-acao.excluir { background-color: var(--error-color); }
+.btn-acao.imprimir { background-color: var(--primary-dark); }
+.btn-acao:disabled { background-color: #ccc; opacity: 0.6; cursor: not-allowed; }
+
+/* Botões da tabela de Contas a Pagar (ícones) */
+.btn-acao-icon {
+    padding: 0.5rem;
+    width: 32px;
+    height: 32px;
+}
+.btn-edit-icon { background-color: var(--secondary-color); color: white; }
+.btn-pago-icon { background-color: var(--success-color); }
+.btn-danger-icon { background-color: var(--error-color); }
+
+
+/* 3. Estilo para Botões de Vendas (Ex: Adicionar ao Carrinho) */
+.produto-info .btn-adicionar {
+    /* Aplicando estilos do .btn e .btn-primary */
+    width: 100%;
+    margin-top: 0.5rem;
+    padding: 0.75rem 1rem;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    color: white;
+}
+.produto-info .btn-adicionar:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover);
+}
+.produto-info .btn-adicionar:disabled {
+    background: #ccc;
+    color: #777;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* 4. Estilo para botões +/- do carrinho (index.html) */
+.carrinho-item-controles .btn-remover,
+.carrinho-item-controles .btn-adicionar-carrinho {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.carrinho-item-controles .btn-remover {
+    background-color: var(--primary-light);
+    color: var(--primary-dark);
+}
+.carrinho-item-controles .btn-remover:hover {
+    background-color: #f7a0af;
+}
+.carrinho-item-controles .btn-adicionar-carrinho:hover {
+    background-color: var(--primary-dark);
+}
+
+/* 5. Estilo para remover pagamento (index.html) */
+.btn-remover-pagamento {
+    background: none;
+    border: none;
+    color: var(--error-color);
+    cursor: pointer;
+    font-size: 1.1rem;
+}
+.btn-remover-pagamento:hover {
+    color: #d32f2f;
+}
+
+/* =================================================== */
+/* --- NOVO: Botão Finalizar Pedido (index.html) --- */
+/* =================================================== */
+
+.btn-finalizar {
+    /* Aplicando estilos do .btn e .btn-primary */
+    width: 100%; /* Ocupar toda a largura do card */
+    padding: 1.25rem; /* Botão grande e chamativo */
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 1.2rem; /* Fonte maior */
+    font-weight: 700; /* Mais forte */
+    cursor: pointer;
+    transition: var(--transition);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    justify-content: center;
+    
+    /* Cores Primárias */
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    color: white;
+    text-transform: uppercase; /* Deixa mais impactante */
+    letter-spacing: 1px;
+}
+
+.btn-finalizar:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover);
+}
+
+/* Estilo para quando estiver desabilitado */
+.btn-finalizar:disabled {
+    background: #ccc;
+    color: #777;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+    opacity: 0.7;
+}
+
+/* ============================================== */
+/* --- ESTILOS KANBAN DELIVERY (VERSÃO FINAL) --- */
+/* ============================================== */
+
+/* 1. O Board (O Painel Principal) */
+.delivery-board {
+    display: flex;
+    flex-wrap: nowrap;
+    width: 100%;
+    gap: 1.5rem;
+    padding: 0 1.5rem 1.5rem 1.5rem; 
+    box-sizing: border-box; 
+    /* Adiciona scroll horizontal se as colunas não couberem */
+    overflow-x: auto; 
+}
+
+/* ================================================================ */
+/* === INÍCIO DA ALTERAÇÃO (Largura das Colunas) === */
+/* ================================================================ */
+/* 2. As Colunas */
+.delivery-column {
+    flex-grow: 1; /* Permite crescer */
+    flex-shrink: 0; /* NÃO permite encolher menos que a base */
+    flex-basis: 340px; /* Largura base de cada coluna */
+    min-width: 320px;  /* Largura mínima absoluta */
+    
+    border-radius: var(--radius-sm);
+    padding: 1rem;
+    min-height: 70vh;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    box-shadow: none;
+    border: none;
+}
+/* ================================================================ */
+/* === FIM DA ALTERAÇÃO ===
+/* ================================================================ */
+
+
+/* Cores de fundo das colunas (como na imagem) */
+#col-novo {
+    background-color: #f39c12; /* Laranja */
+}
+#col-preparando {
+    background-color: #e67e22; /* Laranja Escuro */
+}
+#col-pronto {
+    background-color: #27ae60; /* Verde */
+}
+
+/* 3. Títulos das colunas */
+.delivery-column h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.3); /* Linha branca */
+    margin-bottom: 0; /* Removido margin */
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: white; /* Texto do título branco */
+}
+
+.delivery-column .card-list {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+/* Texto "Nenhum pedido" */
+.delivery-column .card-list p {
+     color: white; /* Texto branco */
+     opacity: 0.8;
+     font-style: italic;
+     margin-top: 1rem;
+     text-align: center;
+}
+
+/* ================================================================ */
+/* === INÍCIO DA ATUALIZAÇÃO (Novo Layout do Card de Pedido) === */
+/* ================================================================ */
+
+/* 4. Cards de Pedido (Layout de image_eaae23.png) */
+.pedido-card {
+    background-color: white;
+    padding: 0; /* REMOVIDO padding principal */
+    box-shadow: var(--shadow);
+    cursor: pointer;
+    border-left: none;
+    transition: var(--transition);
+    overflow: hidden; /* Garante que o botão de ação se ajuste */
+}
+.pedido-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover);
+}
+
+/* -- Seção: Cabeçalho (ID, Hora, Timer) -- */
+.card-novo-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start; /* Alinha no topo */
+    gap: 0.5rem; 
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border-color);
+    position: relative; /* Adicionado na última correção */
+}
+.card-novo-header strong {
+    font-size: 1.1rem;
+    color: var(--text-color);
+    font-weight: 700; /* Mais forte */
+}
+
+/* Grupo da Direita (Hora + Timer) */
+.card-novo-hora-grupo {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end; /* Alinha à direita */
+    flex-shrink: 0; /* Impede que encolha */
+}
+/* Hora que o pedido foi feito */
+.card-novo-hora {
+    font-size: 0.85rem;
+    color: var(--text-light);
+    font-weight: 600;
+    margin-bottom: 5px; /* Espaço entre a hora e o timer */
+}
+/* Timer de Atraso */
+.card-novo-timer {
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 2px 8px; /* Mais fino */
+    border-radius: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+.card-novo-timer.no-prazo {
+    background-color: var(--success-color); /* Verde */
+    color: white;
+}
+.card-novo-timer.atrasado {
+    background-color: var(--error-color); /* Vermelho */
+    color: white;
+    animation: pulse 1.5s infinite;
+}
+
+/* -- Seção: Corpo (Cliente, Info, Endereço) -- */
+.card-novo-body {
+    padding: 0.75rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+.card-novo-cliente {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+}
+.card-novo-cliente .cliente-nome {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-color);
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    /* Impede que o nome quebre o layout */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.card-novo-cliente .cliente-fone {
+    font-size: 0.85rem;
+    color: var(--text-light);
+    flex-shrink: 0; /* Impede o fone de encolher */
+}
+.card-novo-cliente i {
+    color: var(--text-light);
+}
+
+.card-novo-info {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    background-color: #f8f9fa; /* Fundo cinza claro */
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--radius-sm);
+}
+.info-pagamento {
+    display: flex;
+    flex-direction: column;
+}
+.info-pagamento span {
+    font-size: 0.7rem; /* Label menor */
+    color: var(--text-light);
+    text-transform: uppercase;
+    font-weight: 600;
+}
+.info-pagamento strong {
+    font-size: 0.9rem;
+    color: var(--text-color);
+    font-weight: 700;
+}
+.info-pagamento .troco-info {
+    color: var(--error-color);
+    font-weight: 700;
+}
+
+.card-novo-delivery {
+    font-size: 0.85rem;
+    color: var(--text-color);
+    padding-top: 0.5rem;
+    border-top: 1px dashed var(--border-color);
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+.card-novo-delivery i {
+    color: var(--primary-color);
+    flex-shrink: 0;
+}
+.card-novo-delivery span {
+    /* Impede que o endereço quebre o layout */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* -- Seção: Ação (Botão) -- */
+.card-novo-action {
+    margin: 0;
+}
+.btn-ver-detalhes {
+    background: var(--primary-light);
+    color: var(--primary-dark);
+    width: 100%;
+    padding: 0.6rem;
+    border: none;
+    /* Remove borda do botão, deixa só a do card */
+    border-radius: 0 0 var(--radius-sm) var(--radius-sm); 
+    font-size: 0.9rem;
+    font-weight: 700; /* Mais forte */
+    cursor: pointer;
+    transition: var(--transition);
+}
+.btn-ver-detalhes:hover {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+/* Remove os estilos antigos que não são mais usados */
+.pedido-header,
+.pedido-info,
+.pedido-items {
+    display: none;
+}
+/* ================================================================ */
+/* === FIM DA ATUALIZAÇÃO (Novo Layout do Card de Pedido) === */
+/* ================================================================ */
+
+
+/* ============================================== */
+/* --- NOVOS ESTILOS - HEADER KANBAN (DELIVERY) --- */
+/* ============================================== */
+
+.delivery-search-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    flex-wrap: wrap; /* Permite quebrar em telas menores */
+    gap: 1rem;
+}
+
+.delivery-search-bar h2 {
+    margin: 0;
+    color: var(--text-color); /* Sobrescreve a cor rosa padrão */
+    font-size: 1.5rem;
+    flex-shrink: 0; /* Impede que o título encolha */
+}
+
+/* NOVO: Agrupador para inputs e botões */
+.delivery-actions-group {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.delivery-search-bar .search-inputs {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.search-group-kanban {
+    display: flex;
+    align-items: center;
+    background-color: var(--bg-light);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: 0 0.75rem;
+    height: 48px; /* Altura padrão */
+}
+
+.search-group-kanban i {
+    color: var(--text-light);
+    margin-right: 0.5rem;
+}
+
+/* Remove todos os estilos padrão do input */
+.search-group-kanban input {
+    border: none !important;
+    background: none !important;
+    height: 46px !important;
+    padding: 0 !important;
+    font-size: 0.9rem !important;
+    outline: none !important;
+    box-shadow: none !important;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}
+
+/* NOVO: Estilo para os botões no cabeçalho */
+.header-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+
+/* ============================================== */
+/* --- ESTILOS DO MODAL DE CONFIGURAÇÕES (DELIVERY) --- */
+/* ============================================== */
+
+.config-horarios-grid {
+    display: grid;
+    grid-template-columns: 1fr; /* Uma coluna em mobile */
+    gap: 0.5rem; /* Espaçamento menor */
+    margin-top: 1rem;
+    border-top: 1px solid var(--border-color);
+    padding-top: 1rem;
+}
+
+.dia-horario-header {
+    display: grid;
+    /* Colunas: Dia | Abertura | Fechamento | Checkbox */
+    grid-template-columns: 110px 1fr 1fr 60px; 
+    gap: 0.5rem;
+    padding: 0 0.5rem;
+    margin-bottom: 0.25rem;
+}
+.dia-horario-header label {
+    font-weight: 600;
+    font-size: 0.8rem;
+    color: var(--text-light);
+    text-transform: uppercase;
+}
+.dia-horario-header label:last-child {
+    text-align: center; /* Alinha "Fechado?" */
+}
+
+
+.dia-horario-group {
+    display: grid;
+    /* Colunas: Dia | Abertura | Fechamento | Checkbox */
+    grid-template-columns: 110px 1fr 1fr 60px; 
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    border-radius: var(--radius-sm);
+    background-color: var(--bg-light);
+}
+
+.dia-horario-group label {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--text-color);
+    padding-left: 0.25rem;
+}
+
+/* Inputs de hora dentro do modal */
+.dia-horario-group input[type="time"] {
+    width: 100%;
+    height: 40px; /* Menor que o padrão */
+    padding: 0.5rem;
+    font-size: 0.9rem;
+}
+
+/* Checkbox "Fechado?" */
+.dia-horario-group input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    justify-self: center; /* Centraliza o checkbox na célula do grid */
+}
+
+/* Responsividade para o grid de horários */
+@media (max-width: 600px) {
+    .dia-horario-header {
+        /* Oculta os labels do header em telas pequenas */
+        display: none;
+    }
+    .dia-horario-group {
+        /* Muda para 2 colunas: Label e Inputs agrupados */
+        grid-template-columns: 100px 1fr;
+        gap: 0.5rem;
+    }
+    .dia-horario-group label {
+        /* O label do dia fica na primeira coluna */
+        grid-column: 1 / 2;
+        grid-row: 1 / 3; /* Ocupa duas linhas */
+        display: flex;
+        align-items: center;
+    }
+    .dia-horario-group input[type="time"]:first-of-type {
+        grid-column: 2 / 3;
+        grid-row: 1 / 2;
+    }
+    .dia-horario-group input[type="time"]:last-of-type {
+        grid-column: 2 / 3;
+        grid-row: 2 / 3;
+    }
+    .dia-horario-group input[type="checkbox"] {
+        grid-column: 2 / 3;
+        grid-row: 3 / 4;
+        justify-self: start; /* Alinha à esquerda */
+        margin-top: 5px;
+    }
+}
+
+
+/* ================================================================ */
+/* === INÍCIO DA ADIÇÃO (Estilos do Timer de Atraso) === */
+/* ================================================================ */
+
+.card-novo-header {
+    /* ... estilos existentes ... */
+    position: relative; /* Necessário para o timer se posicionar */
+}
+
+/* Oculta o timer antigo que ficava no topo */
+.card-novo-header > .card-novo-timer {
+    display: none;
+}
+
+/* Novo grupo para Hora e Timer */
+.card-novo-hora-grupo {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end; /* Alinha à direita */
+    position: relative;
+    top: -5px; /* Puxa levemente para cima */
+    right: -5px; /* Puxa levemente para a direita */
+    flex-shrink: 0;
+}
+
+/* Hora original do pedido */
+.card-novo-hora {
+    font-size: 0.85rem;
+    color: var(--text-light);
+    font-weight: 600;
+    margin-bottom: 5px; /* Espaço entre a hora e o timer */
+}
+/* Timer de Atraso */
+.card-novo-timer {
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 2px 8px; /* Mais fino */
+    border-radius: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+.card-novo-timer.no-prazo {
+    background-color: var(--success-color); /* Verde */
+    color: white;
+}
+.card-novo-timer.atrasado {
+    background-color: var(--error-color); /* Vermelho */
+    color: white;
+    animation: pulse 1.5s infinite; /* Faz o timer atrasado piscar */
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+/* ================================================================ */
+/* === INÍCIO DA ADIÇÃO (Estilos do Botão Imprimir) === */
+/* ================================================================ */
+
+/* Divide os botões de ação do modal */
+.modal-actions-split {
+    display: flex;
+    justify-content: space-between; /* <-- A Mágica */
+    align-items: center;
+    flex-wrap: wrap; /* Para telas pequenas */
+    gap: 0.5rem;
+}
+
+/* Garante que os grupos de botões não encolham */
+.modal-actions-split > div {
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* Estilo do botão de imprimir */
+.btn-imprimir {
+    background-color: var(--primary-dark);
+    color: white;
+}
+.btn-imprimir:hover {
+    background-color: #6f42c1; /* Um pouco mais claro */
+}
+
+/* ============================================== */
+/* --- ESTILOS DO HISTÓRICO DE DELIVERY E PAGINAÇÃO --- */
+/* ============================================== */
+
+/* Ajusta o painel Kanban para ficar dentro do container */
+#tab-kanban .delivery-board {
+    padding: 1.5rem 0;
+    /* Remove o padding lateral, pois o container já tem */
+    padding-left: 0;
+    padding-right: 0;
+}
+
+/* Tabela de Histórico */
+#historico-tabela {
+    width: 100%;
+}
+#historico-tabela .status-badge {
+    display: inline-flex; /* Garante que o badge apareça */
+    font-size: 0.8rem;
+    padding: 0.3rem 0.6rem;
+}
+/* Cores específicas para o histórico */
+#historico-tabela .status-badge.status-entregue {
+    background: var(--success-color);
+    color: white;
+}
+#historico-tabela .status-badge.status-cancelado {
+    background: var(--error-color);
+    color: white;
+}
+#historico-tabela .btn-ver-detalhes-hist {
+    background-color: var(--secondary-color);
+    color: white;
+    padding: 0.4rem 0.6rem;
+    font-size: 0.8rem;
+}
+
+/* Controles de Paginação */
+.paginacao-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+.paginacao-info {
+    font-size: 0.9rem;
+    color: var(--text-light);
+}
+.paginacao-botoes button {
+    background-color: var(--primary-light);
+    color: var(--primary-dark);
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    cursor: pointer;
+    margin-left: 0.5rem;
+    transition: var(--transition);
+}
+.paginacao-botoes button:hover {
+    background-color: var(--primary-color);
+    color: white;
+}
+.paginacao-botoes button:disabled {
+    background-color: #e9ecef;
+    color: #adb5bd;
+    cursor: not-allowed;
+}
+
+/* === Ajuste: colunas distribuídas proporcionalmente === */
+.delivery-board {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: space-between; /* distribui igualmente */
+  align-items: flex-start;
+  gap: 1rem;
+  width: 100%;
+  overflow-x: hidden; /* remove scroll horizontal */
+}
+
+.delivery-column {
+  flex: 1;                /* mesma proporção para todas */
+  min-width: 0;           /* permite encolher corretamente */
+  background-color: inherit;
+  padding: 1rem;
+  border-radius: var(--radius-sm);
+  box-shadow: none;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* opcional: garante margens laterais */
+.main .delivery-board {
+  padding: 1rem 0;
+}
+
+/* === Ajuste final: colunas 100% proporcionais, sem margens extras === */
+.main .container {
+  max-width: 100%;
+  padding: 0; /* remove o espaçamento interno */
+}
+
+.delivery-board {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: nowrap;
+  gap: 1rem;
+  width: 100%;
+  margin: 0;           /* remove margens externas */
+  padding: 0 1rem;     /* um leve respiro lateral */
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+.delivery-column {
+  flex: 1;
+  min-width: 0;
+  border-radius: var(--radius-sm);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  border: none;
+  box-shadow: none;
+}
+
+/* opcional: remove sombra de hover no board */
+.delivery-column .pedido-card:hover {
+  transform: translateY(-2px);
+}
+
+/* Responsivo: empilha colunas no celular */
+@media (max-width: 900px) {
+  .delivery-board {
+    flex-wrap: wrap;
+  }
+  .delivery-column {
+    flex: 1 1 100%;
+  }
+}
+
+/* ============================================== */
+/* --- INÍCIO: CSS NOVO PARA RELATORIOS.HTML === */
+/* ============================================== */
+
+/* Abas (Estilo da Imagem) */
+.tabs-nav {
+    display: flex;
+    gap: 0.5rem;
+    background: white;
+    padding: 0.5rem;
+    border-radius: 10px;
+    margin-bottom: 1.5rem;
+}
+.tab-button {
+    flex: 1;
+    background: none;
+    border: none;
+    padding: 0.75rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--text-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    transition: var(--transition);
+}
+.tab-button:hover {
+    background: var(--bg-light);
+    color: var(--text-color);
+}
+.tab-button.active {
+    background: var(--secondary-color);
+    color: white;
+    box-shadow: 0 4px 10px rgba(154, 50, 108, 0.3);
+}
+
+/* Painéis de Abas */
+.tab-pane {
+    display: none;
+    animation: fadeIn 0.3s;
+}
+.tab-pane.active {
+    display: block;
+}
+
+/* Header Roxo (Ex: "Análise de Vendas Detalhada") */
+.new-dashboard-header {
+    background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+    color: white;
+    padding: 1.5rem 2rem;
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 8px 20px rgba(154, 50, 108, 0.2);
+}
+.new-dashboard-header h2 {
+    margin: 0 0 0.25rem 0;
+}
+.new-dashboard-header p {
+    margin: 0;
+    opacity: 0.9;
+}
+
+/* Filtros */
+.filtros-container-novo {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+.filtros-rapidos-group {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+.filtro-rapido {
+    background: white;
+    border: 1px solid var(--border-color);
+    color: var(--text-light);
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: var(--transition);
+}
+.filtro-rapido:hover {
+    background: var(--bg-light);
+}
+.filtro-rapido.active {
+    background: var(--secondary-color);
+    color: white;
+    border-color: var(--secondary-color);
+}
+.filtros-data-personalizada {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+.filtro-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.filtro-item label {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+.filtro-item input[type="date"] {
+    height: 40px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.9rem;
+    width: auto;
+}
+
+/* KPIs (Key Performance Indicators) */
+.kpi-financial-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr); /* CORRIGIDO: Força 4 colunas em telas grandes */
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+.kpi-card-detailed {
+    background: white;
+    padding: 1rem 1.25rem;
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    border-left: 5px solid transparent; /* Cor definida por tipo */
+    transition: var(--transition);
+}
+.kpi-card-detailed:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-hover);
+}
+.kpi-icon-wrapper {
+    font-size: 1.5rem;
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    flex-shrink: 0;
+}
+.kpi-data {
+    text-align: left; /* CORRIGIDO: Alinha o conteúdo à esquerda para eliminar o efeito "flutuante" */
+    flex-grow: 1;
+}
+.kpi-data .kpi-label {
+    font-size: 0.8rem;
+    color: var(--text-light);
+    font-weight: 600;
+    text-transform: uppercase;
+}
+.kpi-data .kpi-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-color);
+    margin: 0;
+}
+
+/* Cores dos KPIs */
+.kpi-faturamento { border-left-color: #8a2be2; }
+.kpi-faturamento .kpi-icon-wrapper { background: #8a2be2; }
+.kpi-liquido { border-left-color: #28a745; }
+.kpi-liquido .kpi-icon-wrapper { background: #28a745; }
+.kpi-taxas { border-left-color: #dc3545; }
+.kpi-taxas .kpi-icon-wrapper { background: #dc3545; }
+.kpi-transacoes { border-left-color: #17a2b8; }
+.kpi-transacoes .kpi-icon-wrapper { background: #17a2b8; }
+.kpi-medio { border-left-color: #ffc107; }
+.kpi-medio .kpi-icon-wrapper { background: #ffc107; }
+.kpi-dia { border-left-color: #6f42c1; }
+.kpi-dia .kpi-icon-wrapper { background: #6f42c1; }
+
+/* Layout dos Gráficos */
+.dashboard-main-layout-v2 {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+}
+.col-main {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+.col-side {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+.grafico-card-v2 {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    flex-grow: 1;
+}
+.grafico-card-v2 h3 {
+    border-bottom: 1px solid #eee;
+    padding-bottom: 0.75rem;
+    margin: 0 0 1rem 0;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.grafico-container-v2 {
+    position: relative;
+    width: 100%;
+}
+.table-moderna {
+    width: 100%;
+    border-collapse: collapse;
+}
+.table-moderna th {
+    background: none;
+    color: var(--primary-dark);
+    text-align: left;
+    padding: 0.75rem 1rem;
+    border-bottom: 2px solid var(--primary-light);
+    font-size: 0.9rem;
+}
+.table-moderna td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 0.9rem;
+}
+.badge-pagamento {
+    background: #e9ecef;
+    color: #495057;
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    text-transform: capitalize;
+}
+
+/* Layout da Aba "Gerar Relatórios" */
+.report-date-filter-inputs {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+}
+.filter-note {
+    font-size: 0.85rem;
+    color: var(--text-light);
+    margin-top: 1rem;
+}
+.report-options-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+}
+.report-option-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+    text-align: center;
+    transition: var(--transition);
+}
+.report-option-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-hover);
+}
+.report-option-card .report-icon {
+    font-size: 2.5rem;
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+}
+.report-option-card h3 {
+    margin-bottom: 0.5rem;
+    font-size: 1.2rem;
+}
+.report-option-card p {
+    font-size: 0.9rem;
+    color: var(--text-light);
+    margin-bottom: 1.5rem;
+    min-height: 50px;
+}
+.report-option-card .btn {
+    background: var(--primary-color);
+    width: 100%;
+}
+.report-option-card .btn:hover {
+    background: var(--primary-dark);
+}
+
+/* Layout da Aba "Configurações" */
+.settings-container h3 {
+    border-bottom: 1px solid #eee;
+    padding-bottom: 0.75rem;
+    margin-bottom: 1rem;
+}
+.settings-form {
+    display: flex;
+    align-items: flex-end;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+}
+.settings-instructions {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    background: #e3f2fd;
+    color: #1565c0;
+    border: 1px solid #bbdefb;
+    border-radius: 8px;
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+}
+.settings-instructions p {
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+/* Responsividade do Dashboard */
+@media (max-width: 900px) {
+    .dashboard-main-layout-v2 {
+        grid-template-columns: 1fr;
+    }
+    /* CORRIGIDO: Em telas menores que 900px, volta para 3 ou 2 colunas para caber */
+    .kpi-financial-grid {
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+}
+@media (max-width: 767px) {
+    .tabs-nav {
+        flex-direction: column;
+    }
+    .kpi-financial-grid {
+        grid-template-columns: 1fr 1fr; /* Volta para 2 colunas no mobile */
+    }
+    .filtros-container-novo {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .filtros-data-personalizada {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .filtro-item input[type="date"] {
+        width: 100%;
+    }
+    .new-dashboard-header {
+        padding: 1.5rem;
+        text-align: center;
+    }
+    
+    /* NOVO: Estilos de responsividade do Delivery */
+    .delivery-search-bar .delivery-actions-group {
+        width: 100%;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.5rem;
+    }
+    
+    .delivery-search-bar .search-inputs {
+        width: 100%;
+        display: none; /* Esconde os inputs por padrão no mobile */
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .delivery-search-bar .search-inputs.show-mobile {
+        display: flex; /* Mostra inputs ao clicar no ícone */
+    }
+
+    .delivery-search-bar .header-actions {
+        width: 100%;
+        justify-content: space-between;
+        margin-top: 0;
+    }
+    
+    /* NOVO: Botão de alternância de busca */
+    .delivery-search-bar .btn-toggle-search {
+        background-color: var(--primary-color);
+        color: white;
+        padding: 0.5rem;
+        border-radius: var(--radius-sm);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        flex-shrink: 0;
+    }
+}

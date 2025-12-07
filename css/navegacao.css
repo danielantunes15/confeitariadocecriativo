@@ -1,0 +1,450 @@
+/* css/navegacao.css */
+
+/* 1. Estrutura Principal de Navegação (Sidebar e Header) */
+:root {
+    --sidebar-width: 250px;
+    --header-height: 60px;
+}
+
+.app-wrapper {
+    display: flex;
+    min-height: 100vh;
+}
+
+.main-content-wrapper {
+    flex-grow: 1;
+    margin-left: var(--sidebar-width);
+    position: relative;
+    width: calc(100% - var(--sidebar-width));
+}
+
+.header {
+    background: white; 
+    color: var(--text-color);
+    padding: 0.5rem 0;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    height: var(--header-height);
+    display: flex;
+    align-items: center;
+}
+
+.header .header-content {
+    /* *** MODIFICAÇÃO CHAVE: Forçar separação L/R do conteúdo principal *** */
+    display: flex;
+    justify-content: flex-start; /* CORREÇÃO APLICADA */
+    align-items: center;
+    width: 100%;
+}
+
+.header .logo {
+    color: var(--primary-dark);
+    font-size: 1.3rem;
+}
+
+/* NOVO BLOCO: Estilo do Título formatado pelo JS/CSS */
+/* Esta é a h1 que contém o nome da página (Administração - Gerenciamento) */
+.header .page-title-formatted {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--primary-dark);
+    display: flex;
+    align-items: center;
+    gap: 10px; /* Espaço entre o ícone e o texto */
+    /* *** CORREÇÃO FINAL: Empurra o elemento da direita para a extremidade *** */
+    margin-right: auto; 
+    flex-shrink: 0;
+}
+
+.header .page-title-formatted i {
+    color: var(--primary-color);
+    font-size: 1.5rem;
+}
+/* FIM NOVO BLOCO */
+
+
+/* 2. Sidebar (Menu Lateral) */
+.sidebar {
+    width: var(--sidebar-width);
+    flex-shrink: 0; 
+    background: linear-gradient(180deg, var(--primary-color), var(--primary-dark)); /* Gradiente Rosa */
+    color: white;
+    position: fixed;
+    height: 100%;
+    top: 0;
+    left: 0;
+    z-index: 1100;
+    box-shadow: 5px 0 15px rgba(0, 0, 0, 0.3);
+    overflow-y: auto;
+    padding: 20px 0;
+    transition: transform 0.3s ease-in-out; 
+    
+    /* NOVO: Propriedades Flexbox para o Rodapé */
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 0; /* Remove padding inferior para o footer encaixar */
+}
+
+.sidebar-header {
+    text-align: center;
+    padding: 0 10px 20px 10px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+    flex-shrink: 0; /* Impede o header de encolher */
+}
+
+.sidebar-header .logo {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: white;
+    line-height: 1.2;
+}
+
+.sidebar-header p {
+    font-size: 0.85rem;
+    margin: 5px 0 0 0;
+    opacity: 0.8;
+}
+
+/* 3. Links de Navegação */
+.nav {
+    display: flex; 
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    
+    /* NOVO: Faz a navegação principal crescer e ocupar o espaço disponível */
+    flex-grow: 1;
+}
+
+.nav-link, .btn-logout {
+    color: white;
+    text-decoration: none;
+    padding: 12px 20px;
+    border-radius: 0;
+    transition: background-color 0.3s, border-left 0.3s;
+    justify-content: flex-start; 
+    font-size: 1rem;
+    margin: 0;
+    border-left: 5px solid transparent;
+    display: flex; /* Adicionado para garantir alinhamento */
+    align-items: center; /* Adicionado para garantir alinhamento */
+    gap: 10px; /* Adicionado para espaçar ícone e texto */
+}
+
+.nav-link i, .btn-logout i {
+    font-size: 1.1rem;
+    width: 25px; 
+}
+
+.nav-link:hover, .nav-link.active {
+    background-color: rgba(255, 255, 255, 0.15);
+    border-left-color: var(--primary-color); 
+    transform: none; 
+}
+
+.nav-link.active {
+    background-color: rgba(0, 0, 0, 0.15);
+    font-weight: 600;
+}
+
+/* === MODIFICAÇÃO "SUAVE" DO BOTÃO SAIR (NÃO USADO MAIS, MAS MANTIDO PARA CONTEXTO) === */
+.btn-logout {
+    background-color: rgba(0, 0, 0, 0.15); /* Fundo sutil (igual ao link ativo) */
+    margin-top: 30px; 
+    border-left: 5px solid transparent;
+    font-weight: 600; /* Leve destaque */
+}
+
+.btn-logout:hover {
+    background-color: var(--error-color); /* Vermelho no hover */
+    border-left-color: #f8d7da; /* Borda vermelha clara */
+    transform: none; /* Remove efeito de "levantar" */
+}
+/* === FIM DA MODIFICAÇÃO === */
+
+/* 6. NOVO: Rodapé da Sidebar (Usuário e Logout) */
+
+.sidebar-footer {
+    flex-shrink: 0; /* Impede que o footer encolha */
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(0, 0, 0, 0.1);
+    position: relative; /* Contexto para o menu flutuante */
+}
+
+.user-profile {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+.user-profile:hover {
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.user-profile .user-avatar {
+    font-size: 1.8rem;
+    color: white;
+}
+
+.user-profile span {
+    margin-left: 10px;
+    font-weight: 600;
+    color: white;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex-grow: 1;
+}
+
+.user-profile .toggle-icon {
+    font-size: 0.9rem;
+    color: white;
+    transition: transform 0.3s ease;
+}
+
+/* Animação do ícone 'chevron' */
+.user-profile.open .toggle-icon {
+    transform: rotate(180deg);
+}
+
+/* Menu de Logout (flutuante) */
+.logout-menu {
+    position: absolute;
+    bottom: 100%; /* Começa acima do footer */
+    left: 0;
+    right: 0;
+    background: #2c3e50; /* Um fundo escuro, mas diferente */
+    box-shadow: 0 -4px 10px rgba(0,0,0,0.3);
+    
+    /* Escondido por padrão */
+    visibility: hidden;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.3s ease;
+    z-index: 1101; /* Acima da sidebar */
+}
+
+.logout-menu.show {
+    visibility: visible;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.logout-menu .logout-link {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    color: white;
+    text-decoration: none;
+    gap: 10px;
+}
+
+.logout-menu .logout-link i {
+    color: var(--error-color); /* Vermelho para o ícone de sair */
+    width: 25px;
+}
+
+.logout-menu .logout-link:hover {
+    background: var(--error-color);
+}
+.logout-menu .logout-link:hover i {
+    color: white;
+}
+
+/* 4. Navegação Mobile (Botão Hamburger e Overlay) */
+.menu-toggle {
+    display: none; 
+    color: var(--primary-dark) !important;
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    /* Faz o botão de toggle ficar no canto esquerdo */
+    margin-right: 1rem; 
+}
+
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1099;
+}
+
+/* NOVO BLOCO: Informações do Canto Direito (Relógio + Status) */
+.header-right-info {
+    /* Faz com que o grupo de info fique agrupado à direita */
+    display: flex;
+    align-items: center;
+    gap: 1rem; /* Espaço entre os itens */
+    /* *** CORREÇÃO: Mover para a extrema direita *** */
+    margin-left: auto; 
+    flex-shrink: 0;
+}
+
+.info-item-relogio {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-color);
+    padding: 5px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background: var(--bg-light);
+}
+
+.info-item-icon {
+    font-size: 1.4rem;
+    cursor: pointer;
+    position: relative;
+    /* Adiciona margem se estiver sozinho ou entre outros elementos */
+}
+
+.info-item-icon .fa-bell {
+    /* Estilo inicial do sino de notificação */
+    color: var(--text-light); 
+    transition: all 0.3s ease;
+}
+
+/* Estilo para o badge (ponto vermelho de notificação) */
+.delivery-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: var(--error-color); /* Vermelho */
+    color: white;
+    border-radius: 50%;
+    font-size: 0.7rem;
+    padding: 2px 5px;
+    min-width: 18px;
+    text-align: center;
+    line-height: 1.2;
+    box-shadow: 0 0 5px rgba(0,0,0,0.2);
+    z-index: 10;
+}
+/* FIM NOVO BLOCO */
+
+
+/* 5. Regras Responsivas da Navegação */
+@media (max-width: 1024px) {
+    .sidebar {
+        transform: translateX(calc(var(--sidebar-width) * -1)); 
+    }
+    
+    .sidebar.show {
+        transform: translateX(0);
+    }
+    
+    .main-content-wrapper {
+        margin-left: 0;
+        width: 100%;
+    }
+
+    .header .menu-toggle {
+        display: block !important;
+    }
+    
+    .sidebar.show ~ .sidebar-overlay {
+        display: block;
+    }
+    
+    /* Regras de Responsividade para o novo header */
+    .header .page-title-formatted {
+        /* Reduz o tamanho do título para caber melhor no mobile */
+        font-size: 1.1rem;
+        gap: 5px;
+        /* *** CORREÇÃO: Dá um espaço no mobile para que o título não bata no ícone toggle *** */
+        margin-right: 10px; 
+    }
+    
+    .header .page-title-formatted i {
+         font-size: 1.3rem;
+    }
+    
+    .header-right-info {
+        /* Esconde o relógio no mobile (mantém apenas o ícone de status) */
+        gap: 0.5rem;
+    }
+    
+    .info-item-relogio {
+        display: none;
+    }
+}
+
+/* css/navegacao.css */
+
+/* ... (Estilos existentes de .nav-link) ... */
+.nav-link, .btn-logout {
+    color: white;
+    text-decoration: none;
+    padding: 12px 20px;
+    /* ... (outros estilos) ... */
+    display: flex; 
+    align-items: center; 
+    gap: 10px; 
+}
+
+/* --- INÍCIO DAS NOVAS REGRAS --- */
+
+/* 1. Faz o texto (ex: "Delivery") crescer para empurrar o emblema */
+.nav-link span:first-of-type {
+    flex-grow: 1;
+}
+
+/* 2. Estilo do emblema de notificação */
+.nav-badge {
+    background-color: var(--error-color); /* Vermelho */
+    color: white;
+    font-size: 0.75rem; /* 12px */
+    font-weight: 700;
+    border-radius: 50%;
+    width: 22px;  /* Tamanho fixo */
+    height: 22px; /* Tamanho fixo */
+    display: flex; /* Usado para centralizar o número */
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    flex-shrink: 0; /* Impede que o emblema seja "espremido" */
+    transition: all 0.3s ease;
+    transform: scale(0.9);
+    opacity: 0.9;
+    
+    /* Padrão é escondido (controlado pelo JS) */
+    display: none; 
+}
+
+/* 3. Destaque do emblema quando o link "Delivery" está ativo */
+.nav-link.active .nav-badge {
+    background-color: white;
+    color: var(--error-color); /* Inverte as cores */
+    transform: scale(1);
+    opacity: 1;
+}
+
+/* 4. Estilo do emblema do SINO (no header) */
+/* (Já existia no seu css/navegacao.css, mas garanto que esteja correto) */
+.delivery-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: var(--error-color);
+    color: white;
+    border-radius: 50%;
+    font-size: 0.7rem;
+    padding: 2px 5px;
+    min-width: 18px;
+    text-align: center;
+    line-height: 1.2;
+    box-shadow: 0 0 5px rgba(0,0,0,0.2);
+    z-index: 10;
+}
+/* --- FIM DAS NOVAS REGRAS --- */
+
+
+/* ... (Restante do css/navegacao.css) ... */

@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administração - Gerenciamento</title>
+    <link rel="stylesheet" href="css/layout.css">
+    <link rel="stylesheet" href="css/navegacao.css">
+    <link rel="stylesheet" href="css/componentes.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-wrapper">
+        
+        <div id="sidebar-placeholder"></div>
+        
+        <div class="main-content-wrapper">
+
+            <div id="header-placeholder"></div>
+
+            <main class="main">
+                <div class="container">
+                    <div id="alert-container"></div>
+                    
+                    <div class="card debug-card" style="margin-bottom: 1rem; display: none;" id="debug-card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-bug"></i> Informações de Debug</h3>
+                        </div>
+                        <div class="card-body">
+                            <div id="debug-info"></div>
+                            <button onclick="verificarAcessoAdmin()" class="btn btn-info">
+                                <i class="fas fa-search"></i> Verificar Acesso
+                            </button>
+                            <button onclick="corrigirAcessoAdmin()" class="btn btn-warning">
+                                <i class="fas fa-tools"></i> Corrigir Acesso
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="admin-content" style="display: none;"> <div class="card">
+                            <h2><i class="fas fa-users-cog"></i> Gerenciamento de Usuários</h2>
+
+                            <div class="tabs">
+                                <button class="tab-btn active" data-tab="lista-usuarios">
+                                    <i class="fas fa-list"></i> Lista de Usuários
+                                </button>
+                                <button class="tab-btn" data-tab="novo-usuario">
+                                    <i class="fas fa-user-plus"></i> Novo Usuário
+                                </button>
+                                <button class="tab-btn" data-tab="excluir-vendas">
+                                    <i class="fas fa-trash-alt"></i> Excluir Vendas
+                                </button>
+                            </div>
+
+                            <div id="lista-usuarios" class="tab-content active">
+                                <div class="table-controls">
+                                    <div class="search-box">
+                                        <input type="text" id="search-usuarios" placeholder="Buscar usuários...">
+                                        <i class="fas fa-search"></i>
+                                    </div>
+                                    <button id="refresh-usuarios" class="btn btn-secondary">
+                                        <i class="fas fa-sync-alt"></i> Atualizar
+                                    </button>
+                                </div>
+                                <div class="table-container">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>Nome</th>
+                                                <th>Usuário</th>
+                                                <th>Tipo</th>
+                                                <th>Status</th>
+                                                <th>Criado em</th>
+                                                <th>Ações</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="usuarios-body">
+                                            <tr>
+                                                <td colspan="6" style="text-align: center;">
+                                                    <div class="loading-spinner"></div>
+                                                    Carregando usuários...
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <div id="novo-usuario" class="tab-content">
+                                <form id="form-novo-usuario" class="form">
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="novo-nome">
+                                                <i class="fas fa-user"></i> Nome Completo *
+                                            </label>
+                                            <input id="novo-nome" type="text" required 
+                                                   placeholder="Digite o nome completo" />
+                                            <div class="form-error" id="error-nome"></div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="novo-username">
+                                                <i class="fas fa-at"></i> Usuário (login) *
+                                            </label>
+                                            <input id="novo-username" type="text" required 
+                                                   placeholder="Digite o nome de usuário" />
+                                            <div class="form-error" id="error-username"></div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="nova-senha">
+                                                <i class="fas fa-lock"></i> Senha (mínimo 6 caracteres) *
+                                            </label>
+                                            <input id="nova-senha" type="password" minlength="6" required 
+                                                   placeholder="Digite a senha" />
+                                            <div class="form-error" id="error-senha"></div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="confirmar-senha">
+                                                <i class="fas fa-lock"></i> Confirmar Senha *
+                                            </label>
+                                            <input id="confirmar-senha" type="password" minlength="6" required 
+                                                   placeholder="Confirme a senha" />
+                                            <div class="form-error" id="error-confirmar-senha"></div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="tipo-usuario">
+                                                <i class="fas fa-user-tag"></i> Tipo de Usuário *
+                                            </label>
+                                            <select id="tipo-usuario" required>
+                                                <option value="">Selecione o tipo</option>
+                                                <option value="usuario">Usuário Normal</option>
+                                                <option value="administrador">Administrador</option>
+                                            </select>
+                                            <div class="form-error" id="error-tipo"></div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="checkbox-label">
+                                                <input type="checkbox" id="usuario-ativo" checked />
+                                                <span class="checkmark"></span>
+                                                <i class="fas fa-check-circle"></i> Usuário Ativo
+                                            </label>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="form-actions">
+                                        <button class="btn btn-primary" type="submit">
+                                            <i class="fas fa-save"></i> Criar Usuário
+                                        </button>
+                                        <button class="btn btn-secondary" type="reset">
+                                            <i class="fas fa-broom"></i> Limpar
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+
+                            <div id="excluir-vendas" class="tab-content">
+                                <h3 style="color: var(--error-color);"><i class="fas fa-exclamation-triangle"></i> Exclusão de Vendas</h3>
+                                <p>Use esta ferramenta com cuidado. Excluir uma venda é irreversível e removerá todos os dados associados a ela (itens, caixa).</p>
+                                
+                                <div class="filtros-data-personalizada" style="display: flex; gap: 1rem; align-items: flex-end; margin-bottom: 1rem;">
+                                    <div class="filtro-item">
+                                        <label for="vendas-data-inicio">Data Início</label>
+                                        <input type="date" id="vendas-data-inicio">
+                                    </div>
+                                    <div class="filtro-item">
+                                        <label for="vendas-data-fim">Data Fim</label>
+                                        <input type="date" id="vendas-data-fim">
+                                    </div>
+                                    <button id="buscar-vendas-btn" class="btn btn-primary btn-sm">
+                                        <i class="fas fa-search"></i> Buscar Vendas
+                                    </button>
+                                </div>
+                                
+                                <div class="table-container">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>ID Venda</th>
+                                                <th>Data</th>
+                                                <th>Cliente</th>
+                                                <th>Vendedor</th>
+                                                <th>Total (R$)</th>
+                                                <th>Pagamento</th>
+                                                <th style="width: 100px;">Ações</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="vendas-body">
+                                            <tr>
+                                                <td colspan="7" style="text-align: center;">
+                                                    Selecione um período e clique em "Buscar Vendas".
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            
+                        </div>
+                    </div>
+
+                    <div id="acesso-negado" class="card" style="display: none;">
+                        <div class="error-content">
+                            <i class="fas fa-exclamation-triangle" style="font-size: 4rem; color: #dc3545; margin-bottom: 1rem;"></i>
+                            <h2>Acesso Negado</h2>
+                            <p>Esta área é restrita a administradores.</p>
+                            <div id="info-usuario" style="margin: 1rem 0; padding: 1rem; background: #f8f9fa; border-radius: 8px;"></div>
+                            <button onclick="window.location.href = 'index.html'" class="btn btn-primary">
+                                <i class="fas fa-home"></i> Voltar para Vendas
+                            </button>
+                            <button onclick="window.sistemaAuth.fazerLogout()" class="btn btn-secondary">
+                                <i class="fas fa-sign-out-alt"></i> Fazer Logout
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+            <div id="modal-editar" class="modal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3><i class="fas fa-edit"></i> Editar Usuário</h3>
+                        <span class="close">&times;</span>
+                    </div>
+                    <form id="form-editar-usuario">
+                        <input type="hidden" id="editar-id" />
+                        <div class="form-group">
+                            <label for="editar-nome">Nome Completo *</label>
+                            <input id="editar-nome" type="text" required />
+                            <div class="form-error" id="error-editar-nome"></div>
+                        </div>
+                        <div class="form-group">
+                            <label for="editar-username">Usuário (login) *</label>
+                            <input id="editar-username" type="text" required />
+                            <div class="form-error" id="error-editar-username"></div>
+                        </div>
+                        <div class="form-group">
+                            <label for="editar-tipo">Tipo de Usuário *</label>
+                            <select id="editar-tipo" required>
+                                <option value="">Selecione o tipo</option>
+                                <option value="usuario">Usuário Normal</option>
+                                <option value="administrador">Administrador</option>
+                            </select>
+                            <div class="form-error" id="error-editar-tipo"></div>
+                        </div>
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="editar-ativo" />
+                                <span class="checkmark"></span>
+                                Usuário Ativo
+                            </label>
+                        </div>
+                        <div class="form-actions">
+                            <button class="btn btn-primary" type="submit">
+                                <i class="fas fa-save"></i> Salvar Alterações
+                            </button>
+                            <button class="btn btn-secondary" type="button" id="fechar-modal">
+                                <i class="fas fa-times"></i> Cancelar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <footer>
+            </footer>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <script src="js/supabase-config.js"></script>
+
+    <script src="js/auth.js"></script>
+    <script src="js/layout-loader.js" defer></script> 
+    
+    <script src="js/administracao.js"></script>
+    
+    <script>
+        // Script para verificação de acesso (mantido)
+        function verificarAcessoAdmin() {
+            const usuario = window.sistemaAuth?.usuarioLogado;
+            const debugInfo = document.getElementById('debug-info');
+            
+            if (!usuario) {
+                debugInfo.innerHTML = '<p style="color: #dc3545;">❌ Nenhum usuário logado</p>';
+                return;
+            }
+
+            const info = `
+                <div style="text-align: left;">
+                    <p><strong>Usuário:</strong> ${usuario.nome || 'N/A'}</p>
+                    <p><strong>Username:</strong> ${usuario.username || 'N/A'}</p>
+                    <p><strong>Tipo:</strong> <span style="color: ${usuario.tipo === 'administrador' ? '#28a745' : '#dc3545'}">${usuario.tipo || 'N/A'}</span></p>
+                    <p><strong>ID:</strong> ${usuario.id || 'N/A'}</p>
+                    <p><strong>É admin:</strong> <span style="color: ${window.sistemaAuth.isAdmin() ? '#28a745' : '#dc3545'}">${window.sistemaAuth.isAdmin() ? 'SIM ✅' : 'NÃO ❌'}</span></p>
+                    <p><strong>Tipos aceitos como admin:</strong> administrador, admin, Administrador, ADMINISTRADOR, gerente, supervisor</p>
+                </div>
+            `;
+            
+            debugInfo.innerHTML = info;
+        }
+
+        function corrigirAcessoAdmin() {
+            const usuario = window.sistemaAuth?.usuarioLogado;
+            
+            if (!usuario) {
+                alert('Nenhum usuário logado');
+                return;
+            }
+
+            if (confirm(`Deseja forçar acesso de administrador para ${usuario.username}?\n\nIsso alterará temporariamente o tipo do usuário para "administrador".`)) {
+                // Forçar tipo de administrador
+                usuario.tipo = 'administrador';
+                window.sistemaAuth.usuarioLogado = usuario;
+                sessionStorage.setItem('usuarioLogado', JSON.stringify(usuario));
+                
+                alert('Acesso de administrador concedido! A página será recarregada.');
+                location.reload();
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            // Mostrar informações de debug (apenas para desenvolvimento - mantido)
+            const debugCard = document.getElementById('debug-card');
+            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                debugCard.style.display = 'block';
+                setTimeout(verificarAcessoAdmin, 1000);
+            }
+
+            // Verificar acesso de administrador (mantido)
+            setTimeout(() => {
+                const usuario = window.sistemaAuth?.usuarioLogado;
+                const adminContent = document.getElementById('admin-content');
+                const acessoNegado = document.getElementById('acesso-negado');
+                const infoUsuario = document.getElementById('info-usuario');
+
+                if (!window.sistemaAuth.isAdmin()) {
+                    console.log('❌ Acesso negado - Usuário não é administrador:', usuario);
+                    
+                    if (adminContent) adminContent.style.display = 'none';
+                    if (acessoNegado) acessoNegado.style.display = 'block';
+                    
+                    if (infoUsuario && usuario) {
+                        infoUsuario.innerHTML = `
+                            <p><strong>Usuário logado:</strong> ${usuario.nome}</p>
+                            <p><strong>Tipo:</strong> ${usuario.tipo || 'N/A'}</p>
+                            <p><strong>Status:</strong> ${usuario.ativo ? 'Ativo' : 'Inativo'}</p>
+                        `;
+                    }
+                } else {
+                    console.log('✅ Acesso de administrador permitido para:', usuario?.nome);
+                    if (adminContent) adminContent.style.display = 'block';
+                    if (acessoNegado) acessoNegado.style.display = 'none';
+                }
+            }, 500); // Atraso para garantir que auth.js tenha rodado
+        });
+    </script>
+</body>
+</html>

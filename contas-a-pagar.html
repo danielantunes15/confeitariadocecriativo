@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerencial - Contas a Pagar</title>
+    <link rel="stylesheet" href="css/layout.css">
+    <link rel="stylesheet" href="css/navegacao.css">
+    <link rel="stylesheet" href="css/componentes.css">
+    
+    <link rel="stylesheet" href="css/contas-a-pagar.css">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-wrapper">
+        
+        <div id="sidebar-placeholder"></div>
+
+        <div class="main-content-wrapper">
+
+            <div id="header-placeholder"></div>
+
+            <main class="main">
+                <div class="container">
+                    <div id="alert-container"></div>
+                    
+                    <div id="loading" class="card">
+                        <div class="spinner"></div>
+                        <p style="text-align: center;">Carregando Gerencial...</p>
+                    </div>
+
+                    <div id="content" style="display: none;">
+                        
+                        <div id="acesso-negado" class="card" style="display: none; text-align: center; padding: 2rem; margin-top: 2rem;">
+                            <i class="fas fa-user-lock" style="font-size: 3rem; color: var(--error-color);"></i>
+                            <h2 style="color: var(--error-color);">Acesso Restrito</h2>
+                            <p>Apenas usuários com nível de **Administrador** ou **Gerente** podem acessar esta área.</p>
+                        </div>
+                        
+                        <div id="painel-gerencial-content" style="display: none;">
+                            
+                            <header class="alert-dashboard">
+                                <div class="kpi-alerta alerta-vencido">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    <div>
+                                        <h4>Vencidas</h4>
+                                        <span id="alerta-vencido-valor" class="valor">R$ 0,00</span>
+                                    </div>
+                                </div>
+                                <div class="kpi-alerta alerta-semana">
+                                    <i class="fas fa-calendar-alt"></i>
+                                    <div>
+                                        <h4>A Pagar na Semana</h4>
+                                        <span id="alerta-semana-valor" class="valor">R$ 0,00</span>
+                                    </div>
+                                </div>
+                                <div class="kpi-alerta alerta-mes">
+                                    <i class="fas fa-file-invoice-dollar"></i>
+                                    <div>
+                                        <h4>Total a Pagar no Mês</h4>
+                                        <span id="alerta-mes-valor" class="valor">R$ 0,00</span>
+                                    </div>
+                                </div>
+                            </header>
+                            
+                            <div class="gerencial-header">
+                                <h2><i class="fas fa-chart-line"></i> Painel Gerencial</h2>
+                                <div class="tabs">
+                                    <button class="tab-btn active" data-tab="contas-pendentes">Contas a Pagar</button>
+                                    <button class="tab-btn" data-tab="contas-a-receber">Contas a Receber</button>
+                                    <button class="tab-btn" data-tab="crediario-devedores">Crediário (Devedores)</button>
+                                    <button class="tab-btn" data-tab="nova-conta">Nova Conta (Pagar)</button>
+                                    <button class="tab-btn" data-tab="historico">Histórico (Pagas)</button>
+                                </div>
+                            </div>
+
+                            <div class="card">
+                                <div id="contas-a-receber" class="tab-content" style="display: none;">
+                                    <h3 style="margin-top: 0;"><i class="fas fa-hand-holding-usd"></i> Contas a Receber (Saldo Pendente de Encomendas)</h3>
+                                    <div class="table-container">
+                                        <table>
+                                            <thead>
+                                                <tr>
+                                                    <th>Entrega</th>
+                                                    <th>Cliente</th>
+                                                    <th>Total Encomenda</th>
+                                                    <th>Sinal Pago</th>
+                                                    <th>Valor a Receber (R$)</th>
+                                                    <th>Status</th>
+                                                    <th>Ações</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="contas-receber-body">
+                                                <tr>
+                                                    <td colspan="7" style="text-align: center;">Carregando contas a receber...</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                
+                                <div id="crediario-devedores" class="tab-content" style="display: none;">
+                                    <h3 style="margin-top: 0;"><i class="fas fa-users"></i> Clientes no Crediário (Dívidas)</h3>
+                                    <div class="table-container">
+                                        <table>
+                                            <thead>
+                                                <tr>
+                                                    <th>Data Venda</th>
+                                                    <th>Cliente</th>
+                                                    <th>Vendedor</th>
+                                                    <th>Total da Dívida (R$)</th>
+                                                    <th>Status</th>
+                                                    <th>Ações</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="crediario-devedores-body">
+                                                <tr>
+                                                    <td colspan="6" style="text-align: center;">Carregando clientes no crediário...</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                
+                                <div id="contas-pendentes" class="tab-content active">
+                                    <h3 style="margin-top: 0;"><i class="fas fa-file-invoice-dollar"></i> Contas a Pagar Pendentes</h3>
+                                    <div class="table-controls">
+                                        <div class="search-box">
+                                            <input type="text" id="search-contas" placeholder="Buscar contas...">
+                                            <i class="fas fa-search"></i>
+                                        </div>
+                                        <div class="form-group" style="flex: 1; max-width: 200px; margin-bottom: 0;">
+                                            <label for="filtro-vencimento" style="margin-bottom: 0.25rem;">Filtrar Vencimento</label>
+                                            <select id="filtro-vencimento">
+                                                <option value="proximo">Próximos 7 dias</option>
+                                                <option value="vencido">Vencidas</option>
+                                                <option value="todos">Todos Pendentes</option>
+                                            </select>
+                                        </div>
+                                        <button id="aplicar-filtro" class="btn btn-secondary">Aplicar Filtros</button>
+                                    </div>
+
+                                    <div class="table-container">
+                                        <table>
+                                            <thead>
+                                                <tr>
+                                                    <th>Vencimento</th>
+                                                    <th>Descrição</th>
+                                                    <th>Fornecedor</th>
+                                                    <th>Valor (R$)</th>
+                                                    <th>Status</th>
+                                                    <th>Ações</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="contas-pendentes-body">
+                                                <tr>
+                                                    <td colspan="6" style="text-align: center;">Carregando contas...</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <div id="nova-conta" class="tab-content" style="display: none;">
+                                    <form id="form-nova-conta" class="form">
+                                        <div class="form-row">
+                                            <div class="form-group">
+                                                <label for="conta-descricao">Descrição da Conta *</label>
+                                                <input id="conta-descricao" type="text" required placeholder="Ex: Aluguel da Loja, Compra de Farinha" />
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="conta-fornecedor">Fornecedor (Opcional)</label>
+                                                <input id="conta-fornecedor" type="text" placeholder="Nome do fornecedor" />
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="form-row">
+                                            <div class="form-group">
+                                                <label for="conta-valor">Valor (R$) *</label>
+                                                <input id="conta-valor" type="number" step="0.01" min="0" required placeholder="0.00" />
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="conta-vencimento">Data de Vencimento *</label>
+                                                <input id="conta-vencimento" type="date" required />
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="card-recorrencia">
+                                            <h4 class="card-recorrencia-title"><i class="fas fa-sync-alt"></i> Recorrência (Opcional)</h4>
+                                            <div class="form-row">
+                                                <div class="form-group">
+                                                    <label for="conta-recorrencia">Tipo de Repetição</label>
+                                                    <select id="conta-recorrencia">
+                                                        <option value="unica">Única (Padrão)</option>
+                                                        <option value="mensal">Mensal</option>
+                                                        <option value="semestral">Semestral</option>
+                                                        <option value="anual">Anual</option>
+                                                    </select>
+                                                </div>
+                                                <div class="form-group" id="duracao-recorrencia-group" style="display: none;">
+                                                    <label for="conta-parcelas">Nº de Parcelas (Meses/Repetições)</label>
+                                                    <input id="conta-parcelas" type="number" min="2" value="12" placeholder="Ex: 12">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="form-group">
+                                            <label for="conta-observacoes">Observações</label>
+                                            <textarea id="conta-observacoes" rows="3" placeholder="Detalhes importantes"></textarea>
+                                        </div>
+                                        
+                                        <div class="form-actions">
+                                            <button class="btn btn-primary" type="submit">
+                                                <i class="fas fa-save"></i> Cadastrar Conta
+                                            </button>
+                                            <button class="btn btn-secondary" type="reset">
+                                                <i class="fas fa-broom"></i> Limpar
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+
+                                <div id="historico" class="tab-content" style="display: none;">
+                                    <h3 style="margin-top: 0;"><i class="fas fa-history"></i> Histórico de Contas Pagas</h3>
+                                    <div class="table-container">
+                                        <table>
+                                            <thead>
+                                                <tr>
+                                                    <th>Vencimento</th>
+                                                    <th>Descrição</th>
+                                                    <th>Valor (R$)</th>
+                                                    <th>Data Pgto</th>
+                                                    <th>Ações</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="contas-historico-body">
+                                                <tr>
+                                                    <td colspan="5" style="text-align: center;">Carregando histórico...</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div> 
+                        </div>
+                    </div>
+
+                    <div id="error-message" class="card" style="display: none;">
+                        <h2>Erro de Conexão</h2>
+                        <p>Não foi possível conectar ao banco de dados.</p>
+                        <button onclick="location.reload()" class="btn btn-primary">Tentar Novamente</button>
+                    </div>
+                </div>
+            </main>
+
+            <div id="modal-editar-conta" class="modal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3><i class="fas fa-edit"></i> Editar Conta</h3>
+                        <span class="close" id="fechar-modal-editar-conta">&times;</span>
+                    </div>
+                    <form id="form-editar-conta">
+                        <input type="hidden" id="editar-conta-id" />
+                        <div class="form-group">
+                            <label for="editar-conta-descricao">Descrição *</label>
+                            <input id="editar-conta-descricao" type="text" required />
+                        </div>
+                        <div class="form-group">
+                            <label for="editar-conta-fornecedor">Fornecedor</label>
+                            <input id="editar-conta-fornecedor" type="text" />
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="editar-conta-valor">Valor (R$) *</label>
+                                <input id="editar-conta-valor" type="number" step="0.01" min="0" required />
+                            </div>
+                            <div class="form-group">
+                                <label for="editar-conta-vencimento">Vencimento *</label>
+                                <input id="editar-conta-vencimento" type="date" required />
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="editar-conta-observacoes">Observações</label>
+                            <textarea id="editar-conta-observacoes" rows="3"></textarea>
+                        </div>
+                        <div class="form-actions">
+                            <button class="btn btn-primary" type="submit">
+                                <i class="fas fa-save"></i> Salvar Alterações
+                            </button>
+                            <button class="btn btn-secondary" type="button" onclick="fecharModalContas()">
+                                <i class="fas fa-times"></i> Cancelar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <div id="modal-pagamento-crediario" class="modal">
+                <div class="modal-content" style="max-width: 400px;">
+                    <div class="modal-header">
+                        <h3><i class="fas fa-money-check-alt"></i> Recebimento de Dívida</h3>
+                        <span class="close" id="fechar-modal-crediario">&times;</span>
+                    </div>
+                    <form id="form-pagamento-crediario">
+                        <input type="hidden" id="pagamento-crediario-venda-id">
+                        <div class="form-group">
+                            <label>Cliente:</label>
+                            <p style="font-size: 1rem; font-weight: bold;" id="pagamento-crediario-cliente-nome">N/A</p>
+                        </div>
+                        <div class="form-group">
+                            <label>Valor a Receber:</label>
+                            <p style="font-size: 1.5rem; font-weight: bold; color: var(--success-color);" id="pagamento-crediario-valor">R$ 0,00</p>
+                        </div>
+                        <div class="form-group">
+                            <label for="pagamento-crediario-forma">Forma de Recebimento *</label>
+                            <select id="pagamento-crediario-forma" required>
+                                <option value="dinheiro">Dinheiro</option>
+                                <option value="pix">PIX</option>
+                                <option value="cartao_debito">Cartão de Débito</option>
+                                <option value="cartao_credito">Cartão de Crédito</option>
+                            </select>
+                        </div>
+                        <div class="form-actions" style="justify-content: center;">
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-check-circle"></i> Confirmar Recebimento
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <footer>
+            </footer>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <script src="js/supabase-config.js"></script>
+
+    <script>
+        // (Estas funções são chamadas pelo contas-a-pagar.js, então não podem ser totalmente removidas)
+        function fecharModalContas() {
+            const modal = document.getElementById('modal-editar-conta');
+            if(modal) modal.style.display = 'none';
+        }
+        // As definições de window.fecharModalContas e window.fecharModalCrediario
+        // serão feitas pelo contas-a-pagar.js quando ele carregar.
+        
+        // Script de lógica de abas (específico desta página, mantido)
+         document.addEventListener('DOMContentLoaded', function() {
+            const tabButtons = document.querySelectorAll('.gerencial-header .tabs .tab-btn');
+            const tabContents = document.querySelectorAll('.card .tab-content');
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    tabButtons.forEach(btn => btn.classList.remove('active'));
+                    tabContents.forEach(content => {
+                        content.classList.remove('active');
+                        content.style.display = 'none'; 
+                    });
+                    
+                    button.classList.add('active');
+                    const tabId = button.getAttribute('data-tab');
+                    const activeContent = document.getElementById(tabId);
+                    
+                    if (activeContent) {
+                        activeContent.classList.add('active');
+                        activeContent.style.display = 'block'; 
+                    }
+                });
+            });
+            
+            // Lógica da Recorrencia (mantida)
+            const recorrenciaSelect = document.getElementById('conta-recorrencia');
+            const duracaoGroup = document.getElementById('duracao-recorrencia-group');
+            const parcelasInput = document.getElementById('conta-parcelas');
+            
+            if (recorrenciaSelect && duracaoGroup) {
+                recorrenciaSelect.addEventListener('change', () => {
+                    const isRecorrente = recorrenciaSelect.value !== 'unica';
+                    duracaoGroup.style.display = isRecorrente ? 'block' : 'none';
+                    if (isRecorrente) {
+                        parcelasInput.setAttribute('required', 'required');
+                    } else {
+                        parcelasInput.removeAttribute('required');
+                    }
+                });
+            }
+        });
+    </script>
+    
+    <script src="js/auth.js"></script>
+    <script src="js/layout-loader.js" defer></script> 
+    
+    <script src="js/supabase-vendas.js"></script> 
+    <script src="js/supabase-encomendas.js"></script> 
+    <script src="js/contas-a-pagar.js"></script>
+
+</body>
+</html>

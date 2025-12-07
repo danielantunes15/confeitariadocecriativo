@@ -1,0 +1,163 @@
+/* css/encomendas.css */
+/* Estilos específicos para a página de Encomendas, baseados na imagem. */
+
+/* 1. Abas Principais (Criar, Lista, Clientes) */
+.tabs-nav {
+    display: flex;
+    gap: 1.5rem; /* Mais espaço entre as abas principais */
+    border-bottom: 2px solid var(--border-color);
+    margin-bottom: 1.5rem;
+}
+
+.tabs-nav .tab-button {
+    background: none;
+    border: none;
+    padding: 0.75rem 0.25rem; /* Padding sutil para o sublinhado */
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-light);
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.tabs-nav .tab-button:hover {
+    color: var(--primary-dark);
+}
+
+.tabs-nav .tab-button.active {
+    color: var(--primary-color); /* Pink */
+    border-bottom-color: var(--primary-color); /* Pink underline */
+}
+
+/* 2. Conteúdo da Página e Cards */
+/* O card principal agora não tem sombra e tem fundo branco */
+.encomendas-content .card {
+    background: var(--bg-color);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05); /* Sombra suave */
+    padding: 2rem; /* Mais espaçamento interno */
+}
+
+/* 3. Títulos e Labels do Formulário (como na imagem) */
+.card-title,
+#form-encomenda label,
+#form-cadastro-cliente label {
+    color: var(--primary-dark); /* Tom de rosa escuro/pink */
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
+}
+
+.card-title {
+    font-size: 1.3rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+/* 4. Abas Secundárias (Lista Clientes, Cadastrar Cliente) */
+.submenu-clientes .tabs-header {
+    display: flex;
+    gap: 1rem;
+    border-bottom: 2px solid var(--border-color);
+    margin-bottom: 1.5rem;
+}
+
+.submenu-clientes .tab-button {
+    background: none;
+    border: none;
+    padding: 0.5rem 0.25rem;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-light);
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.submenu-clientes .tab-button:hover {
+    color: var(--primary-dark);
+}
+
+.submenu-clientes .tab-button.active {
+    color: var(--primary-color); /* Pink */
+    border-bottom-color: var(--primary-color); /* Pink underline */
+}
+
+/* 5. Tabela de Clientes (Baseado na Imagem) */
+.tabela-clientes {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.tabela-clientes thead {
+    background-color: #FFF0F5; /* Fundo rosa claro para o header */
+}
+
+.tabela-clientes th {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    font-size: 0.85rem;
+    color: var(--primary-dark); /* Texto pink escuro */
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border: none; /* Remove bordas do header da tabela */
+}
+
+.tabela-clientes td {
+    padding: 1rem 1rem;
+    border-bottom: 1px solid #fdeff2; /* Borda rosa claro */
+    vertical-align: middle;
+    font-size: 0.95rem;
+}
+
+.tabela-clientes tr:last-child td {
+    border-bottom: none;
+}
+
+.tabela-clientes .text-center {
+    text-align: center;
+}
+
+/* 6. Botões de Ação da Tabela (Baseado na Imagem) */
+.tabela-clientes .btn-acao {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.1rem;
+    padding: 0.5rem;
+    transition: var(--transition);
+}
+.tabela-clientes .btn-acao.editar {
+    color: var(--success-color); /* Verde (como na imagem) */
+}
+.tabela-clientes .btn-acao.editar:hover {
+    color: #388e3c;
+    transform: scale(1.2);
+}
+.tabela-clientes .btn-acao.excluir {
+    color: var(--error-color); /* Vermelho (como na imagem) */
+}
+.tabela-clientes .btn-acao.excluir:hover {
+    color: #c62828;
+    transform: scale(1.2);
+}
+
+/* 7. Status da Encomenda (Página Lista de Encomendas) */
+/* (Estilos de status do seu componentes.css) */
+.tabela-encomendas .status-pendente { 
+    background-color: #fff3cd; color: #856404; padding: 5px 10px; border-radius: 12px; font-size: 0.8rem;
+}
+.tabela-encomendas .status-paga { 
+    background-color: #d1ecf1; color: #0c5460; padding: 5px 10px; border-radius: 12px; font-size: 0.8rem;
+}
+.tabela-encomendas .status-concluida { 
+    background-color: #d4edda; color: #155724; padding: 5px 10px; border-radius: 12px; font-size: 0.8rem;
+}
