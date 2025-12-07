@@ -1,4 +1,4 @@
-// js/supabase-vendas.js - Configuração específica para vendas CORRIGIDA
+// js/supabase-vendas.js - Configuração específica para vendas CORRIGIDA (OTIMIZADA)
 class VendasSupabase {
     constructor() {
         this.supabase = window.supabase;
@@ -27,7 +27,7 @@ class VendasSupabase {
         try {
             const { data, error } = await this.supabase
                 .from('categorias')
-                .select('*')
+                .select('id, nome') // Traz apenas o necessário
                 .eq('ativo', true)
                 .order('nome');
                 
@@ -40,26 +40,46 @@ class VendasSupabase {
         }
     }
 
-    // Buscar produtos
+    // Buscar produtos (CORREÇÃO DE TIMEOUT ERRO 500)
     async buscarProdutos() {
         try {
-            // ================================================================
-            // === INÍCIO DA CORREÇÃO (O select foi trocado por *) ===
-            // ================================================================
-            const { data, error } = await this.supabase
+            // PASSO 1: Buscar Produtos (SELECIONANDO COLUNAS ESPECÍFICAS)
+            // IMPORTANTE: Removi a coluna 'icone' (*) para evitar o erro de timeout
+            // se as imagens forem muito pesadas.
+            const { data: produtos, error: erroProdutos } = await this.supabase
                 .from('produtos')
-                .select(`*`) // Seleciona todas as colunas
+                .select('id, nome, descricao, preco_venda, estoque_atual, estoque_minimo, ativo, categoria_id') 
                 .eq('ativo', true)
                 .order('nome');
-            // ================================================================
-            // === FIM DA CORREÇÃO ===
-            // ================================================================
                 
-            if (error) throw error;
-            console.log(`✅ ${data?.length || 0} produtos carregados`);
-            return data || [];
+            if (erroProdutos) throw erroProdutos;
+
+            // PASSO 2: Buscar Categorias separadamente para mapear os nomes
+            const { data: categorias, error: erroCategorias } = await this.supabase
+                .from('categorias')
+                .select('id, nome');
+
+            // PASSO 3: Mapeamento Manual
+            if (produtos && categorias) {
+                const mapaCategorias = {};
+                categorias.forEach(c => mapaCategorias[c.id] = c.nome);
+
+                const produtosMapeados = produtos.map(p => ({
+                    ...p,
+                    icone: null, // Define icone como null para usar o placeholder padrão (cubo)
+                    categoria: {
+                        nome: mapaCategorias[p.categoria_id] || 'Sem Categoria'
+                    }
+                }));
+
+                console.log(`✅ ${produtosMapeados.length} produtos carregados (modo leve).`);
+                return produtosMapeados;
+            }
+            
+            return produtos || [];
+
         } catch (error) {
-            console.error('❌ Erro ao buscar produtos:', error);
+            console.error('❌ Erro crítico ao buscar produtos:', error);
             return [];
         }
     }
@@ -69,7 +89,7 @@ class VendasSupabase {
         try {
             const { data, error } = await this.supabase
                 .from('clientes')
-                .select('*')
+                .select('id, nome, telefone, cpf, endereco') // Seleciona colunas específicas
                 .order('nome');
             
             if (error) throw error;
@@ -99,59 +119,38 @@ class VendasSupabase {
         }
     }
 
-    // Criar venda - CORRIGIDO
+    // Criar venda
     async criarVenda(vendaData) {
         try {
-            console.log('📝 Tentando criar venda:', vendaData);
-            
-            // Validar dados obrigatórios
             if (!vendaData.data_venda || !vendaData.forma_pagamento || vendaData.total === undefined) {
                 throw new Error('Dados obrigatórios da venda não fornecidos');
             }
 
-            // Garantir que o total seja número
             vendaData.total = parseFloat(vendaData.total) || 0;
+            if (vendaData.total < 0) throw new Error('Total da venda não pode ser negativo.');
             
-            if (vendaData.total < 0) { 
-                throw new Error('Total da venda não pode ser negativo.');
-            }
-            
-            // Preparar dados para inserção (apenas campos necessários)
+            // Prepara apenas os campos que existem na tabela vendas
             const dadosVenda = {
                 data_venda: vendaData.data_venda,
                 cliente: vendaData.cliente || 'Cliente não identificado',
-                cliente_id: vendaData.cliente_id, // <<<< LINHA ADICIONADA/CORRIGIDA
+                cliente_id: vendaData.cliente_id,
                 total: vendaData.total,
                 forma_pagamento: vendaData.forma_pagamento,
                 observacoes: vendaData.observacoes || '',
                 usuario_id: vendaData.usuario_id
             };
 
-            console.log('📦 Dados da venda para inserção:', dadosVenda);
-
             const { data, error } = await this.supabase
                 .from('vendas')
-                .insert([dadosVenda]) // Garantir que seja um array
+                .insert([dadosVenda])
                 .select()
                 .single();
                 
             if (error) {
                 console.error('❌ Erro detalhado ao criar venda:', error);
-                
-                if (error.code === '23505') { 
-                    throw new Error('Já existe uma venda com esses dados. Tente novamente.');
-                } else if (error.code === '42501') { 
-                    throw new Error('Sem permissão para criar vendas. Verifique suas credenciais.');
-                } else {
-                    throw error;
-                }
+                throw error;
             }
 
-            if (!data) {
-                throw new Error('Nenhum dado retornado após criação da venda');
-            }
-
-            console.log('✅ Venda criada com sucesso:', data);
             return data;
 
         } catch (error) {
@@ -160,17 +159,13 @@ class VendasSupabase {
         }
     }
 
-    // Criar itens da venda - CORRIGIDO
+    // Criar itens da venda
     async criarItensVenda(itensData) {
         try {
-            console.log('📦 Criando itens da venda:', itensData);
-
-            // Validar itens
             if (!itensData || !Array.isArray(itensData) || itensData.length === 0) {
-                throw new Error('Nenhum item para inserir');
+                return;
             }
 
-            // Processar cada item
             const itensProcessados = itensData.map(item => ({
                 venda_id: item.venda_id,
                 produto_id: item.produto_id,
@@ -178,19 +173,13 @@ class VendasSupabase {
                 preco_unitario: parseFloat(item.preco_unitario) || 0
             }));
 
-            console.log('🛒 Itens processados:', itensProcessados);
-
-            const { data, error } = await this.supabase
+            const { error } = await this.supabase
                 .from('vendas_itens')
                 .insert(itensProcessados);
                 
-            if (error) {
-                console.error('❌ Erro detalhado ao criar itens:', error);
-                throw error;
-            }
+            if (error) throw error;
 
             console.log('✅ Itens da venda criados com sucesso');
-            return data;
 
         } catch (error) {
             console.error('❌ Erro ao criar itens da venda:', error);
@@ -198,27 +187,15 @@ class VendasSupabase {
         }
     }
 
-    // Atualizar estoque - CORRIGIDO
+    // Atualizar estoque
     async actualizarEstoque(produtoId, novoEstoque) {
         try {
-            console.log('📊 Atualizando estoque do produto:', produtoId, 'para:', novoEstoque);
-
-            if (!produtoId || novoEstoque === undefined || novoEstoque < 0) {
-                throw new Error('Dados inválidos para atualização de estoque');
-            }
-
-            const { data, error } = await this.supabase
+            const { error } = await this.supabase
                 .from('produtos')
-                .update({ 
-                    estoque_atual: parseInt(novoEstoque)
-                })
-                .eq('id', produtoId)
-                .select()
-                .single();
+                .update({ estoque_atual: parseInt(novoEstoque) })
+                .eq('id', produtoId);
                 
             if (error) throw error;
-
-            console.log('✅ Estoque atualizado com sucesso:', data);
             return true;
 
         } catch (error) {
@@ -238,13 +215,8 @@ class VendasSupabase {
 
             if (error) throw error;
 
-            if (!produto.ativo) {
-                throw new Error(`Produto ${produto.nome} está inativo`);
-            }
-
-            if (produto.estoque_atual < quantidade) {
-                throw new Error(`Estoque insuficiente para ${produto.nome}. Disponível: ${produto.estoque_atual}, Solicitado: ${quantidade}`);
-            }
+            if (!produto.ativo) throw new Error(`Produto ${produto.nome} está inativo`);
+            if (produto.estoque_atual < quantidade) throw new Error(`Estoque insuficiente para ${produto.nome}.`);
 
             return true;
         } catch (error) {
