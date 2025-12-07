@@ -1767,3 +1767,44 @@ table tr:hover {
         flex-shrink: 0;
     }
 }
+/* --- CORREÇÃO: Miniaturas do Estoque --- */
+
+/* 1. Reduz a largura da coluna da tabela */
+#produtos-body td:first-child,
+.coluna-foto {
+    width: 60px !important; /* Reduz a largura da coluna */
+    padding: 5px !important;
+    text-align: center;
+    vertical-align: middle;
+}
+
+/* 2. Ajusta a IMAGEM (Foto do Produto) */
+.img-tabela-mini, 
+.produto-imagem-tabela {
+    width: 45px !important;  /* Define o tamanho do quadro (menor) */
+    height: 45px !important; /* Define a altura do quadro */
+    
+    /* AQUI ESTÁ O TRUQUE DA PROPORÇÃO: */
+    object-fit: contain !important; /* Faz a imagem caber inteira dentro do quadro */
+    
+    background-color: #ffffff; /* Fundo branco para preencher sobras */
+    border: 1px solid #e0e0e0; /* Borda suave */
+    border-radius: 6px;        /* Cantos arredondados */
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    display: inline-block;
+}
+
+/* 3. Ajusta o ÍCONE (Caso o produto não tenha foto) */
+.icone-tabela-placeholder,
+.coluna-foto i {
+    width: 45px !important;
+    height: 45px !important;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem; /* Ícone menor */
+    background-color: #f8f9fa;
+    border-radius: 6px;
+    color: #999;
+    margin: 0 auto;
+}
