@@ -1,5 +1,5 @@
 /*
-* js/script.js - CORRIGIDO PARA EXIBIR IMAGENS NO ESTOQUE
+* js/script.js - CORRIGIDO: Botão Ativar/Desativar e Imagens
 */
 document.addEventListener('DOMContentLoaded', function() {
     
@@ -373,13 +373,10 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             // *** CORREÇÃO: Lógica para renderizar FOTO ou ÍCONE ***
-            // Verifica se o campo 'icone' parece uma URL (http) ou uma imagem Base64 (data:image)
             let displayIcone;
             if (produto.icone && (produto.icone.startsWith('http') || produto.icone.startsWith('data:image'))) {
-                // É uma FOTO: Usa a tag <img> com a classe .img-tabela-mini
                 displayIcone = `<img src="${produto.icone}" alt="${produto.nome}" class="img-tabela-mini" loading="lazy">`;
             } else {
-                // NÃO É FOTO (ou está vazio): Usa um ícone padrão do FontAwesome
                 const iconClass = produto.icone && !produto.icone.includes('/') ? produto.icone : 'fa-cube';
                 displayIcone = `<div class="icone-tabela-placeholder"><i class="fas ${iconClass}"></i></div>`;
             }
@@ -400,6 +397,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 </td>
                 <td>
                     <button class="btn-edit" onclick="window.editarProduto('${produto.id}')">Editar</button>
+                    <button class="btn-${produto.ativo ? 'warning' : 'success'}" 
+                        onclick="window.toggleProduto('${produto.id}', ${produto.ativo})">
+                        ${produto.ativo ? 'Desativar' : 'Ativar'}
+                    </button>
                     <button class="btn-danger" onclick="window.excluirProduto('${produto.id}', '${produto.nome}')">Excluir</button>
                 </td>
             `;
@@ -465,7 +466,6 @@ document.addEventListener('DOMContentLoaded', function() {
     window.editarProduto = async function(produtoId) {
         try {
             // No editar, precisamos do ícone, então buscamos individualmente com select('*')
-            // Como é apenas 1 registro, não causa timeout
             const { data: produto, error } = await supabaseClient
                 .from('produtos')
                 .select('*')
