@@ -1,3 +1,5 @@
+/* pedido/css/style.css */
+
 /* --- INÍCIO: NOVO HEADER (imagem 2b23dd.png) --- */
 .header-v2 {
     background-color: #ff69b4; /* Fundo Rosa (principal) */
@@ -151,8 +153,6 @@ body {
     padding-bottom: 70px;
 }
 
-/* REMOVIDO: Bloco .header, .header-content, .logo, .header-icons, .search-icon, .share-icon */
-
 /* Status da Loja */
 .store-status {
     margin-top: 80px; /* --- ALTERADO DE 70px para 80px --- */
@@ -284,12 +284,16 @@ body {
     cursor: pointer; /* Adicionado */
 }
 
+/* --- ALTERAÇÃO AQUI: Imagem Mais Pedidos --- */
 .popular-item img {
     width: 140px;
     height: 140px;
     border-radius: 10px;
-    object-fit: cover;
+    object-fit: contain; /* Alterado de cover para contain */
+    background-color: #ffffff; /* Fundo branco para preencher o espaço */
+    border: 1px solid #f0f0f0; /* Borda sutil */
 }
+/* --- FIM DA ALTERAÇÃO --- */
 
 .popular-item h3 {
     margin: 8px 0 5px 0;
@@ -416,12 +420,16 @@ body {
     gap: 8px;
 }
 
+/* --- ALTERAÇÃO AQUI: Imagem na Lista de Produtos --- */
 .product-image img {
     width: 90px;
     height: 90px;
     border-radius: 8px;
-    object-fit: cover;
+    object-fit: contain; /* Alterado de cover para contain */
+    background-color: #ffffff;
+    border: 1px solid #f0f0f0;
 }
+/* --- FIM DA ALTERAÇÃO --- */
 
 .add-cart {
     background: #ff69b4;
@@ -1131,12 +1139,15 @@ body {
     position: relative;
 }
 
+/* --- ALTERAÇÃO AQUI: Imagem no Modal --- */
 .modal-product-image-container img {
     width: 100%;
     height: 100%;
-    object-fit: cover; /* Garante que a imagem cubra o espaço */
+    object-fit: contain; /* Alterado de cover para contain */
     display: none; /* Escondido por padrão */
+    background-color: #fff; /* Fundo branco no modal */
 }
+/* --- FIM DA ALTERAÇÃO --- */
 
 .modal-product-image-container .modal-product-image-placeholder {
     width: 100%;
