@@ -1,4 +1,4 @@
-// js/caixa-fechamento.js - Sistema completo de fechamento de caixa
+// js/caixa-fechamento.js - Sistema completo de fechamento de caixa (OTIMIZADO)
 document.addEventListener('DOMContentLoaded', async function() {
     // Verificar autenticação
     const usuario = window.sistemaAuth?.verificarAutenticacao();
@@ -41,7 +41,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             'dinheiro': 'Dinheiro',
             'cartao_debito': 'Débito',
             'cartao_credito': 'Crédito',
-            'pix': 'PIX'
+            'pix': 'PIX',
+            'crediario': 'Crediário'
         };
         return formas[forma] || forma;
     }
@@ -157,7 +158,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
         try {
             document.body.classList.add('loading-instant');
-            // O Promise.all aqui será EXTREMAMENTE RÁPIDO AGORA
             await Promise.all([
                 carregarVendas(dataSelecionada),
                 carregarMovimentacoes(dataSelecionada),
@@ -254,20 +254,21 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
 
-    // FUNÇÃO OTIMIZADA (Correção de Performance)
+    // --- FUNÇÃO OTIMIZADA (CORREÇÃO DE TIMEOUT) ---
     async function carregarVendas(data) {
         try {
             vendasBody.innerHTML = ''; 
             const dataInicio = new Date(data + 'T00:00:00').toISOString();
             const dataFim = new Date(data + 'T23:59:59').toISOString();
             
-            // NOVO: Consulta única com JOINs aninhados para buscar VENDAS, USUÁRIOS, ITENS e PRODUTOS.
+            // OTIMIZAÇÃO: Removemos a busca profunda de produtos aqui.
+            // Buscamos apenas o necessário para a lista: total, cliente, pagto, obs e qtd de itens.
             const { data: vendas, error } = await supabase
                 .from('vendas')
                 .select(`
-                    *, 
+                    id, created_at, cliente, total, forma_pagamento, observacoes,
                     usuario:sistema_usuarios(nome), 
-                    itens:vendas_itens(*, produto:produtos(nome, icone))
+                    itens:vendas_itens(quantidade) 
                 `) 
                 .gte('created_at', dataInicio)
                 .lte('created_at', dataFim)
@@ -275,15 +276,11 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             if (error) throw error;
             
-            // A resposta já vem com a estrutura completa e aninhada
             window.vendasDoDia = vendas || []; 
-            
-            // O loop N+1 FOI ELIMINADO.
-
             exibirVendas(window.vendasDoDia);
         } catch (error) {
             console.error('Erro ao carregar vendas:', error);
-            throw error;
+            mostrarMensagem('Erro ao carregar vendas: ' + error.message, 'error');
         }
     }
     
@@ -312,8 +309,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 .select('valor')
                 .eq('tipo', 'abertura')
                 .eq('data_caixa', data)
-                .order('created_at', { ascending: true }) // CORREÇÃO: Pega o mais antigo primeiro
-                .limit(1) // CORREÇÃO: Limita o resultado a 1 linha
+                .order('created_at', { ascending: true }) 
+                .limit(1) 
                 .maybeSingle(); 
             if (error) {
                 throw error;
@@ -341,11 +338,15 @@ document.addEventListener('DOMContentLoaded', async function() {
         vendas.forEach(venda => {
             const tr = document.createElement('tr');
             const hora = new Date(venda.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-            const totalItens = venda.itens ? venda.itens.reduce((sum, item) => sum + item.quantidade, 0) : 0;
+            // Como carregamos apenas 'quantidade', o reduce ainda funciona
+            const totalItens = venda.itens ? venda.itens.reduce((sum, item) => sum + (item.quantidade || 0), 0) : 0;
             let valorExibido = venda.total?.toFixed(2) || '0.00';
+            
+            // Oculta valores de cartão se não for admin
             if (!window.isAdmin && (venda.forma_pagamento === 'cartao_debito' || venda.forma_pagamento === 'cartao_credito' || venda.forma_pagamento === 'pix')) {
                 valorExibido = '**.**';
             }
+            
             tr.innerHTML = `
                 <td>${hora}</td>
                 <td>${venda.cliente || 'Cliente não identificado'}</td>
@@ -483,7 +484,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             .reduce((sum, m) => sum + (m.valor || 0), 0);
         
         // CORREÇÃO: Somar todas as entradas, subtrair todas as saídas e adicionar ao saldo final do caixa.
-        // As vendas em dinheiro são a primeira entrada.
         const saldoFinal = window.valorAbertura + totalVendasDinheiro + totalEntradas - totalSaidas;
 
         document.getElementById('relatorio-entradas').textContent = `R$ ${totalEntradas.toFixed(2)}`;
@@ -523,7 +523,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             const totalEntradas = window.movimentacoesDoDia.filter(m => m.tipo === 'entrada').reduce((sum, m) => sum + (m.valor || 0), 0);
             const totalSaidas = window.movimentacoesDoDia.filter(m => m.tipo === 'saida').reduce((sum, m) => sum + (m.valor || 0), 0);
             
-            // CORREÇÃO: Incluir todas as entradas e saídas no cálculo do saldo final
             const saldoFinal = window.valorAbertura + totalDinheiro + totalEntradas - totalSaidas;
             const isAdmin = window.isAdmin;
 
@@ -660,90 +659,116 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     };
 
-    window.verDetalhesVenda = function(vendaId) {
-        const venda = window.vendasDoDia.find(v => v.id === vendaId);
-        if (!venda) {
-            window.mostrarMensagem('Venda não encontrada', 'error');
-            return;
-        }
+    // --- FUNÇÃO ATUALIZADA (Otimizada para carregar detalhes sob demanda) ---
+    window.verDetalhesVenda = async function(vendaId) {
         const modal = document.getElementById('modal-detalhes-venda');
         const content = document.getElementById('detalhes-venda-content');
-        const dataHora = new Date(venda.created_at).toLocaleString('pt-BR');
-        const isAdmin = window.sistemaAuth.isAdmin();
-        let valorTotalExibido = (venda.total || 0).toFixed(2);
-        if (!isAdmin && (venda.forma_pagamento === 'cartao_debito' || venda.forma_pagamento === 'cartao_credito' || venda.forma_pagamento === 'pix')) {
-            valorTotalExibido = '**.**';
-        }
-        let html = `
-            <div class="detalhes-venda">
-                <div class="info-item">
-                    <span><strong>Data/Hora:</strong></span>
-                    <span>${dataHora}</span>
-                </div>
-                <div class="info-item">
-                    <span><strong>Cliente:</strong></span>
-                    <span>${venda.cliente || 'Cliente não identificado'}</span>
-                </div>
-                <div class="info-item">
-                    <span><strong>Vendedor:</strong></span>
-                    <span>${venda.usuario?.nome || 'N/A'}</span>
-                </div>
-                <div class="info-item">
-                    <span><strong>Forma de Pagamento:</strong></span>
-                    <span>${window.formatarFormaPagamento(venda.forma_pagamento)}</span>
-                </div>
-                
-                <h4>Itens da Venda:</h4>
-        `;
-        if (venda.observacoes && venda.observacoes.includes('Pagamento MISTO DETALHES:')) {
-             html += `<p style="white-space: pre-wrap;">${venda.observacoes}</p>`;
-        }
         
-        if (venda.itens && venda.itens.length > 0) {
-            venda.itens.forEach(item => {
-                let valorItemExibido = ((item.preco_unitario || 0) * (item.quantidade || 0)).toFixed(2);
-                let precoUnitarioExibido = (item.preco_unitario || 0).toFixed(2);
-                if (!isAdmin && (venda.forma_pagamento === 'cartao_debito' || venda.forma_pagamento === 'cartao_credito' || venda.forma_pagamento === 'pix')) {
-                    valorItemExibido = '**.**';
-                    precoUnitarioExibido = '**.**';
-                }
-                html += `
-                    <div class="detalhes-item">
-                        <div class="detalhes-produto">
-                            <i class="fas ${item.produto?.icone || 'fa-cube'}"></i>
+        // Mostra loading enquanto busca
+        content.innerHTML = '<div style="text-align:center; padding: 2rem;"><div class="spinner"></div><p>Carregando detalhes...</p></div>';
+        modal.style.display = 'block';
+
+        try {
+            // Busca os dados completos DESTA venda específica agora
+            const { data: venda, error } = await supabase
+                .from('vendas')
+                .select(`
+                    *, 
+                    usuario:sistema_usuarios(nome), 
+                    itens:vendas_itens(*, produto:produtos(nome, icone))
+                `)
+                .eq('id', vendaId)
+                .single();
+
+            if (error) throw error;
+
+            // Renderiza o conteúdo (Lógica original mantida, apenas usando os dados frescos)
+            const dataHora = new Date(venda.created_at).toLocaleString('pt-BR');
+            const isAdmin = window.sistemaAuth.isAdmin();
+            let valorTotalExibido = (venda.total || 0).toFixed(2);
+            
+            if (!isAdmin && (venda.forma_pagamento === 'cartao_debito' || venda.forma_pagamento === 'cartao_credito' || venda.forma_pagamento === 'pix')) {
+                valorTotalExibido = '**.**';
+            }
+
+            let html = `
+                <div class="detalhes-venda">
+                    <div class="info-item">
+                        <span><strong>Data/Hora:</strong></span>
+                        <span>${dataHora}</span>
+                    </div>
+                    <div class="info-item">
+                        <span><strong>Cliente:</strong></span>
+                        <span>${venda.cliente || 'Cliente não identificado'}</span>
+                    </div>
+                    <div class="info-item">
+                        <span><strong>Vendedor:</strong></span>
+                        <span>${venda.usuario?.nome || 'N/A'}</span>
+                    </div>
+                    <div class="info-item">
+                        <span><strong>Forma de Pagamento:</strong></span>
+                        <span>${window.formatarFormaPagamento(venda.forma_pagamento)}</span>
+                    </div>
+                    
+                    <h4>Itens da Venda:</h4>
+            `;
+
+            if (venda.observacoes && venda.observacoes.includes('Pagamento MISTO DETALHES:')) {
+                 html += `<p style="white-space: pre-wrap;">${venda.observacoes}</p>`;
+            }
+            
+            if (venda.itens && venda.itens.length > 0) {
+                venda.itens.forEach(item => {
+                    let valorItemExibido = ((item.preco_unitario || 0) * (item.quantidade || 0)).toFixed(2);
+                    let precoUnitarioExibido = (item.preco_unitario || 0).toFixed(2);
+                    
+                    if (!isAdmin && (venda.forma_pagamento === 'cartao_debito' || venda.forma_pagamento === 'cartao_credito' || venda.forma_pagamento === 'pix')) {
+                        valorItemExibido = '**.**';
+                        precoUnitarioExibido = '**.**';
+                    }
+                    
+                    html += `
+                        <div class="detalhes-item">
+                            <div class="detalhes-produto">
+                                <i class="fas ${item.produto?.icone || 'fa-cube'}"></i>
+                                <div>
+                                    <strong>${item.produto?.nome || 'Produto não encontrado'}</strong>
+                                    <div>Quantidade: ${item.quantidade}</div>
+                                </div>
+                            </div>
                             <div>
-                                <strong>${item.produto?.nome || 'Produto não encontrado'}</strong>
-                                <div>Quantidade: ${item.quantidade}</div>
+                                <strong>R$ ${valorItemExibido}</strong>
+                                <div>Unit: R$ ${precoUnitarioExibido}</div>
                             </div>
                         </div>
-                        <div>
-                            <strong>R$ ${valorItemExibido}</strong>
-                            <div>Unit: R$ ${precoUnitarioExibido}</div>
+                    `;
+                });
+            } else {
+                html += `<p>Nenhum item encontrado para esta venda</p>`;
+            }
+            
+            html += `
+                    <div class="detalhes-total">
+                        <div class="info-item">
+                            <span><strong>Total da Venda:</strong></span>
+                            <span><strong>R$ ${valorTotalExibido}</strong></span>
                         </div>
                     </div>
-                `;
-            });
-        } else {
-            html += `<p>Nenhum item encontrado para esta venda</p>`;
-        }
-        html += `
-                <div class="detalhes-total">
-                    <div class="info-item">
-                        <span><strong>Total da Venda:</strong></span>
-                        <span><strong>R$ ${valorTotalExibido}</strong></span>
-                    </div>
+                    
+                    ${venda.observacoes && !venda.observacoes.includes('Pagamento MISTO DETALHES:') ? `
+                        <div class="info-item observacoes">
+                            <span><strong>Observações:</strong></span>
+                            <span>${venda.observacoes}</span>
+                        </div>
+                        ` : ''}
                 </div>
-                
-                ${venda.observacoes && !venda.observacoes.includes('Pagamento MISTO DETALHES:') ? `
-                    <div class="info-item observacoes">
-                        <span><strong>Observações:</strong></span>
-                        <span>${venda.observacoes}</span>
-                    </div>
-                    ` : ''}
-            </div>
-        `;
-        content.innerHTML = html;
-        modal.style.display = 'block';
+            `;
+            content.innerHTML = html;
+
+        } catch (err) {
+            console.error("Erro ao carregar detalhes:", err);
+            content.innerHTML = `<p style="text-align:center; color:red;">Erro ao carregar detalhes: ${err.message}</p>`;
+        }
     };
 
     inicializarCaixa();
