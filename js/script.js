@@ -1,5 +1,5 @@
 /*
-* SCRIPT HÍBRIDO CORRIGIDO
+* js/script.js - CORRIGIDO PARA EXIBIR IMAGENS NO ESTOQUE
 */
 document.addEventListener('DOMContentLoaded', function() {
     
@@ -314,12 +314,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const filtroEstoque = document.getElementById('filtro-estoque').value;
 
         try {
-            // *** CORREÇÃO CRÍTICA DO ERRO 500 ***
-            // Removemos 'icone' e '*' da consulta. 
-            // Agora trazemos apenas os campos de texto leves.
+            // *** CORREÇÃO IMPORTANTE: ADICIONADO 'icone' À CONSULTA ***
             let query = supabaseClient
                 .from('produtos')
-                .select('id, nome, descricao, preco_venda, estoque_atual, estoque_minimo, ativo, categoria_id') 
+                .select('id, nome, descricao, preco_venda, estoque_atual, estoque_minimo, ativo, categoria_id, icone') 
                 .order('created_at', { ascending: false });
 
             if (filtroCategoria) {
@@ -350,7 +348,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         } catch (error) {
             console.error('Erro ao carregar produtos:', error);
-            produtosBody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #dc3545;">Erro ao carregar produtos (Timeout)</td></tr>';
+            produtosBody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #dc3545;">Erro ao carregar produtos</td></tr>';
         }
     }
 
@@ -374,19 +372,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 statusEstoque = { class: 'low-stock', text: 'Estoque Baixo' };
             }
 
-            // Como removemos o 'icone' da listagem para não travar, mostramos placeholder
-            // A imagem real (link) aparecerá apenas se você editar o produto
+            // *** CORREÇÃO: Lógica para renderizar FOTO ou ÍCONE ***
+            // Verifica se o campo 'icone' parece uma URL (http) ou uma imagem Base64 (data:image)
             let displayIcone;
             if (produto.icone && (produto.icone.startsWith('http') || produto.icone.startsWith('data:image'))) {
-                displayIcone = `<img src="${produto.icone}" alt="${produto.nome}" class="produto-imagem-tabela">`;
+                // É uma FOTO: Usa a tag <img> com a classe .img-tabela-mini
+                displayIcone = `<img src="${produto.icone}" alt="${produto.nome}" class="img-tabela-mini" loading="lazy">`;
             } else {
-                displayIcone = `<div class="produto-imagem-tabela-placeholder"><i class="fas fa-image"></i></div>`;
+                // NÃO É FOTO (ou está vazio): Usa um ícone padrão do FontAwesome
+                const iconClass = produto.icone && !produto.icone.includes('/') ? produto.icone : 'fa-cube';
+                displayIcone = `<div class="icone-tabela-placeholder"><i class="fas ${iconClass}"></i></div>`;
             }
 
             const preco = produto.preco_venda ? produto.preco_venda.toFixed(2) : '0.00';
 
             tr.innerHTML = `
-                <td>${displayIcone}</td>
+                <td class="coluna-foto">${displayIcone}</td>
                 <td>${produto.nome}</td>
                 <td>${produto.nome_categoria || 'Sem categoria'}</td>
                 <td>R$ ${preco}</td>
@@ -399,13 +400,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 </td>
                 <td>
                     <button class="btn-edit" onclick="window.editarProduto('${produto.id}')">Editar</button>
-                    <button class="btn-${produto.ativo ? 'warning' : 'success'}" 
-                        onclick="window.toggleProduto('${produto.id}', ${produto.ativo})">
-                        ${produto.ativo ? 'Desativar' : 'Ativar'}
-                    </button>
-                    <button class="btn-danger" onclick="window.excluirProduto('${produto.id}', '${produto.nome}')">
-                        Excluir
-                    </button>
+                    <button class="btn-danger" onclick="window.excluirProduto('${produto.id}', '${produto.nome}')">Excluir</button>
                 </td>
             `;
             produtosBody.appendChild(tr);
@@ -491,7 +486,7 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('editar-icone-atual').value = produto.icone || ''; 
             document.getElementById('foto-editar').value = ''; 
 
-            if (produto.icone) {
+            if (produto.icone && (produto.icone.startsWith('http') || produto.icone.startsWith('data:'))) {
                 previewEditar.src = produto.icone;
                 previewEditar.style.display = 'block';
             } else {
