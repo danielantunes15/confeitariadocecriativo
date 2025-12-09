@@ -12,7 +12,7 @@ const navLinks = [
     { href: "caixa-fechamento.html", icon: "fa-cash-register", text: "Caixa" },
     { href: "encomendas.html", icon: "fa-receipt", text: "Encomendas" },
     { href: "producao.html", icon: "fa-sitemap", text: "Produção" },
-    { href: "estoque.html", icon: "fa-boxes", text: "Estoque" },
+    { href: "estoque.html", icon: "fa-boxes", text: "Cardápio" },
     { href: "relatorios.html", icon: "fa-chart-bar", text: "Relatórios" },
     { href: "administracao.html", icon: "fa-cog", text: "Administração" },
     { href: "contas-a-pagar.html", icon: "fa-chart-line", text: "Gerencial" }
