@@ -629,3 +629,118 @@ button {
     .products-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
     .app-content-scroll { max-width: 800px; margin: 0 auto; }
 }
+
+/* --- HISTÓRICO DE PEDIDOS (DESIGN MODERNO) --- */
+
+.history-container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 10px;
+}
+
+.history-card {
+    background: white;
+    border-radius: 16px;
+    padding: 16px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    border: 1px solid #f0f0f0;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.history-card:active {
+    transform: scale(0.98);
+}
+
+/* Barra lateral colorida baseada no status (opcional, mas bonito) */
+.history-card::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background-color: #eee; /* Cor padrão */
+}
+
+.history-card.status-novo::before { background-color: var(--primary-color); }
+.history-card.status-preparando::before { background-color: var(--warning-color); }
+.history-card.status-pronto::before { background-color: var(--info-color); }
+.history-card.status-entregue::before { background-color: var(--success-color); }
+.history-card.status-cancelado::before { background-color: var(--error-color); }
+
+/* Cabeçalho do Card */
+.history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.history-id {
+    font-weight: 700;
+    font-size: 1rem;
+    color: #333;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.history-date {
+    font-size: 0.8rem;
+    color: #888;
+    background: #f9f9f9;
+    padding: 4px 8px;
+    border-radius: 8px;
+}
+
+/* Corpo do Card */
+.history-body {
+    margin-bottom: 12px;
+}
+
+.history-items {
+    font-size: 0.9rem;
+    color: #666;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2; /* Limita a 2 linhas */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* Rodapé do Card */
+.history-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px dashed #eee;
+    padding-top: 10px;
+}
+
+.history-total {
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--primary-dark);
+}
+
+/* Badges de Status Específicos para Histórico */
+.history-badge {
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.history-badge.novo { background: #fff0f5; color: #ff69b4; }
+.history-badge.preparando { background: #fff3e0; color: #f57c00; }
+.history-badge.pronto { background: #e3f2fd; color: #1976d2; }
+.history-badge.entregue { background: #e8f5e9; color: #2e7d32; }
+.history-badge.cancelado { background: #ffebee; color: #c62828; }
