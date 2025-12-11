@@ -5,11 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Doce Criativo App</title>
     
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+
     <link rel="stylesheet" href="pedido/css/style.css">
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <link rel="manifest" href="manifest.json">
 </head>
 <body class="app-body">
     
@@ -73,7 +81,7 @@
         </div>
         
         <div id="view-inicio" class="app-view">
-            <div class="app-content-scroll" style="padding-top: 70px;"> 
+            <div class="app-content-scroll" style="padding-top: 90px;"> 
                 
                 <section class="card-app" id="rastreamento-pedido-ativo" style="display: none;">
                     <h2><i class="fas fa-truck"></i> Acompanhe seu Pedido</h2>
@@ -104,7 +112,7 @@
                     <button id="ver-detalhes-pedido-ativo" class="btn-link" style="display: block; text-align: center; margin-top: 10px; font-size: 0.9rem;">
                         <i class="fas fa-eye"></i> Ver Detalhes do Pedido
                     </button>
-                    </section>
+                </section>
 
                 <section class="card-app">
                     <h2>👋 Olá, <span id="home-cliente-nome">Cliente</span>!</h2>
@@ -136,11 +144,11 @@
             
             <header class="header-v2" id="header-v2">
                 <div class="header-v2-content">
-                    <h1 class="header-v2-logo" id="header-v2-logo">Confeitaria Doce Criativo</h1>
+                    <h1 class="header-v2-logo" id="header-v2-logo">Doce Criativo</h1>
                     
                     <div class="header-v2-search-container" id="header-v2-search-container">
                         <i class="fas fa-search"></i>
-                        <input type="text" id="header-search-input" placeholder="Busque por item ou loja">
+                        <input type="text" id="header-search-input" placeholder="O que você deseja comer hoje?">
                     </div>
                     
                     <div class="header-v2-actions" id="header-v2-actions">
@@ -168,6 +176,7 @@
                     </div>
                 </div>
             </header>
+            
             <div class="app-content-scroll">
                 <section class="store-status">
                     <div class="status-content">
@@ -197,29 +206,37 @@
                 </section>
 
                 <section class="popular-section">
-                    <h2>Os Mais Pedidos</h2>
+                    <h2>Mais Pedidos</h2>
                     <div class="popular-scroll" id="popular-scroll">
+                        <div class="skeleton-popular"></div>
+                        <div class="skeleton-popular"></div>
+                        <div class="skeleton-popular"></div>
                     </div>
                 </section>
 
                 <section class="products-section" id="products-section">
                     <div class="category-products">
-                        <h3 class="category-title">Carregando...</h3>
+                        <h3 class="category-title skeleton-text" style="width: 150px;"></h3>
                         <div class="products-list">
+                            <div class="product-item skeleton-item"></div>
+                            <div class="product-item skeleton-item"></div>
+                            <div class="product-item skeleton-item"></div>
                         </div>
                     </div>
                 </section>
             </div>
-            
         </div>
         
         <div id="view-promocoes" class="app-view">
-             <div class="app-content-scroll" style="padding-top: 70px;">
+             <div class="app-content-scroll" style="padding-top: 90px;">
                  <section class="card-app" id="promocoes-list">
                     <h2>🔥 Ofertas do Dia</h2>
-                    <p>Em breve!</p>
+                    <p>Fique ligado nas nossas redes sociais para cupons!</p>
                     <div id="promocoes-grid">
-                        <p style="text-align: center; color: #666;">Nenhuma promoção definida.</p>
+                        <div style="text-align: center; padding: 40px; color: #999;">
+                            <i class="fas fa-tag" style="font-size: 3rem; margin-bottom: 10px; color: #ffb6c1;"></i>
+                            <p>Nenhuma promoção ativa no momento.</p>
+                        </div>
                     </div>
                  </section>
             </div>
@@ -231,13 +248,13 @@
                 <section id="pedido-confirmado-section" class="card-app" style="display: none; padding-top: 20px;">
                     <div class="final-success-container">
                         <i class="fas fa-check-circle"></i>
-                        <h3>Pedido #<span id="final-pedido-id"></span> Finalizado!</h3>
-                        <p>Obrigado pelo seu pedido! Ele foi registrado e está em preparo.</p>
+                        <h3>Pedido #<span id="final-pedido-id"></span> Recebido!</h3>
+                        <p>Obrigado! Seu pedido foi registrado.</p>
                         <p style="font-weight: bold; color: #db7093;">Total Final: <span id="final-total">R$ 0,00</span></p>
 
-                        <p>Deseja enviar os detalhes do pedido para o WhatsApp da loja para acompanhamento?</p>
+                        <p>Deseja enviar o pedido no WhatsApp?</p>
                         <a href="#" id="final-whatsapp-link" target="_blank" class="btn-whatsapp-final">
-                            <i class="fab fa-whatsapp"></i> Enviar Pedido no WhatsApp
+                            <i class="fab fa-whatsapp"></i> Enviar no WhatsApp
                         </a>
                         <button id="final-novo-pedido-btn" class="btn-login-app" style="background: #8a2be2; margin-top: 1rem;">
                             <i class="fas fa-arrow-left"></i> Voltar ao Cardápio
@@ -257,8 +274,7 @@
                     <div id="step-carrinho" class="checkout-step active card-app">
                         
                         <div id="carrinho-itens-container">
-                            <div class="carrinho-itens" id="carrinho-itens">
-                                </div>
+                            <div class="carrinho-itens" id="carrinho-itens"></div>
                         </div>
 
                         <button id="add-more-items-btn" class="add-more-items-btn">
@@ -266,21 +282,19 @@
                         </button>
                         
                         <div class="cupom-area">
-                            <h4 style="font-size: 1rem; color: #db7093;"><i class="fas fa-tag"></i> Cupom de Desconto (Opcional)</h4>
+                            <h4 style="font-size: 1rem; color: #db7093;"><i class="fas fa-tag"></i> Cupom de Desconto</h4>
                             <div class="form-group">
-                                <input type="text" id="cupom-input" placeholder="Digite o código do cupom" maxlength="15" style="text-transform: uppercase;">
+                                <input type="text" id="cupom-input" placeholder="Código do cupom" maxlength="15" style="text-transform: uppercase;">
                                 <button id="aplicar-cupom-btn" class="btn-login-app" style="width: 100px; margin: 0; padding: 10px 5px; font-size: 0.85rem;">
                                     Aplicar
                                 </button>
                             </div>
-                            <p id="cupom-message" style="font-size: 0.8rem; margin-top: 5px; color: #999;">
-                                <i class="fas fa-info-circle"></i> Nenhum cupom aplicado.
-                            </p>
+                            <p id="cupom-message" style="font-size: 0.8rem; margin-top: 5px; color: #999;"></p>
                         </div>
 
                         <div class="resumo-valores-cart">
                             <div class="total-linha">
-                                <span>Subtotal Bruto</span>
+                                <span>Subtotal</span>
                                 <span id="subtotal-carrinho">R$ 0,00</span>
                             </div>
                             <div class="total-linha" id="resumo-desconto-linha" style="display: none;">
@@ -292,48 +306,40 @@
                                 <span id="subtotal-ajustado-carrinho">R$ 0,00</span>
                             </div>
                             <div class="total-linha">
-                                <span>Taxa de Entrega</span>
+                                <span>Entrega</span>
                                 <span id="taxa-entrega-carrinho">R$ 0,00</span>
                             </div>
                             <div class="total-linha final">
-                                <strong>Total (Com Entrega):</strong>
+                                <strong>Total:</strong>
                                 <strong>R$ <span id="total-carrinho">0,00</span></strong>
                             </div>
                         </div>
                         
-                        <h3 style="margin-top: 2rem;"><i class="fas fa-truck"></i> Opção de Entrega</h3>
+                        <h3 style="margin-top: 2rem;"><i class="fas fa-truck"></i> Entrega</h3>
 
                         <div id="delivery-options-container" class="delivery-options-group">
-                            
                             <label class="delivery-option-radio selected" for="delivery-option-entrega">
                                 <input type="radio" name="delivery-option" id="delivery-option-entrega" value="entrega" checked>
-                                
                                 <div class="delivery-option-content">
                                     <i class="fas fa-motorcycle"></i>
                                     <div>
-                                        <span class="delivery-option-title">Entrega Padrão</span>
+                                        <span class="delivery-option-title">Entrega</span>
                                         <span class="delivery-option-detail">Tempo: <span id="tempo-entrega-display">...</span></span>
                                         <span class="delivery-option-detail">Taxa: <span id="taxa-entrega-display">...</span></span>
                                     </div>
                                 </div>
-
-                                <div id="entrega-address-info" style="display: block;"> <h4 style="font-size: 1.1rem; color: #db7093; margin-top: 1rem;">Seu Endereço</h4>
+                                <div id="entrega-address-info" style="display: block;"> 
+                                    <h4 style="font-size: 1rem; color: #db7093; margin-top: 1rem;">Endereço de Entrega</h4>
                                     <div class="carrinho-list-card" style="padding: 15px; margin-top: 0.5rem; border: 1px dashed #ffb6c1;">
-                                        <p style="font-size: 1rem;">
-                                            Entregar em: 
-                                            <strong id="carrinho-endereco-display">N/A</strong>
-                                        </p>
-                                        <p style="font-size: 0.9rem; color: #666;">
-                                            Cliente: <span id="carrinho-cliente-nome">N/A</span>
+                                        <p style="font-size: 0.95rem;">
+                                            <i class="fas fa-map-pin" style="color: #db7093;"></i> <strong id="carrinho-endereco-display">N/A</strong>
                                         </p>
                                         <input type="hidden" id="carrinho-endereco-input" value="">
-
                                         <button id="trocar-endereco-btn" class="btn-link" style="margin-top: 5px; font-size: 0.9rem;">
-                                            <i class="fas fa-edit"></i> Trocar Endereço
+                                            Trocar Endereço
                                         </button>
                                     </div>
                                 </div>
-
                             </label>
 
                             <label class="delivery-option-radio" for="delivery-option-retirada">
@@ -342,8 +348,8 @@
                                     <i class="fas fa-store"></i>
                                     <div>
                                         <span class="delivery-option-title">Retirar na Loja</span>
-                                        <span class="delivery-option-detail">Tempo: Entre 10 - 30 min</span>
-                                        <span class="delivery-option-detail" style="color: #2e7d32; font-weight: bold;">Taxa: Grátis</span>
+                                        <span class="delivery-option-detail">10 - 30 min</span>
+                                        <span class="delivery-option-detail" style="color: #2e7d32; font-weight: bold;">Grátis</span>
                                     </div>
                                 </div>
                             </label>
@@ -351,12 +357,11 @@
 
                         <div id="retirada-address-info" style="display: none; font-size: 0.9rem; background: #fff0f5; padding: 10px; border-radius: 8px; margin-top: 10px; border: 1px dashed #ffb6c1;">
                             <strong><i class="fas fa-map-marker-alt"></i> Endereço de Retirada:</strong><br>
-                            Rua São Lourenço, 326, Rua do Meu salgado Favorito, Centro, NANUQUE - MG
+                            Rua São Lourenço, 326, Centro, NANUQUE - MG
                         </div>
                         
                         <h3 style="margin-top: 2rem;"><i class="fas fa-credit-card"></i> Pagamento</h3>
 
-                        <h4 style="font-size: 1.1rem; color: #db7093;">Forma de Pagamento</h4>
                         <div class="opcoes-pagamento">
                             <label class="pagamento-opcao selected">
                                 <input type="radio" name="pagamento" value="Dinheiro" checked style="display: none;">
@@ -371,28 +376,27 @@
                                 <span class="pagamento-icone">📱</span>
                                 <span class="pagamento-texto">
                                     <span class="pagamento-titulo">PIX</span>
-                                    <span class="pagamento-descricao">Pagar na entrega</span>
+                                    <span class="pagamento-descricao">Pagar na entrega/Chave</span>
                                 </span>
                             </label>
                             <label class="pagamento-opcao">
                                 <input type="radio" name="pagamento" value="Cartão (Maquininha)" style="display: none;">
                                 <span class="pagamento-icone">💳</span>
                                 <span class="pagamento-texto">
-                                    <span class="pagamento-titulo">Cartão (Maquininha)</span>
-                                    <span class="pagamento-descricao">Débito ou Crédito na entrega</span>
+                                    <span class="pagamento-titulo">Cartão</span>
+                                    <span class="pagamento-descricao">Levamos a maquininha</span>
                                 </span>
                             </label>
                         </div>
                         
-                        <h4 style="font-size: 1.1rem; color: #db7093; margin-top: 2rem;">Detalhes Adicionais</h4>
-                        <div class="form-group" style="margin-top: 1rem;">
-                            <label for="pedido-observacoes">Observações do Pedido (Opcional)</label>
-                            <textarea id="pedido-observacoes" rows="2" placeholder="Ex: Entregar para o porteiro..."></textarea>
+                        <h4 style="font-size: 1rem; color: #db7093; margin-top: 2rem;">Observações</h4>
+                        <div class="form-group" style="margin-top: 0.5rem;">
+                            <textarea id="pedido-observacoes" rows="2" placeholder="Ex: Sem cebola, Campainha quebrada..."></textarea>
                         </div>
                         
                         <div class="form-group" id="troco-group">
-                            <label for="troco-para">Precisa de Troco? (Para Pagamentos em Dinheiro)</label>
-                            <input type="number" id="troco-para" step="0.01" min="0" placeholder="Ex: 50.00 (Troco para R$50)">
+                            <label for="troco-para">Troco para quanto? (Se dinheiro)</label>
+                            <input type="number" id="troco-para" step="0.01" min="0" placeholder="Ex: 50.00">
                         </div>
                     </div>
                     
@@ -402,7 +406,7 @@
             
             <footer class="checkout-footer" id="checkout-footer">
                  <div class="finalizar-actions">
-                    <button id="finalizar-pedido-direto" class="btn-login-app" style="background: var(--rosa-escuro, #db7093); width: 100%;">
+                    <button id="finalizar-pedido-direto" class="btn-login-app" style="background: var(--primary-dark); width: 100%;">
                         <i class="fas fa-check-circle"></i> Finalizar Pedido
                     </button>
                  </div>
@@ -413,53 +417,51 @@
 
     <nav id="mobile-bottom-nav" class="bottom-nav" style="display: none;">
         <button class="nav-item-app nav-item active" data-view="view-cardapio">
-            <i class="fas fa-home"></i> <span>Início</span>
+            <i class="fas fa-home"></i> <span>Cardápio</span>
         </button>
         <button class="nav-item-app nav-item" data-view="view-inicio">
-            <i class="fas fa-receipt"></i> <span>Pedidos</span>
+            <i class="fas fa-user"></i> <span>Perfil</span>
         </button>
         <button class="nav-item-app nav-item" data-view="view-promocoes">
-            <i class="fas fa-tag"></i> <span>Promos</span>
+            <i class="fas fa-tag"></i> <span>Ofertas</span>
         </button>
         <button class="nav-item-app nav-item" data-view="view-carrinho" id="nav-carrinho-btn">
-            <i class="fas fa-shopping-cart"></i> 
-            <span>Carrinho 
+            <i class="fas fa-shopping-bag"></i> 
+            <span>Sacola 
                 <span id="carrinho-badge" class="badge-app-count cart-count" style="display: none;">0</span>
             </span>
         </button>
     </nav>
 
     <div id="modal-editar-endereco" class="modal" style="display: none;">
-        <div class="modal-content" style="max-width: 400px; margin-top: 10vh;">
+        <div class="modal-content" style="max-width: 400px; margin-top: 5vh;">
             <div class="modal-header">
-                <h3><i class="fas fa-map-marker-alt"></i> Editar Endereço</h3>
+                <h3><i class="fas fa-map-marker-alt"></i> Endereço</h3>
                 <span class="close">&times;</span> </div>
             <form id="form-editar-endereco" class="modal-body">
                 <div class="form-group">
-                    <label for="modal-cidade-select">Cidade (Onde você mora) *</label>
+                    <label for="modal-cidade-select">Cidade *</label>
                     <select id="modal-cidade-select" required>
-                        <option value="">Carregando cidades...</option>
+                        <option value="">Carregando...</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="modal-bairro-select">Bairro (Onde entregaremos) *</label>
+                    <label for="modal-bairro-select">Bairro *</label>
                     <select id="modal-bairro-select" required>
-                        <option value="">Selecione uma cidade primeiro</option>
+                        <option value="">Selecione a cidade</option>
                     </select>
                 </div>
-                
                 <div class="form-row-cadastro">
                     <div class="form-group">
-                        <label for="modal-rua">Rua/Avenida *</label>
+                        <label for="modal-rua">Rua *</label>
                         <input type="text" id="modal-rua" required>
                     </div>
-                    <div class="form-group" style="max-width: 100px;">
+                    <div class="form-group" style="max-width: 90px;">
                         <label for="modal-numero">Nº *</label>
                         <input type="text" id="modal-numero" required>
                     </div>
                 </div>
-                
-                <button type="submit" class="btn-login-app">Salvar Novo Endereço</button>
+                <button type="submit" class="btn-login-app">Salvar Endereço</button>
             </form>
         </div>
     </div>
@@ -467,7 +469,7 @@
     <div id="modal-detalhes-pedido" class="modal" style="display: none;">
         <div class="modal-content" style="max-width: 400px; margin-top: 10vh;">
             <div class="modal-header">
-                <h3 id="detalhes-modal-titulo"><i class="fas fa-receipt"></i> Detalhes do Pedido <span id="detalhes-pedido-id"></span></h3>
+                <h3 id="detalhes-modal-titulo">Detalhes <span id="detalhes-pedido-id"></span></h3>
                 <span class="close">&times;</span> </div>
             <div id="detalhes-pedido-content" class="modal-detalhes-produto-body">
             </div>
@@ -477,29 +479,24 @@
     <div id="modal-opcoes-produto" class="modal">
         <div class="modal-content" style="max-width: 450px; margin-top: 5vh; max-height: 90vh; display: flex; flex-direction: column;">
             <div class="modal-header">
-                <h3 id="opcoes-titulo">Personalize seu item</h3>
+                <h3 id="opcoes-titulo">Personalizar</h3>
                 <span class="close">&times;</span> </div>
             <div class="modal-body" style="overflow-y: auto; flex-grow: 1;">
-                
                 <div class="modal-product-image-container">
                     <img id="opcoes-imagem-produto" src="" alt="Imagem do Produto" />
                     <div class="modal-product-image-placeholder" id="opcoes-imagem-placeholder">
-                        <i class="fas fa-cube"></i>
+                        <i class="fas fa-image"></i>
                     </div>
                 </div>
-                
                 <p id="opcoes-descricao" style="font-size: 0.9rem; color: #666; margin-bottom: 1rem;"></p>
-                
                 <div id="opcoes-container"></div>
                 <div id="complementos-container"></div>
-                
                 <div class="form-group" style="margin-top: 1rem;">
-                    <label for="opcoes-observacao">Observações (ex: sem nozes, etc)</label>
-                    <textarea id="opcoes-observacao" rows="2" placeholder="Alguma observação para este item?"></textarea>
+                    <label for="opcoes-observacao">Observações do item</label>
+                    <textarea id="opcoes-observacao" rows="2" placeholder="Ex: Sem cebola"></textarea>
                 </div>
             </div>
-            
-            <div class="modal-footer" style="flex-direction: column; align-items: stretch; gap: 0.5rem;">
+            <div class="modal-footer" style="flex-direction: column; align-items: stretch; gap: 0.5rem; background: #fff;">
                 <div class="opcoes-quantidade-preco">
                     <div class="opcoes-quantidade">
                         <button id="opcoes-btn-remover" class="btn-remover"><i class="fas fa-minus"></i></button>
@@ -511,15 +508,15 @@
                     </div>
                 </div>
                 <button id="btn-adicionar-opcoes" class="btn-login-app" style="width: 100%; margin: 0; padding: 12px;">
-                    <i class="fas fa-cart-plus"></i> Adicionar ao Carrinho
+                    Adicionar à Sacola
                 </button>
             </div>
         </div>
     </div>
 
-    <script src="js/supabase-config.js"></script>
-    
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> <script src="js/supabase-config.js"></script>
     <script src="js/supabase-vendas.js" defer></script> 
+    
     <script src="pedido/js/ui.js" defer></script>         
     <script src="pedido/js/api.js" defer></script>         
     <script src="pedido/js/auth.js" defer></script>        
@@ -528,6 +525,12 @@
     <script src="pedido/js/checkout.js" defer></script>    
     <script src="pedido/js/rastreamento.js" defer></script> 
     <script src="pedido/js/app.js" defer></script>
+    
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
+        }
+    </script>
 
 </body>
 </html>

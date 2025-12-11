@@ -1,15 +1,16 @@
-// js/cardapio.js - Módulo de Cardápio e Opções de Produto (Com Busca no Servidor)
+// js/cardapio.js - Cardápio Otimizado (Busca Local + Lazy Load)
 
 (function() {
 
-    // const ui = window.AppUI; // <-- REMOVIDO
-    // const api = window.AppAPI; // <-- REMOVIDO
-
     /**
      * Carrega categorias, produtos e destaques.
+     * Inclui um "Skeleton Loading" para melhorar a percepção de performance.
      */
     async function carregarDadosCardapio() {
         try {
+            // Skeleton Loading antes de carregar
+            exibirSkeletonLoading();
+
             const [categoriasData, produtosData, maisPedidosData] = await Promise.all([
                 window.AppAPI.carregarCategorias(),
                 window.AppAPI.carregarProdutos(),
@@ -17,15 +18,30 @@
             ]);
             
             window.app.categorias = categoriasData;
-            window.app.produtos = produtosData;
+            window.app.produtos = produtosData; // Cache local para busca rápida
             
             exibirCategorias();
-            exibirProdutos(window.app.produtos);
+            exibirProdutos(window.app.produtos); // Renderiza tudo inicial
             exibirMaisPedidos(maisPedidosData);
 
         } catch (error) {
             window.AppUI.mostrarMensagem('Erro ao carregar o cardápio: ' + error.message, 'error');
         }
+    }
+
+    /**
+     * Exibe "esqueletos" (placeholders animados) enquanto os produtos carregam.
+     */
+    function exibirSkeletonLoading() {
+        const container = window.AppUI.elementos.productsSection;
+        if(!container) return;
+        
+        let skeletons = '<div class="category-products"><h3 class="category-title skeleton-text" style="width: 40%;"></h3><div class="products-list">';
+        for(let i=0; i<4; i++) {
+            skeletons += '<div class="product-item skeleton-item"></div>';
+        }
+        skeletons += '</div></div>';
+        container.innerHTML = skeletons;
     }
 
     /**
@@ -111,7 +127,7 @@
     }
 
     /**
-     * Configura os cliques e o scroll suave das categorias.
+     * Configura a navegação por clique nas categorias.
      */
     function setupCategoryNavigationJS() {
         const categoryItems = document.querySelectorAll('.category-item');
@@ -120,16 +136,14 @@
         categoryItems.forEach(item => {
             item.addEventListener('click', () => {
                 const categoryId = item.getAttribute('data-id');
+                categoryItems.forEach(c => c.classList.remove('active'));
+                item.classList.add('active');
                 
                 const categorySections = document.querySelectorAll('.category-products');
 
                 if (categoryId === 'todos') {
                     categorySections.forEach(section => section.style.display = 'block');
-                    
-                    window.scrollTo({
-                        top: productsSectionEl.offsetTop - 150, // (Header + Categorias)
-                        behavior: 'smooth'
-                    });
+                    window.scrollTo({ top: productsSectionEl.offsetTop - 150, behavior: 'smooth' });
                     return;
                 }
                 
@@ -138,18 +152,10 @@
                 
                 if (targetSection) {
                     targetSection.style.display = 'block';
-                    
-                    const headerHeight = 70; // .header
-                    const categoryBarHeight = document.querySelector('.categories-section').offsetHeight || 80;
-                    const offset = headerHeight + categoryBarHeight;
-                    
+                    const headerHeight = 130; 
                     const elementPosition = targetSection.getBoundingClientRect().top + window.scrollY;
-                    const offsetPosition = elementPosition - offset;
-
-                    window.scrollTo({
-                        top: offsetPosition,
-                        behavior: 'smooth'
-                    });
+                    const offsetPosition = elementPosition - headerHeight;
+                    window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
                 }
             });
         });
@@ -164,7 +170,7 @@
         container.innerHTML = '';
         
         if (!destaques || destaques.length === 0) {
-             container.innerHTML = '<p>Nenhum destaque no momento.</p>';
+             container.innerHTML = '<p style="padding: 10px; font-size: 0.8rem; color: #888;">Em breve.</p>';
              return;
         }
 
@@ -172,7 +178,7 @@
             const item = document.createElement('div');
             item.className = 'popular-item';
             const imgTag = produto.icone
-                ? `<img src="${produto.icone}" alt="${produto.nome}">`
+                ? `<img src="${produto.icone}" alt="${produto.nome}" loading="lazy">`
                 : `<div class="popular-item-placeholder"><i class="fas fa-cube"></i></div>`;
 
             item.innerHTML = `
@@ -186,45 +192,28 @@
     }
 
     /**
-     * Realiza a busca de produtos no servidor e atualiza a exibição.
+     * Realiza a busca de produtos em TEMPO REAL (Client-Side).
+     * Filtra o array local `window.app.produtos` para máxima performance.
      */
-    async function setupSearch() {
+    function setupSearch() {
         const elementos = window.AppUI.elementos;
-        const searchTerm = elementos.headerSearchInput.value.trim(); 
+        const searchTerm = elementos.headerSearchInput.value.trim().toLowerCase(); 
 
-        // Espera pelo menos 2 caracteres para pesquisar, senão retorna a lista completa
-        if (searchTerm.length < 2 && searchTerm.length > 0) {
-            // Se o usuário digitou 1 caractere, limpa a exibição anterior ou espera
-            if (elementos.productsSection) elementos.productsSection.innerHTML = '<p style="padding: 20px; text-align: center;">Digite mais para pesquisar...</p>';
+        // Filtra o array local (muito mais rápido que ir ao servidor)
+        if (searchTerm.length === 0) {
+            // Se limpou a busca, mostra tudo
+            exibirProdutos(window.app.produtos);
+            // Reseta categorias
+            document.querySelectorAll('.category-item').forEach(c => c.classList.remove('active'));
+            document.querySelector('.category-item[data-id="todos"]').classList.add('active');
             return;
         }
 
-        try {
-            // 1. Busca os produtos no SERVIDOR (usa a nova função)
-            const produtosFiltrados = await window.AppAPI.buscarProdutosPorTermo(searchTerm);
-            
-            // 2. Atualiza o cache global de produtos para que o modal funcione corretamente
-            if (!searchTerm) {
-                 const todosOsProdutos = await window.AppAPI.carregarProdutos();
-                 window.app.produtos = todosOsProdutos;
-            } else {
-                 window.app.produtos = produtosFiltrados; 
-            }
-            
-            // 3. Exibe os resultados (seja a lista completa ou a filtrada)
-            exibirProdutos(produtosFiltrados);
-            
-            // 4. Atualiza a UI das categorias (ativa "Todos" e mostra todas as seções)
-            document.querySelectorAll('.category-item').forEach(cat => cat.classList.remove('active'));
-            document.querySelector('.category-item[data-id="todos"]')?.classList.add('active');
-            document.querySelectorAll('.category-products').forEach(section => {
-                section.style.display = 'block';
-            });
-            
-        } catch (error) {
-            console.error("Erro na busca de produtos:", error);
-            window.AppUI.mostrarMensagem("Erro ao buscar produtos.", "error");
-        }
+        const produtosFiltrados = window.app.produtos.filter(p => 
+            p.nome.toLowerCase().includes(searchTerm)
+        );
+        
+        exibirProdutos(produtosFiltrados);
     }
 
     /**
@@ -237,6 +226,7 @@
         
         const produtosAtivos = listaParaExibir || window.app.produtos.filter(p => p.ativo);
         
+        // Agrupa por categoria
         const produtosPorCategoria = {};
         produtosAtivos.forEach(produto => {
             const catId = produto.categoria_id || 'sem-categoria';
@@ -252,7 +242,11 @@
         const categoriasOrdenadas = Object.values(produtosPorCategoria).sort((a, b) => a.nome.localeCompare(b.nome));
 
         if (categoriasOrdenadas.length === 0) {
-            container.innerHTML = '<p style="padding: 20px; text-align: center;">Nenhum produto encontrado.</p>';
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-cookie-bite"></i>
+                    <p>Nenhum produto encontrado com este nome.</p>
+                </div>`;
             return;
         }
 
@@ -264,21 +258,22 @@
             let productListHtml = '';
             categoria.produtos.forEach(produto => {
                 const esgotado = produto.estoque_atual <= 0;
+                // LAZY LOADING ADICIONADO AQUI (loading="lazy")
                 const imgTag = produto.icone
-                    ? `<img src="${produto.icone}" alt="${produto.nome}">`
+                    ? `<img src="${produto.icone}" alt="${produto.nome}" loading="lazy">`
                     : `<div class="product-image-placeholder"><i class="fas fa-cube"></i></div>`;
                 
                 productListHtml += `
                     <div class="product-item ${esgotado ? 'out-of-stock' : ''}" data-id="${produto.id}">
                         <div class="product-info">
                             <h4 class="product-name">${produto.nome}</h4>
-                            <p class="product-description">${produto.descricao || 'Sem descrição'}</p>
+                            <p class="product-description">${produto.descricao || ''}</p>
                             <p class="product-price">${window.AppUI.formatarMoeda(produto.preco_venda)}</p>
                         </div>
                         <div class="product-image">
                             ${imgTag}
                             <button class="add-cart" data-id="${produto.id}" ${esgotado ? 'disabled' : ''}>
-                                ${esgotado ? '<i class="fas fa-times"></i>' : '+'}
+                                ${esgotado ? '<i class="fas fa-times"></i>' : '<i class="fas fa-plus"></i>'}
                             </button>
                         </div>
                     </div>
@@ -287,21 +282,19 @@
 
             categorySectionDiv.innerHTML = `
                 <h3 class="category-title">${categoria.nome}</h3>
-                <div class="products-list">
-                    ${productListHtml}
-                </div>
+                <div class="products-list">${productListHtml}</div>
             `;
             container.appendChild(categorySectionDiv);
         });
         
-        // --- ATUALIZAÇÃO DO EVENT LISTENER: (Adicionar ao Carrinho ou Modal) ---
+        // Listeners para clique no produto e botão adicionar
         container.querySelectorAll('.product-item').forEach(item => {
             item.addEventListener('click', (e) => {
                 const produtoId = e.currentTarget.getAttribute('data-id');
                 const produto = window.app.produtos.find(p => p.id === produtoId);
                 if (!produto) return;
 
-                if (e.target.classList.contains('add-cart')) {
+                if (e.target.closest('.add-cart')) {
                     e.stopPropagation();
                     window.app.Carrinho.adicionarAoCarrinho(produto);
                 } else if (produto.estoque_atual > 0) {
@@ -313,7 +306,7 @@
         setupCategoryScrollSpy();
     }
     
-    // --- Funções de Modal ---
+    // --- Funções do Modal de Opções ---
 
     async function abrirModalOpcoes(produto) {
         if (produto.estoque_atual <= 0) return;
@@ -399,9 +392,7 @@
             elementos.modalOpcoesProduto.style.display = 'flex';
 
         } catch (error) {
-            console.warn(`Aviso: Não foi possível carregar opções para o produto ${produto.id}. ${error.message}`);
-            elementos.opcoesContainer.innerHTML = '';
-            elementos.complementosContainer.innerHTML = '';
+            // Caso falhe (tabelas não existem), apenas mostra o modal básico
             calcularPrecoModal();
             elementos.modalOpcoesProduto.style.display = 'flex';
         }
@@ -471,67 +462,39 @@
     }
     
     /**
-     * NOVO: Configura o 'scroll spy' para atualizar a categoria ativa
-     * enquanto o usuário rola a lista de produtos.
+     * Scroll Spy: Atualiza a categoria ativa conforme o usuário rola a tela.
      */
     function setupCategoryScrollSpy() {
-        // Seleciona o container que de fato rola (AGORA É A JANELA)
         const scrollContainer = window;
-        if (!scrollContainer) return;
-
         const categorySections = document.querySelectorAll('.category-products');
         const categoryItems = document.querySelectorAll('.category-item');
-        
-        // Offset para ativação: Altura do Header (80px) + Altura da Categoria (aprox. 80px)
-        const topOffset = 161; // +1 pixel de margem
+        const topOffset = 150; 
 
         scrollContainer.addEventListener('scroll', () => {
             let currentCategoryId = null;
-
-            // Itera pelas seções para ver qual está no topo
             for (let i = 0; i < categorySections.length; i++) {
                 const section = categorySections[i];
                 const rect = section.getBoundingClientRect();
-                
-                // Verifica se a seção está visível e próxima ao topo definido pelo offset
                 if (section.style.display !== 'none' && rect.top <= topOffset) {
                     currentCategoryId = section.id.replace('category-section-', '');
                 }
             }
-            
-            // Se nenhuma seção estiver no topo (ex: início ou fim da página), 
-            // tenta ativar a primeira visível ou 'todos'
-            if (!currentCategoryId) {
-                const firstVisibleSection = Array.from(categorySections).find(s => s.style.display !== 'none');
-                if (firstVisibleSection) {
-                     // Se o topo da primeira seção estiver abaixo da linha de ativação
-                     // (ou seja, estamos no topo da página), ativa 'todos'.
-                     if (firstVisibleSection.getBoundingClientRect().top > topOffset) {
-                        currentCategoryId = 'todos';
-                     }
-                } else {
-                    currentCategoryId = 'todos';
-                }
-            }
+            if (!currentCategoryId) currentCategoryId = 'todos';
 
-            // Atualiza os botões de categoria
             categoryItems.forEach(item => {
                 item.classList.toggle('active', item.getAttribute('data-id') === currentCategoryId);
             });
         });
     }
 
-
-    // Expõe as funções para o objeto global AppCardapio
+    // Exporta o módulo
     window.AppCardapio = {
         carregarDadosCardapio,
         updateStoreStatus,
-        setupSearch, // <-- ATUALIZADO
+        setupSearch,
         exibirCategorias,
         exibirProdutos,
         exibirMaisPedidos,
-        setupCategoryNavigationJS,
-        setupCategoryScrollSpy, 
         abrirModalOpcoes,
         calcularPrecoModal,
         adicionarItemComOpcoes,
