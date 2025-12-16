@@ -1,125 +1,177 @@
-/* Estilos específicos para a página de login */
+:root {
+    --primary-color: #e91e63;
+    --primary-hover: #d81b60;
+    --text-main: #2d3748;
+    --text-muted: #718096;
+    --bg-right: #f7fafc; /* Fundo cinza muito claro */
+    --input-bg: #edf2f7;
+    --white: #ffffff;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+    --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+    --radius: 16px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body, html {
+    height: 100%;
+    font-family: 'Poppins', sans-serif;
+    overflow-x: hidden;
+}
+
 .login-body {
-    background: linear-gradient(135deg, #e91e63, #c2185b);
+    display: flex;
+    width: 100%;
+    height: 100vh;
+}
+
+/* --- LADO ESQUERDO (Imagem) --- */
+.login-left {
+    width: 50%; /* Ajustado para 50/50 */
+    position: relative;
+    background-image: url('https://images.unsplash.com/photo-1565958011703-44f9829ba187?q=80&w=1965&auto=format&fit=crop');
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 3rem;
+}
+
+.login-left::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, rgba(233, 30, 99, 0.3), rgba(0, 0, 0, 0.8));
+    z-index: 1;
+}
+
+.brand-content, .brand-footer { position: relative; z-index: 2; color: white; }
+.brand-content h1 { font-size: 3rem; font-weight: 800; line-height: 1.2; text-shadow: 0 2px 10px rgba(0,0,0,0.3); }
+.brand-content p { font-size: 1.1rem; opacity: 0.9; margin-top: 1rem; font-weight: 300; }
+.brand-footer p { font-size: 0.85rem; opacity: 0.7; }
+
+/* --- LADO DIREITO (Formulário) --- */
+.login-right {
+    width: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 100vh;
-    padding: 1rem;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--bg-right); /* Fundo cinza suave */
+    position: relative;
 }
 
-.login-container {
+/* O "Cartão" dentro do lado direito */
+.login-card-right {
+    background: var(--white);
     width: 100%;
-    max-width: 400px;
+    max-width: 450px;
+    padding: 3rem;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-md); /* Sombra para destacar do fundo */
+    animation: slideUp 0.6s ease-out;
 }
 
-.login-card {
-    background: white;
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.form-header { text-align: center; margin-bottom: 2.5rem; }
+.form-header h2 { color: var(--text-main); font-size: 1.8rem; font-weight: 700; margin-bottom: 0.5rem; }
+.form-header p { color: var(--text-muted); font-size: 0.95rem; }
+
+/* Inputs Modernos */
+.form-group { position: relative; margin-bottom: 1.5rem; }
+
+.input-field {
+    width: 100%;
+    padding: 1rem 1rem 1rem 2.8rem; /* Espaço para ícone */
+    background: var(--input-bg);
+    border: 2px solid transparent;
     border-radius: 12px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-    padding: 2rem;
-    text-align: center;
+    font-size: 0.95rem;
+    color: var(--text-main);
+    transition: all 0.3s ease;
+    height: 50px;
 }
 
-.login-header {
-    margin-bottom: 2rem;
-}
-
-.logo-login {
-    color: #e91e63;
-    font-size: 2.5rem;
-    font-weight: 700;
-    margin-bottom: 0.5rem;
-}
-
-.slogan {
-    color: #666;
-    font-size: 1rem;
-    margin-bottom: 0;
-}
-
-.login-card .form-group {
-    margin-bottom: 1.5rem;
-    text-align: left;
-}
-
-.login-card .form-group label {
-    display: block;
-    margin-bottom: 0.5rem;
-    font-weight: 600;
-    color: #333;
-}
-
-.login-card .form-group input {
-    width: 100%;
-    padding: 0.75rem;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    font-size: 1rem;
-    transition: border-color 0.3s;
-}
-
-.login-card .form-group input:focus {
+.input-field:focus {
     outline: none;
-    border-color: #e91e63;
-    box-shadow: 0 0 0 2px rgba(233, 30, 99, 0.2);
+    background: #fff;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 4px rgba(233, 30, 99, 0.1);
 }
 
+/* Ícones dentro do input (usando SVG via CSS ou background-image seria ideal, aqui simulado) */
+.input-icon {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    font-size: 1.1rem;
+    pointer-events: none;
+    transition: 0.3s;
+}
+
+.input-field:focus ~ .input-icon { color: var(--primary-color); }
+
+/* Links auxiliares */
+.form-options {
+    display: flex;
+    justify-content: flex-end; /* Alinha à direita */
+    margin-bottom: 1.5rem;
+}
+
+.forgot-link {
+    color: var(--primary-color);
+    font-size: 0.85rem;
+    text-decoration: none;
+    font-weight: 500;
+    transition: 0.2s;
+}
+.forgot-link:hover { text-decoration: underline; color: var(--primary-hover); }
+
+/* Botão */
 .btn-login {
     width: 100%;
-    background: linear-gradient(135deg, #e91e63, #c2185b);
+    padding: 0.9rem;
+    background: var(--primary-color);
     color: white;
     border: none;
-    padding: 0.75rem;
-    border-radius: 6px;
+    border-radius: 12px;
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s;
-    margin-bottom: 1rem;
+    box-shadow: 0 4px 6px rgba(233, 30, 99, 0.25);
 }
 
 .btn-login:hover {
+    background: var(--primary-hover);
     transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(233, 30, 99, 0.3);
+    box-shadow: 0 6px 12px rgba(233, 30, 99, 0.35);
 }
 
-.btn-login:disabled {
-    opacity: 0.7;
-    cursor: not-allowed;
-    transform: none;
+.register-link {
+    margin-top: 1.5rem;
+    text-align: center;
+    font-size: 0.9rem;
+    color: var(--text-muted);
 }
+.register-link a { color: var(--primary-color); font-weight: 600; text-decoration: none; }
+.register-link a:hover { text-decoration: underline; }
 
 .message {
-    padding: 0.75rem;
-    border-radius: 6px;
-    margin-bottom: 1rem;
-    text-align: left;
-    font-weight: 500;
+    margin-top: 1rem; padding: 0.8rem; border-radius: 8px; font-size: 0.9rem; text-align: center; display: none;
 }
+.message.error { background: #fee2e2; color: #991b1b; }
+.message.success { background: #dcfce7; color: #166534; }
 
-.message.success {
-    background-color: #e8f5e9;
-    color: #2e7d32;
-    border: 1px solid #c8e6c9;
-}
-
-.message.error {
-    background-color: #ffebee;
-    color: #c62828;
-    border: 1px solid #ffcdd2;
-}
-
-/* REMOVIDO: Seção .login-info com credenciais de teste */
-
-/* Responsividade */
-@media (max-width: 480px) {
-    .login-card {
-        padding: 1.5rem;
-    }
-    
-    .logo-login {
-        font-size: 2rem;
-    }
+/* Responsivo */
+@media (max-width: 900px) {
+    .login-left { display: none; }
+    .login-right { width: 100%; background: #fff; }
+    .login-card-right { box-shadow: none; padding: 1.5rem; }
 }

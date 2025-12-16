@@ -3,47 +3,75 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Confeitaria Doces Criativos</title>
+    <title>Login - Confeitaria Doce Criativo</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/login.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="login-body">
-    <div class="login-container">
-        <div class="login-card">
-            <div class="login-header">
-                <h1 class="logo-login">Doce Criativo</h1>
-                <p class="slogan">Sistema de Gestão da Confeitaria</p>
+
+    <div class="login-left">
+        <div class="brand-content">
+            <h1>O sabor que<br>fica na memória.</h1>
+            <p>Gerencie sua produção com a qualidade que seus clientes merecem.</p>
+        </div>
+        <div class="brand-footer">
+            <p>© 2025 Confeitaria Doce Criativo | Dev. Daniel Antunes</p>
+        </div>
+    </div>
+
+    <div class="login-right">
+        <div class="login-card-right">
+            <div class="form-header">
+                <h2>Olá, bem-vindo! 👋</h2>
+                <p>Entre com seus dados para continuar</p>
             </div>
             
-            <form id="login-form" class="form">
+            <form id="login-form">
                 <div class="form-group">
-                    <label for="username">Usuário</label>
-                    <input type="text" id="username" required placeholder="Digite seu usuário">
+                    <i class="fa-regular fa-user input-icon"></i>
+                    <input type="text" id="username" class="input-field" placeholder="Nome de usuário" required autocomplete="username">
                 </div>
                 
                 <div class="form-group">
-                    <label for="password">Senha</label>
-                    <input type="password" id="password" required placeholder="Digite sua senha">
+                    <i class="fa-solid fa-lock input-icon"></i>
+                    <input type="password" id="password" class="input-field" placeholder="Sua senha" required autocomplete="current-password">
                 </div>
                 
-                <div id="login-message" class="message" style="display: none;"></div>
-                
-                <div class="form-actions">
-                    <button type="submit" class="btn btn-login">Entrar</button>
+                <div class="form-options">
+                    <a href="#" class="forgot-link">Esqueceu a senha?</a>
                 </div>
                 
-                </form>
+                <div id="login-message" class="message"></div>
+                
+                <button type="submit" class="btn-login">
+                    Entrar
+                </button>
+
+                <div class="register-link">
+                    <p>Precisa de suporte? <a href="#">Contate o admin</a></p>
+                </div>
+            </form>
+        </div>
+        
+        <div style="position: absolute; bottom: 20px; font-size: 0.75rem; color: #aaa;" class="mobile-footer">
+             © 2025 Confeitaria Doce Criativo
         </div>
     </div>
 
     <script src="js/supabase-config.js"></script>
-
     <script src="js/auth.js"></script>
     <script src="js/login.js"></script>
     
-    <div style="position: absolute; bottom: 20px; width: 100%; text-align: center; color: white; font-size: 0.9em;">
-        <p>Confeitaria Doce Criativo - © 2025 Desenvolvido por Daniel Antunes</p>
-    </div>
+    <style>
+        @media (min-width: 901px) { .mobile-footer { display: none; } }
+    </style>
 </body>
 </html>
