@@ -1,4 +1,4 @@
-// js/encomendas-principal.js - Sistema completo de encomendas (VERSÃO FINAL CORRIGIDA)
+// js/encomendas-principal.js - Sistema completo de encomendas (COM BUSCA E PAGINAÇÃO)
 document.addEventListener('DOMContentLoaded', async function() {
     // Verificar autenticação
     const usuario = window.sistemaAuth?.verificarAutenticacao();
@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         return;
     }
 
-    // Elementos do DOM
+    // Elementos do DOM Principais
     const formEncomenda = document.getElementById('form-encomenda');
     const clienteEncomendaSearch = document.getElementById('cliente-encomenda-search');
     const clienteEncomendaId = document.getElementById('cliente-encomenda-id');
@@ -22,17 +22,12 @@ document.addEventListener('DOMContentLoaded', async function() {
     const clientesTabelaBody = document.getElementById('clientes-tabela-body');
     const formCadastroCliente = document.getElementById('form-cadastro-cliente');
     
-    // ================================================================
-    // === INÍCIO DA CORREÇÃO (Seletor dos botões principais) ===
-    // ================================================================
-    // Procura por .tab-button que seja filho DIRETO de .tabs-nav
+    // Elemento de Busca Global (NOVO)
+    const buscaInput = document.getElementById('busca-encomendas-geral');
+
+    // Navegação de abas
     const encomendasNavBtns = document.querySelectorAll('.tabs-nav > .tab-button');
-    // Procura por .tab-button DENTRO de .tabs-header (para as sub-abas de Clientes)
     const tabButtons = document.querySelectorAll('.tabs-header .tab-button');
-    // ================================================================
-    // === FIM DA CORREÇÃO ===
-    // ================================================================
-    
     const pageContents = document.querySelectorAll('.page-content');
     const tabContents = document.querySelectorAll('.tab-content');
     const clienteIdEdicao = document.getElementById('cliente-id-edicao');
@@ -53,9 +48,13 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // Variáveis globais
     let clientes = [];
-    let encomendas = [];
+    let todasEncomendasCache = []; // Guarda TUDO que veio do banco
+    
+    // Variáveis de controle de exibição
+    let limiteConcluidas = 10; 
+    let listaConcluidasFiltrada = []; // Guarda as concluídas APÓS o filtro de busca
 
-    // Elementos e funções auxiliares para o novo modal de pagamento
+    // Elementos e funções auxiliares para o modal de pagamento
     const modalPagamento = document.getElementById('modal-pagamento-encomenda');
     const formPagamento = document.getElementById('form-pagamento-encomenda');
     const pagamentoValorPendente = document.getElementById('pagamento-valor-pendente');
@@ -68,7 +67,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     };
     
     window.abrirModalPagamento = (encomendaId) => {
-        const encomenda = encomendas.find(enc => enc.id === encomendaId);
+        const encomenda = todasEncomendasCache.find(enc => enc.id === encomendaId);
         if (!encomenda) {
             mostrarMensagem('Encomenda não encontrada.', 'error');
             return;
@@ -92,26 +91,24 @@ document.addEventListener('DOMContentLoaded', async function() {
         const encomendaId = pagamentoEncomendaId.value;
         const formaPagamentoSaldo = pagamentoForma.value;
         
-        const encomenda = encomendas.find(enc => enc.id === encomendaId);
+        const encomenda = todasEncomendasCache.find(enc => enc.id === encomendaId);
         if (!encomenda) return mostrarMensagem('Erro: Encomenda não encontrada.', 'error');
 
         const valorPendente = (encomenda.valor_total - encomenda.sinal_pago);
         
         try {
-            // 1. Registrar o pagamento final como Venda (APENAS se houver valor pendente)
             if (valorPendente > 0) {
                 const vendaData = {
                     data_venda: new Date().toISOString().split('T')[0],
                     cliente: encomenda.cliente?.nome || 'Cliente não identificado',
                     cliente_id: encomenda.cliente_id, 
                     total: valorPendente,
-                    forma_pagamento: formaPagamentoSaldo, // USAR FORMA DE PAGAMENTO DO MODAL
+                    forma_pagamento: formaPagamentoSaldo,
                     observacoes: `Pagamento Saldo ref. Encomenda #${encomenda.id}`, 
                     usuario_id: usuario.id
                 };
 
                 if (window.vendasSupabase) {
-                    // Criei uma venda para que o valor entre no Caixa e Relatórios corretamente
                     await window.vendasSupabase.criarVenda(vendaData);
                     mostrarMensagem(`Saldo de R$ ${valorPendente.toFixed(2)} registrado como Venda (${formaPagamentoSaldo})!`, 'info');
                 } else {
@@ -119,7 +116,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
             }
 
-            // 2. Atualizar o status da encomenda para "paga"
             await window.encomendasSupabase.atualizarStatusEncomenda(encomendaId, 'paga');
 
             mostrarMensagem('Encomenda marcada como paga e saldo registrado com sucesso!', 'success');
@@ -132,7 +128,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
 
-    // Funções auxiliares de UI
     const mostrarMensagem = (mensagem, tipo = 'info') => {
         const alertContainer = document.getElementById('alert-container');
         if (!alertContainer) return;
@@ -143,7 +138,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         setTimeout(() => { if (alertDiv.parentNode) alertDiv.remove(); }, 5000);
     };
 
-    // Função principal de inicialização
     async function inicializarEncomendas() {
         try {
             await carregarDadosIniciais();
@@ -155,7 +149,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
     
-    // Funções de carregamento de dados
     async function carregarDadosIniciais() {
         await carregarClientes();
         await carregarEncomendas();
@@ -172,33 +165,100 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
 
+    // === LÓGICA DE CARREGAMENTO E FILTRO ===
+
     async function carregarEncomendas() {
         const pendentesContainer = document.getElementById('encomendas-pendentes-container');
         const concluidasContainer = document.getElementById('encomendas-concluidas-container');
         if (!pendentesContainer || !concluidasContainer) return;
 
-        pendentesContainer.innerHTML = '<p class="loading-message">Carregando encomendas pendentes...</p>';
-        concluidasContainer.innerHTML = '<p class="loading-message">Carregando encomendas concluídas...</p>';
-
+        pendentesContainer.innerHTML = '<p class="loading-message">Atualizando encomendas...</p>';
+        
         try {
             if (!window.encomendasSupabase) throw new Error('Módulo de comunicação com o Supabase não carregado.');
-            encomendas = await window.encomendasSupabase.buscarEncomendas();
             
-            const encomendasPendentes = encomendas.filter(enc => enc.status !== 'concluida');
-            const encomendasConcluidas = encomendas.filter(enc => enc.status === 'concluida');
-
-            exibirListaEncomendas(encomendasPendentes, pendentesContainer, 'pendentes');
-            exibirListaEncomendas(encomendasConcluidas, concluidasContainer, 'concluidas');
+            // 1. Busca TUDO do banco e guarda no cache global
+            todasEncomendasCache = await window.encomendasSupabase.buscarEncomendas();
+            
+            // 2. Aplica o filtro (que vai considerar o que estiver no input de busca, se houver)
+            filtrarEncomendas();
 
         } catch (error) {
             mostrarMensagem('Erro ao carregar a lista de encomendas: ' + error.message, 'error');
-            encomendas = [];
+            todasEncomendasCache = [];
             pendentesContainer.innerHTML = '<p class="empty-message">Erro ao carregar as encomendas.</p>';
             concluidasContainer.innerHTML = '<p class="empty-message">Erro ao carregar as encomendas.</p>';
         }
     }
+
+    function filtrarEncomendas() {
+        const termoBusca = buscaInput ? buscaInput.value.toLowerCase().trim() : '';
+        const pendentesContainer = document.getElementById('encomendas-pendentes-container');
+        const concluidasContainer = document.getElementById('encomendas-concluidas-container');
+
+        // 1. Filtra a lista global baseada no termo de busca
+        const encomendasFiltradas = todasEncomendasCache.filter(enc => {
+            const nomeCliente = enc.cliente?.nome?.toLowerCase() || '';
+            const detalhes = enc.detalhes?.toLowerCase() || '';
+            return nomeCliente.includes(termoBusca) || detalhes.includes(termoBusca);
+        });
+
+        // 2. Separa em Pendentes e Concluídas
+        
+        // Pendentes: Ordena por Data de Entrega (Ascendente - mais urgente primeiro)
+        const listaPendentes = encomendasFiltradas
+            .filter(enc => enc.status !== 'concluida')
+            .sort((a, b) => new Date(a.data_entrega) - new Date(b.data_entrega));
+
+        // Concluídas: Ordena por Data de Entrega (Decrescente - mais recente primeiro)
+        // Guardamos nessa variável global para usar na paginação
+        listaConcluidasFiltrada = encomendasFiltradas
+            .filter(enc => enc.status === 'concluida')
+            .sort((a, b) => new Date(b.data_entrega) - new Date(a.data_entrega));
+
+        // 3. Renderiza
+        exibirListaEncomendas(listaPendentes, pendentesContainer, 'pendentes');
+        
+        // Resetamos o limite sempre que o filtro muda, para mostrar os primeiros resultados da nova busca
+        limiteConcluidas = 10; 
+        renderizarConcluidasControlado(concluidasContainer);
+    }
+
+    function renderizarConcluidasControlado(container) {
+        container.innerHTML = ''; // Limpa o container
+        
+        if (listaConcluidasFiltrada.length === 0) {
+            container.innerHTML = '<p class="empty-message">Nenhuma encomenda concluída encontrada com este filtro.</p>';
+            return;
+        }
+
+        // Pega apenas a fatia baseada no limite atual
+        const fatiaParaExibir = listaConcluidasFiltrada.slice(0, limiteConcluidas);
+        
+        // Usa a função original para criar a tabela com essa fatia
+        exibirListaEncomendas(fatiaParaExibir, container, 'concluidas');
+        
+        // Se houver mais itens do que o limite atual, adiciona o botão "Ver Mais"
+        if (listaConcluidasFiltrada.length > limiteConcluidas) {
+            const btnDiv = document.createElement('div');
+            btnDiv.style.textAlign = 'center';
+            btnDiv.style.padding = '15px';
+            
+            const btnCarregarMais = document.createElement('button');
+            btnCarregarMais.className = 'btn btn-primary';
+            btnCarregarMais.innerHTML = '<i class="fas fa-plus"></i> Ver Mais Encomendas';
+            btnCarregarMais.style.cursor = 'pointer';
+            
+            btnCarregarMais.onclick = () => {
+                limiteConcluidas += 10; // Aumenta o limite
+                renderizarConcluidasControlado(container); // Renderiza novamente mantendo o filtro
+            };
+            
+            btnDiv.appendChild(btnCarregarMais);
+            container.appendChild(btnDiv);
+        }
+    }
     
-    // Funções de exibição de dados
     function exibirClientesNaTabela() {
         if (!clientesTabelaBody) return;
         clientesTabelaBody.innerHTML = '';
@@ -229,9 +289,12 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     function exibirListaEncomendas(lista, container, tipo) {
         if (!container) return;
-        container.innerHTML = '';
+        if (tipo === 'pendentes') container.innerHTML = ''; 
+
         if (lista.length === 0) {
-            container.innerHTML = `<p class="empty-message">Nenhuma encomenda ${tipo === 'pendentes' ? 'pendente' : 'concluída'} encontrada.</p>`;
+            if (tipo === 'pendentes') {
+                container.innerHTML = `<p class="empty-message">Nenhuma encomenda pendente encontrada.</p>`;
+            }
             return;
         }
         
@@ -291,11 +354,15 @@ document.addEventListener('DOMContentLoaded', async function() {
         tabela.querySelectorAll('.btn-acao.imprimir').forEach(btn => btn.addEventListener('click', () => imprimirCanhoto(btn.dataset.id)));
     }
 
-    // Funções de eventos e navegação
     function configurarEventListeners() {
         if (formEncomenda) formEncomenda.addEventListener('submit', criarEncomenda);
         if (formCadastroCliente) formCadastroCliente.addEventListener('submit', cadastrarOuAtualizarCliente);
         
+        // Event listener para a busca (input)
+        if (buscaInput) {
+            buscaInput.addEventListener('input', filtrarEncomendas);
+        }
+
         tipoEntregaSelect.addEventListener('change', () => {
             enderecoEntregaGroup.style.display = tipoEntregaSelect.value === 'entrega' ? 'block' : 'none';
         });
@@ -309,7 +376,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
         }
         
-        // Listener dos botões PRINCIPAIS ("Criar", "Lista", "Clientes")
         encomendasNavBtns.forEach(btn => {
             btn.addEventListener('click', async () => {
                 const page = btn.getAttribute('data-page');
@@ -322,7 +388,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
         });
         
-        // Listener das SUB-ABAS (dentro de "Clientes")
         tabButtons.forEach(btn => {
             btn.addEventListener('click', () => {
                 const tabId = btn.getAttribute('data-tab');
@@ -343,7 +408,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
         }
         
-        // NOVO: Listener para o formulário de pagamento
         if (formPagamento) {
             formPagamento.addEventListener('submit', confirmarPagamentoSaldo);
         }
@@ -353,11 +417,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
     
-    // Lógica principal de Ações
     async function criarEncomenda(event) {
         event.preventDefault();
         const sinalEncomenda = parseFloat(sinalEncomendaInput.value) || 0;
-        // NOVO: Capturar a forma de pagamento do sinal
         const formaPagamentoSinal = document.getElementById('forma-pagamento-sinal').value;
         
         const encomendaData = {
@@ -378,18 +440,16 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
 
         try {
-            // 1. Criar a encomenda
             const novaEncomenda = await window.encomendasSupabase.criarEncomenda(encomendaData);
 
-            // 2. Registrar o sinal como Venda (APENAS se houver sinal) para aparecer no Resumo do Caixa/Relatórios.
             if (sinalEncomenda > 0) {
                 const vendaData = {
                     data_venda: new Date().toISOString().split('T')[0],
                     cliente: clienteEncomendaSearch.value,
                     cliente_id: encomendaData.cliente_id, 
                     total: sinalEncomenda,
-                    forma_pagamento: formaPagamentoSinal, // USAR FORMA DE PAGAMENTO DO CAMPO
-                    observacoes: `Adiantamento ref. Encomenda #${novaEncomenda.id}`, // REFERENCIAR ENCOMENDA
+                    forma_pagamento: formaPagamentoSinal,
+                    observacoes: `Adiantamento ref. Encomenda #${novaEncomenda.id}`, 
                     usuario_id: usuario.id
                 };
 
@@ -414,8 +474,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
     
     async function marcarEncomendaComoPaga(encomendaId) {
-        // Esta função agora apenas abrirá o modal de pagamento, 
-        // pois a lógica de registro foi movida para confirmarPagamentoSaldo()
         window.abrirModalPagamento(encomendaId);
     }
 
@@ -441,7 +499,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
     
-    // Funções de Clientes e Edição de Encomendas
     function buscarClientesNaInput() {
         const termo = clienteEncomendaSearch.value.toLowerCase().trim();
         clienteEncomendaResults.innerHTML = '';
@@ -523,7 +580,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
     
     function editarEncomenda(encomendaId) {
-        const encomenda = encomendas.find(enc => enc.id === encomendaId);
+        const encomenda = todasEncomendasCache.find(enc => enc.id === encomendaId);
         if (encomenda) {
             editEncomendaId.value = encomenda.id;
             editClienteNome.value = encomenda.cliente?.nome || 'N/A';
@@ -558,15 +615,13 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
     
-    // === FUNÇÃO CORRIGIDA PARA IMPRESSÃO EM TÉRMICA ===
     function imprimirCanhoto(encomendaId) {
-        const encomenda = encomendas.find(enc => enc.id === encomendaId);
+        const encomenda = todasEncomendasCache.find(enc => enc.id === encomendaId);
         if (!encomenda) return mostrarMensagem('Encomenda não encontrada.', 'error');
 
         const valorPendente = (encomenda.valor_total - encomenda.sinal_pago).toFixed(2);
         const dataEntregaFormatada = new Date(encomenda.data_entrega + 'T03:00:00Z').toLocaleDateString('pt-BR');
         
-        // Adicionei estilos inline simples e otimizados para térmica (largura e fonte menor)
         const canhotoContent = `
             <div id="canhoto-impressao" style="font-family: Arial, sans-serif; width: 300px; padding: 5px;">
                 <h4 style="text-align: center; margin: 0; font-size: 14px;">Confeitaria Doces Criativos</h4>
@@ -584,7 +639,6 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         const printWindow = window.open('', 'PrintCanhoto', 'height=600,width=400');
         
-        // Define CSS otimizado para impressão térmica (ajusta a largura do corpo e remove margens)
         const thermalCss = `
             <style>
                 @media print {
@@ -600,7 +654,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                         padding: 0;
                     }
                     @page {
-                        margin: 0; /* Remove margens do spooler */
+                        margin: 0;
                     }
                 }
             </style>
@@ -609,13 +663,10 @@ document.addEventListener('DOMContentLoaded', async function() {
         printWindow.document.write('<html><head><title>Canhoto do Pedido</title>' + thermalCss + '</head><body>');
         printWindow.document.write(canhotoContent);
         
-        // *** CORREÇÃO CRÍTICA (JavaScript): Remove onafterprint e usa setTimeout ***
         const fixScript = `
             <script>
                 window.onload = function() {
                     window.print();
-                    // O atraso de 1 segundo garante que o spooler de impressão termine
-                    // antes de fechar a janela, prevenindo o loop de reimpressão.
                     setTimeout(function() {
                         window.close();
                     }, 1000); 
@@ -627,7 +678,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         printWindow.document.write('</body></html>');
         printWindow.document.close();
     }
-    // === FIM DA FUNÇÃO CORRIGIDA ===
     
     inicializarEncomendas();
 });
