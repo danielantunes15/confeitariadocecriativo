@@ -8,9 +8,10 @@
 // -----------------------------------------------------------------
 const navLinks = [
     { href: "index.html", icon: "fa-shopping-cart", text: "Vendas" },
-    { href: "delivery.html", icon: "fa-motorcycle", text: "Delivery" }, // <- ALVO
+    { href: "delivery.html", icon: "fa-motorcycle", text: "Delivery" }, 
     { href: "caixa-fechamento.html", icon: "fa-cash-register", text: "Caixa" },
     { href: "encomendas.html", icon: "fa-receipt", text: "Encomendas" },
+    { href: "crediario.html", icon: "fa-address-book", text: "Crediário" }, // NOVO LINK ADICIONADO
     { href: "producao.html", icon: "fa-sitemap", text: "Produção" },
     { href: "estoque.html", icon: "fa-boxes", text: "Cardápio" },
     { href: "relatorios.html", icon: "fa-chart-bar", text: "Relatórios" },

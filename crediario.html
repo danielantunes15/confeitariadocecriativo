@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crediário - Devedores</title>
+    
+    <link rel="stylesheet" href="css/layout.css">
+    <link rel="stylesheet" href="css/navegacao.css">
+    <link rel="stylesheet" href="css/componentes.css">
+    <link rel="stylesheet" href="css/crediario.css"> <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-wrapper">
+        
+        <div id="sidebar-placeholder"></div>
+        
+        <div class="main-content-wrapper">
+
+            <div id="header-placeholder"></div>
+        
+            <main class="main">
+                <div class="container">
+                    <div id="alert-container"></div>
+        
+                    <section class="card">
+                        <div class="section-header">
+                            <h2><i class="fas fa-address-book"></i> Controle de Crediário</h2>
+                            <p class="section-subtitle">Gerencie as vendas a prazo e receba pagamentos de clientes.</p>
+                        </div>
+                        
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Data Venda</th>
+                                        <th>Cliente</th>
+                                        <th>Vendedor</th>
+                                        <th>Total Dívida (R$)</th>
+                                        <th>Status</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="crediario-devedores-body">
+                                    <tr>
+                                        <td colspan="6" style="text-align: center;">
+                                            <div class="loading-spinner"></div> Carregando clientes...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+                </div>
+            </main>
+        
+            <div id="modal-pagamento-crediario" class="modal">
+                <div class="modal-content" style="max-width: 400px;">
+                    <div class="modal-header">
+                        <h3><i class="fas fa-money-check-alt"></i> Recebimento de Dívida</h3>
+                        <span class="close" id="fechar-modal-crediario">&times;</span>
+                    </div>
+                    <form id="form-pagamento-crediario">
+                        <input type="hidden" id="pagamento-crediario-venda-id">
+                        <div class="form-group">
+                            <label>Cliente:</label>
+                            <p class="info-destaque" id="pagamento-crediario-cliente-nome">N/A</p>
+                        </div>
+                        <div class="form-group">
+                            <label>Valor a Receber:</label>
+                            <p class="valor-destaque" id="pagamento-crediario-valor">R$ 0,00</p>
+                        </div>
+                        <div class="form-group">
+                            <label for="pagamento-crediario-forma">Forma de Recebimento *</label>
+                            <select id="pagamento-crediario-forma" required class="form-control">
+                                <option value="dinheiro">Dinheiro</option>
+                                <option value="pix">PIX</option>
+                                <option value="cartao_debito">Cartão de Débito</option>
+                                <option value="cartao_credito">Cartão de Crédito</option>
+                            </select>
+                        </div>
+                        <div class="form-actions" style="justify-content: center;">
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-check-circle"></i> Confirmar Recebimento
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <footer class="footer">
+                <div class="container">
+                    <p>Confeitaria Doce Criativo - © 2025</p>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <script src="js/supabase-config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/layout-loader.js" defer></script> 
+    
+    <script src="js/supabase-vendas.js"></script> 
+    <script src="js/supabase-encomendas.js"></script> 
+    
+    <script src="js/crediario.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,79 @@
+/* css/crediario.css */
+
+/* Cabeçalho da Seção */
+.section-header {
+    margin-bottom: 1.5rem;
+    border-bottom: 2px solid #f0f0f0;
+    padding-bottom: 1rem;
+}
+
+.section-header h2 {
+    color: var(--primary-dark);
+    font-size: 1.8rem;
+    margin-bottom: 0.5rem;
+}
+
+.section-subtitle {
+    color: #666;
+    font-size: 0.95rem;
+}
+
+/* Tabela Específica */
+.table-container {
+    overflow-x: auto;
+    background: white;
+    border-radius: 8px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th {
+    background-color: #FFF0F5; /* Rosa claro */
+    color: var(--primary-dark);
+    padding: 1rem;
+    font-weight: 600;
+    text-align: left;
+    border-bottom: 2px solid #ffdde1;
+}
+
+td {
+    padding: 1rem;
+    border-bottom: 1px solid #eee;
+    vertical-align: middle;
+}
+
+/* Badges */
+.status-badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.status-badge.pendente {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeeba;
+}
+
+/* Modal Destaques */
+.info-destaque {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-dark);
+}
+
+.valor-destaque {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--success-color); /* Verde */
+}
+
+/* Botão pequeno da tabela */
+.btn-sm {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.9rem;
+}
