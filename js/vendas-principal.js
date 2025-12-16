@@ -68,8 +68,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             'cartao_debito': 'Cartão Débito',
             'cartao_credito': 'Cartão Crédito',
             'pix': 'PIX',
-            'crediario': 'Crediário', // NOVO: Crediario
-            'misto': 'Misto'
+            'crediario': 'Crediário',
+            'misto': 'Misto',
+            'ifood': 'iFood' // <--- LINHA ADICIONADA AQUI
         };
         return formas[forma] || forma;
     };

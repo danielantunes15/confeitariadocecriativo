@@ -42,7 +42,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             'cartao_debito': 'Débito',
             'cartao_credito': 'Crédito',
             'pix': 'PIX',
-            'crediario': 'Crediário'
+            'crediario': 'Crediário',
+            'ifood': 'iFood'
         };
         return formas[forma] || forma;
     }
@@ -343,7 +344,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             let valorExibido = venda.total?.toFixed(2) || '0.00';
             
             // Oculta valores de cartão se não for admin
-            if (!window.isAdmin && (venda.forma_pagamento === 'cartao_debito' || venda.forma_pagamento === 'cartao_credito' || venda.forma_pagamento === 'pix')) {
+            // OBS: iFood geralmente é tratado como pagamento digital externo, similar a cartão
+            if (!window.isAdmin && (venda.forma_pagamento === 'cartao_debito' || venda.forma_pagamento === 'cartao_credito' || venda.forma_pagamento === 'pix' || venda.forma_pagamento === 'ifood')) {
                 valorExibido = '**.**';
             }
             
@@ -406,11 +408,13 @@ document.addEventListener('DOMContentLoaded', async function() {
         const vendasDebito = window.vendasDoDia.filter(v => v.forma_pagamento === 'cartao_debito');
         const vendasCredito = window.vendasDoDia.filter(v => v.forma_pagamento === 'cartao_credito');
         const vendasPix = window.vendasDoDia.filter(v => v.forma_pagamento === 'pix');
+        const vendasIfood = window.vendasDoDia.filter(v => v.forma_pagamento === 'ifood');
 
         const totalDinheiroVendas = vendasDinheiro.reduce((sum, v) => sum + (v.total || 0), 0);
         const totalDebito = vendasDebito.reduce((sum, v) => sum + (v.total || 0), 0);
         const totalCredito = vendasCredito.reduce((sum, v) => sum + (v.total || 0), 0);
         const totalPix = vendasPix.reduce((sum, v) => sum + (v.total || 0), 0);
+        const totalIfood = vendasIfood.reduce((sum, v) => sum + (v.total || 0), 0);
         const totalGeral = window.vendasDoDia.reduce((sum, v) => sum + (v.total || 0), 0);
 
         document.getElementById('total-dinheiro').textContent = `R$ ${totalDinheiroVendas.toFixed(2)}`;
@@ -423,6 +427,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             document.getElementById('qtd-credito').textContent = '** venda(s)';
             document.getElementById('total-pix').textContent = 'R$ **,**';
             document.getElementById('qtd-pix').textContent = '** venda(s)';
+            if (document.getElementById('total-ifood')) {
+                document.getElementById('total-ifood').textContent = 'R$ **,**';
+                document.getElementById('qtd-ifood').textContent = '** venda(s)';
+            }
             document.getElementById('total-geral').textContent = `R$ ${totalDinheiroVendas.toFixed(2)}`;
             document.getElementById('qtd-total').textContent = `${vendasDinheiro.length} venda(s)`;
         } else {
@@ -432,6 +440,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             document.getElementById('qtd-credito').textContent = `${vendasCredito.length} venda(s)`;
             document.getElementById('total-pix').textContent = `R$ ${totalPix.toFixed(2)}`;
             document.getElementById('qtd-pix').textContent = `${vendasPix.length} venda(s)`;
+            if (document.getElementById('total-ifood')) {
+                document.getElementById('total-ifood').textContent = `R$ ${totalIfood.toFixed(2)}`;
+                document.getElementById('qtd-ifood').textContent = `${vendasIfood.length} venda(s)`;
+            }
             document.getElementById('total-geral').textContent = `R$ ${totalGeral.toFixed(2)}`;
             document.getElementById('qtd-total').textContent = `${window.vendasDoDia.length} venda(s)`;
         }
@@ -445,11 +457,13 @@ document.addEventListener('DOMContentLoaded', async function() {
         const vendasDebito = window.vendasDoDia.filter(v => v.forma_pagamento === 'cartao_debito');
         const vendasCredito = window.vendasDoDia.filter(v => v.forma_pagamento === 'cartao_credito');
         const vendasPix = window.vendasDoDia.filter(v => v.forma_pagamento === 'pix');
+        const vendasIfood = window.vendasDoDia.filter(v => v.forma_pagamento === 'ifood');
         
         const totalVendasDinheiro = vendasDinheiro.reduce((sum, v) => sum + (v.total || 0), 0);
         const totalVendasDebito = vendasDebito.reduce((sum, v) => sum + (v.total || 0), 0);
         const totalVendasCredito = vendasCredito.reduce((sum, v) => sum + (v.total || 0), 0);
         const totalVendasPix = vendasPix.reduce((sum, v) => sum + (v.total || 0), 0);
+        const totalVendasIfood = vendasIfood.reduce((sum, v) => sum + (v.total || 0), 0);
         
         const vendasTotaisCartao = vendasDebito.length + vendasCredito.length;
         const vendasTotaisPix = vendasPix.length;
@@ -464,11 +478,17 @@ document.addEventListener('DOMContentLoaded', async function() {
              document.getElementById('relatorio-total-vendas-debito').textContent = `R$ ${totalVendasDebito.toFixed(2)}`;
              document.getElementById('relatorio-total-vendas-credito').textContent = `R$ ${totalVendasCredito.toFixed(2)}`;
              document.getElementById('relatorio-total-vendas-pix').textContent = `R$ ${totalVendasPix.toFixed(2)}`;
+             if(document.getElementById('relatorio-total-vendas-ifood')) {
+                 document.getElementById('relatorio-total-vendas-ifood').textContent = `R$ ${totalVendasIfood.toFixed(2)}`;
+             }
         } else {
              document.getElementById('relatorio-total-vendas-dinheiro').textContent = `R$ ${totalVendasDinheiro.toFixed(2)}`;
              document.getElementById('relatorio-total-vendas-debito').textContent = `R$ **,**`;
              document.getElementById('relatorio-total-vendas-credito').textContent = `R$ **,**`;
              document.getElementById('relatorio-total-vendas-pix').textContent = `R$ **,**`;
+             if(document.getElementById('relatorio-total-vendas-ifood')) {
+                 document.getElementById('relatorio-total-vendas-ifood').textContent = `R$ **,**`;
+             }
         }
 
         document.getElementById('relatorio-qtd-vendas-dinheiro').textContent = vendasTotaisDinheiro;
@@ -513,11 +533,13 @@ document.addEventListener('DOMContentLoaded', async function() {
             const vendasDebito = window.vendasDoDia.filter(v => v.forma_pagamento === 'cartao_debito');
             const vendasCredito = window.vendasDoDia.filter(v => v.forma_pagamento === 'cartao_credito');
             const vendasPix = window.vendasDoDia.filter(v => v.forma_pagamento === 'pix');
+            const vendasIfood = window.vendasDoDia.filter(v => v.forma_pagamento === 'ifood');
 
             const totalDinheiro = vendasDinheiro.reduce((sum, v) => sum + (v.total || 0), 0);
             const totalDebito = vendasDebito.reduce((sum, v) => sum + (v.total || 0), 0);
             const totalCredito = vendasCredito.reduce((sum, v) => sum + (v.total || 0), 0);
             const totalPix = vendasPix.reduce((sum, v) => sum + (v.total || 0), 0);
+            const totalIfood = vendasIfood.reduce((sum, v) => sum + (v.total || 0), 0);
             const totalGeral = window.vendasDoDia.reduce((sum, v) => sum + (v.total || 0), 0);
 
             const totalEntradas = window.movimentacoesDoDia.filter(m => m.tipo === 'entrada').reduce((sum, m) => sum + (m.valor || 0), 0);
@@ -609,6 +631,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                                 <td>Total de Vendas em PIX</td>
                                 <td>R$ ${totalPix.toFixed(2)}</td>
                             </tr>
+                            <tr>
+                                <td>Total de Vendas em iFood</td>
+                                <td>R$ ${totalIfood.toFixed(2)}</td>
+                            </tr>
                             ` : ''}
                             <tr class="total">
                                 <td>Total Geral de Vendas</td>
@@ -687,7 +713,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             const isAdmin = window.sistemaAuth.isAdmin();
             let valorTotalExibido = (venda.total || 0).toFixed(2);
             
-            if (!isAdmin && (venda.forma_pagamento === 'cartao_debito' || venda.forma_pagamento === 'cartao_credito' || venda.forma_pagamento === 'pix')) {
+            if (!isAdmin && (venda.forma_pagamento === 'cartao_debito' || venda.forma_pagamento === 'cartao_credito' || venda.forma_pagamento === 'pix' || venda.forma_pagamento === 'ifood')) {
                 valorTotalExibido = '**.**';
             }
 
@@ -722,7 +748,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     let valorItemExibido = ((item.preco_unitario || 0) * (item.quantidade || 0)).toFixed(2);
                     let precoUnitarioExibido = (item.preco_unitario || 0).toFixed(2);
                     
-                    if (!isAdmin && (venda.forma_pagamento === 'cartao_debito' || venda.forma_pagamento === 'cartao_credito' || venda.forma_pagamento === 'pix')) {
+                    if (!isAdmin && (venda.forma_pagamento === 'cartao_debito' || venda.forma_pagamento === 'cartao_credito' || venda.forma_pagamento === 'pix' || venda.forma_pagamento === 'ifood')) {
                         valorItemExibido = '**.**';
                         precoUnitarioExibido = '**.**';
                     }

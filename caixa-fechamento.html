@@ -134,6 +134,17 @@
                                     </div>
                                 </div>
                                 
+                                <div class="resumo-card ifood" style="border-left: 4px solid #ea1d2c;">
+                                    <div class="resumo-icon ifood" style="color: #ea1d2c;">
+                                        <i class="fas fa-motorcycle"></i>
+                                    </div>
+                                    <div class="resumo-info">
+                                        <h4>Total iFood</h4>
+                                        <span class="valor" id="total-ifood">R$ 0,00</span>
+                                        <span class="quantidade" id="qtd-ifood">0 vendas</span>
+                                    </div>
+                                </div>
+
                                 <div class="resumo-card total">
                                     <div class="resumo-icon total">
                                         <i class="fas fa-cash-register"></i>
@@ -157,6 +168,8 @@
                                         <option value="cartao_debito">Débito</option>
                                         <option value="cartao_credito">Crédito</option>
                                         <option value="pix">PIX</option>
+                                        <option value="crediario">Crediário</option>
+                                        <option value="ifood">iFood</option>
                                     </select>
                                 </div>
                             </div>
@@ -233,6 +246,10 @@
                                 <div class="info-item">
                                     <span>Total em Vendas (PIX):</span>
                                     <strong id="relatorio-total-vendas-pix">R$ 0,00</strong>
+                                </div>
+                                <div class="info-item">
+                                    <span>Total em Vendas (iFood):</span>
+                                    <strong id="relatorio-total-vendas-ifood">R$ 0,00</strong>
                                 </div>
                                 
                                 <div class="info-item">
